@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+build
+.expo
+android
+ios
+*.tsbuildinfo
+.idea
+.vscode
+pnpm-lock.yaml

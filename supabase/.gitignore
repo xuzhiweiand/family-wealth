@@ -1,0 +1,10 @@
+# Supabase
+branches/
+.temp/
+.env
+.env.local
+**/migrations/*.down.sql
+
+# 真实密钥绝不入库
+.env.production
+secrets.json
