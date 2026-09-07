@@ -78,7 +78,7 @@ export default function LoginScreen() {
         color="white"
         onPress={onSubmit}
         disabled={loading || !email || !password}
-        icon={loading ? <Spinner color="white" /> : undefined}
+        {...(loading ? { icon: <Spinner color="white" /> } : {})}
       >
         {loading ? '处理中...' : mode === 'signin' ? '登录' : '注册'}
       </Button>

@@ -11,9 +11,67 @@
  * - 单主密码模型：登录密码 == 加密主密码（同 InMemoryAuthClient，见 ADR-0006）
  */
 
-import type { SupabaseClient, Session as SupabaseSession, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 import { generateSalt, toBase64, fromBase64, createPasswordCheckEnvelope, verifyPasswordCheck } from '@family-wealth/crypto';
 import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
+
+/**
+ * 本模块**不 import @supabase/supabase-js 的类型**，只声明真正用到的那一小摊表面。
+ *
+ * 原因：supabase-js 各版本导出的类型名与结构差异很大（2.115 起改 .d.cts，
+ * 且不再导出 Session / AuthError），直接绑定 SDK 类型一升级就碎。
+ * 真正的类型断言只在 bootstrap 里做一次（createClient(...) as unknown as SupabaseLike）。
+ */
+
+export interface SupabaseSession {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number | undefined;
+  user: { id: string; email?: string | null };
+}
+
+export interface SupabaseUser {
+  id: string;
+  email?: string | null;
+}
+
+/** 错误只需要这三个字段，与 SDK 的 AuthError 结构化兼容 */
+export interface AuthErrorLike {
+  status?: number | undefined;
+  code?: string | undefined;
+  message: string;
+}
+
+interface AuthResponse {
+  data: { user: SupabaseUser | null; session: SupabaseSession | null };
+  error: AuthErrorLike | null;
+}
+
+export interface SupabaseAuthPort {
+  signUp(credentials: {
+    email: string;
+    password: string;
+    options?: { data?: Record<string, unknown> };
+  }): Promise<AuthResponse>;
+  signInWithPassword(credentials: { email: string; password: string }): Promise<AuthResponse>;
+  signOut(): Promise<{ error: AuthErrorLike | null }>;
+  getUser(): Promise<{ data: { user: SupabaseUser | null }; error: AuthErrorLike | null }>;
+  getSession(): Promise<{ data: { session: SupabaseSession | null }; error: AuthErrorLike | null }>;
+  refreshSession(): Promise<{ data: { session: SupabaseSession | null }; error: AuthErrorLike | null }>;
+  onAuthStateChange(listener: (event: string, session: SupabaseSession | null) => void): {
+    data: { subscription: { unsubscribe: () => void } };
+  };
+}
+
+export interface SupabaseLike {
+  auth: SupabaseAuthPort;
+  from(table: string): {
+    select(columns: string): {
+      eq(column: string, value: string): { single(): Promise<{ data: unknown; error: AuthErrorLike | null }> };
+    };
+    /** 行对象不要求索引签名，具体表的行类型（如 ProfileRow）可直接传入 */
+    upsert(row: object): Promise<{ error: AuthErrorLike | null }>;
+  };
+}
 
 /** profiles 表一行（salt / password_check_envelope 为 base64 字符串） */
 interface ProfileRow {
@@ -28,7 +86,7 @@ export class SupabaseAuthClient implements AuthClient {
   /** 内存缓存 profile，避免每次 getCurrentUser 都查库 */
   private profileCache = new Map<string, ProfileRow>();
 
-  constructor(private readonly supabase: SupabaseClient) {}
+  constructor(private readonly supabase: SupabaseLike) {}
 
   async signUp(input: SignUpInput): Promise<AuthResult<{ user: User; session: Session }>> {
     const { data, error } = await this.supabase.auth.signUp({
@@ -155,7 +213,7 @@ export class SupabaseAuthClient implements AuthClient {
     };
   }
 
-  private mapAuthError(e: AuthError): AuthResult<never> {
+  private mapAuthError(e: AuthErrorLike): AuthResult<never> {
     // 网络错误：supabase-js 网络层失败时 status 为 0 / undefined
     if (e.status === 0 || e.status === undefined) {
       return { ok: false, error: { code: 'NETWORK', message: '网络异常，请稍后重试' } };

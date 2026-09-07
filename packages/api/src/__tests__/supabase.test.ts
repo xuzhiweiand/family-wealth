@@ -1,6 +1,6 @@
 import { SupabaseAuthClient } from '../supabase';
 import { generateSalt, toBase64, createPasswordCheckEnvelope } from '@family-wealth/crypto';
-import type { AuthError, Session as SupabaseSession, User as SupabaseUser } from '@supabase/supabase-js';
+import type { AuthErrorLike, SupabaseSession, SupabaseUser } from '../supabase';
 
 const PASSWORD = 'correct-horse-battery-staple';
 
@@ -13,7 +13,7 @@ function fakeSupabaseUser(id = 'user-1', email = 'alice@example.com'): SupabaseU
     app_metadata: {},
     user_metadata: { display_name: 'Alice' },
     created_at: '2026-09-07T00:00:00Z',
-  } as SupabaseUser;
+  } as unknown as SupabaseUser;
 }
 
 /** 构造最小可用的 Supabase Session 对象 */
@@ -25,11 +25,11 @@ function fakeSupabaseSession(user = fakeSupabaseUser()): SupabaseSession {
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     token_type: 'bearer',
     user,
-  } as SupabaseSession;
+  } as unknown as SupabaseSession;
 }
 
-function authError(status: number, code?: string, message = 'auth error'): AuthError {
-  return { status, code, message, name: 'AuthError' } as AuthError;
+function authError(status: number, code?: string, message = 'auth error'): AuthErrorLike {
+  return { status, code, message } as AuthErrorLike;
 }
 
 /** 构建一个可配置的 fake SupabaseClient（只实现本 client 用到的面） */

@@ -8,7 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { setAuthClient, InMemoryAuthClient, SupabaseAuthClient } from '@family-wealth/api';
+import { setAuthClient, InMemoryAuthClient, SupabaseAuthClient, type SupabaseLike } from '@family-wealth/api';
 import { InMemoryAssetRepository, InMemorySnapshotRepository } from '@family-wealth/db';
 
 let isBootstrapped = false;
@@ -16,13 +16,14 @@ let isBootstrapped = false;
 export function bootstrap() {
   if (isBootstrapped) return;
 
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env['EXPO_PUBLIC_SUPABASE_URL'];
+  const supabaseAnonKey = process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
 
   if (supabaseUrl && supabaseAnonKey) {
     // 生产路径：真实 Supabase Auth + profiles 表（见 supabase/migrations）
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    setAuthClient(new SupabaseAuthClient(supabase));
+    // 全应用内唯一一次 SDK 类型断言：之后一律走 SupabaseLike 这个最小接口
+    setAuthClient(new SupabaseAuthClient(supabase as unknown as SupabaseLike));
   } else {
     // 开发兜底：无 env 配置时用内存 mock，便于 UI 联调
     console.warn('[bootstrap] 未配置 EXPO_PUBLIC_SUPABASE_URL/ANON_KEY，使用 InMemoryAuthClient');

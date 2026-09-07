@@ -17,6 +17,8 @@ web-build/
 .tamagui/
 *.orig.*
 *.jks
+# expo 自动生成的根 app.json（含 anonymous 包名，不该进仓库）
+/app.json
 *.p8
 *.p12
 *.key

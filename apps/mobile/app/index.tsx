@@ -1,60 +1,154 @@
 /**
- * 已登录主页（仪表盘冒烟版）
+ * 仪表盘：净资产 + 环比 + 趋势图 + 资产列表
+ *
+ * 所有聚合都在本机完成（服务端只见密文，见 ADR-0006）：
+ * 快照 → packages/analytics 聚合成趋势序列 → 这里只负责画。
  */
 
-import { YStack, Text, Card } from 'tamagui';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import { Button, Card, Text, XStack, YStack } from 'tamagui';
+import { buildTrendSeries, summarizeTrend } from '@family-wealth/analytics';
+import { formatCNY, formatCNYCompact, formatPct } from '@family-wealth/shared-utils';
 import { useAuthStore } from '../src/stores/auth-store';
 import { useKeyStore } from '../src/stores/key-store';
-import { deriveUMK, fromBase64 } from '@family-wealth/crypto';
-import { useEffect } from 'react';
+import { useAssetStore } from '../src/stores/asset-store';
+import { TrendChart } from '../src/components/TrendChart';
+
+/** A 股习惯：涨红跌绿 */
+const UP_COLOR = '#DC2626';
+const DOWN_COLOR = '#16A34A';
+
+const TREND_WINDOW_DAYS = 90;
+
+function fromDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
 
 export default function HomeScreen() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const session = useAuthStore((s) => s.session);
   const signOut = useAuthStore((s) => s.signOut);
-  const setUmk = useKeyStore((s) => s.setUmk);
-  const umkLoaded = useKeyStore((s) => s.umk !== null);
+  const umk = useKeyStore((s) => s.umk);
+  const storedFamilyId = useKeyStore((s) => s.familyId);
 
-  // 派生 UMK 并存入内存 key-store（实际场景：登录后立即派生，不在主页副作用里）
+  const assets = useAssetStore((s) => s.assets);
+  const snapshots = useAssetStore((s) => s.snapshots);
+  const loading = useAssetStore((s) => s.loading);
+  const load = useAssetStore((s) => s.load);
+
+  // W2 的 mock 登录流程没有真实 familyId，这里兜底一个，保证 UI 可跑
+  const familyId = storedFamilyId ?? 'demo-family';
+
   useEffect(() => {
-    if (user && !umkLoaded) {
-      // 演示：派生 UMK 后立即清掉密码
-      const salt = fromBase64(user.salt);
-      const tempPassword = 'demo-not-real-password';
-      const umk = deriveUMK(tempPassword, salt);
-      setUmk(umk, 'demo-family');
-    }
-  }, [user, umkLoaded, setUmk]);
+    void load(familyId);
+  }, [familyId, load]);
+
+  const activeAssets = useMemo(() => assets.filter((a) => a.deletedAt === null), [assets]);
+
+  const series = useMemo(
+    () => buildTrendSeries(snapshots, activeAssets, { from: fromDaysAgo(TREND_WINDOW_DAYS), familyId }),
+    [snapshots, activeAssets, familyId],
+  );
+
+  const summary = useMemo(() => summarizeTrend(series, 30), [series]);
+
+  const netWorth = summary.latest?.netWorth ?? 0;
+  const up = summary.changeAmount >= 0;
 
   return (
     <YStack flex={1} backgroundColor="$bgSecondary" padding="$lg" space="$md">
-      <Text fontSize="$5" fontWeight="700" color="$textPrimary">
-        欢迎，{user?.displayName ?? '用户'}
-      </Text>
-      <Text fontSize="$2" color="$textSecondary">
-        会话 token：{session?.accessToken.slice(0, 12)}…
-      </Text>
-      <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">
-        <Text fontSize="$3" color="$textSecondary">UMK 状态</Text>
-        <Text fontSize="$4" fontWeight="600" color={umkLoaded ? '$primary' : '$debt'}>
-          {umkLoaded ? '已派生 ✓' : '未派生 ✗'}
+      <XStack justifyContent="space-between" alignItems="center">
+        <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+          {user?.displayName ?? '我的家庭'}
         </Text>
-      </Card>
+        <Text fontSize="$2" color="$primary" pressStyle={{ opacity: 0.6 }} onPress={() => void signOut()}>
+          退出
+        </Text>
+      </XStack>
+
       <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">
-        <Text fontSize="$3" color="$textSecondary">W2 进度</Text>
-        <Text fontSize="$2" color="$textPrimary">· Tamagui 接入</Text>
-        <Text fontSize="$2" color="$textPrimary">· 主密钥派生</Text>
-        <Text fontSize="$2" color="$textPrimary">· Auth Store + 登录页</Text>
-        <Text fontSize="$2" color="$textPrimary">· ADR 0005-0009</Text>
+        <Text fontSize="$2" color="$textSecondary">
+          净资产
+        </Text>
+        <Text fontSize="$8" fontWeight="700" color="$textPrimary">
+          {formatCNY(netWorth)}
+        </Text>
+        <XStack space="$sm" alignItems="center">
+          <Text fontSize="$3" fontWeight="600" color={up ? UP_COLOR : DOWN_COLOR}>
+            {up ? '▲' : '▼'} {formatPct(summary.changePct)}
+          </Text>
+          <Text fontSize="$1" color="$textSecondary">
+            近 30 天 {up ? '+' : ''}
+            {formatCNYCompact(summary.changeAmount)}
+          </Text>
+        </XStack>
+        <XStack space="$md" marginTop="$xs">
+          <Text fontSize="$1" color="$textSecondary">
+            总资产 {formatCNYCompact(summary.latest?.totalAssets ?? 0)}
+          </Text>
+          <Text fontSize="$1" color="$textSecondary">
+            负债 {formatCNYCompact(summary.latest?.totalLiabilities ?? 0)}
+          </Text>
+        </XStack>
       </Card>
-      <Text
-        color="$primary"
-        fontSize="$2"
-        marginTop="$md"
-        pressStyle={{ opacity: 0.6 }}
-        onPress={() => signOut()}
-      >
-        退出登录
+
+      <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">
+        <Text fontSize="$3" color="$textSecondary" marginBottom="$xs">
+          近 {TREND_WINDOW_DAYS} 天趋势
+        </Text>
+        <TrendChart data={series} height={150} lines={['netWorth', 'totalAssets', 'totalLiabilities']} />
+      </Card>
+
+      <XStack justifyContent="space-between" alignItems="center">
+        <Text fontSize="$4" fontWeight="600" color="$textPrimary">
+          资产列表
+        </Text>
+        <Button size="$3" backgroundColor="$primary" color="white" onPress={() => router.push('/asset/new')}>
+          + 录入
+        </Button>
+      </XStack>
+
+      {loading ? (
+        <Text fontSize="$2" color="$textSecondary">
+          加载中…
+        </Text>
+      ) : null}
+
+      {activeAssets.length === 0 && !loading ? (
+        <Text fontSize="$2" color="$textSecondary">
+          还没有资产，点「+ 录入」添加第一笔（可以拍照识别金额）
+        </Text>
+      ) : null}
+
+      {activeAssets.map((asset) => (
+        <Card
+          key={asset.id}
+          padded
+          elevate
+          backgroundColor="$bgPrimary"
+          borderColor="$border"
+          borderWidth={1}
+          borderRadius="$md"
+        >
+          <XStack justifyContent="space-between" alignItems="center">
+            <YStack>
+              <Text fontSize="$4" fontWeight="600" color="$textPrimary">
+                {asset.name}
+              </Text>
+              <Text fontSize="$1" color="$textSecondary">
+                {asset.type}
+              </Text>
+            </YStack>
+            <Text fontSize="$4" color={asset.type === 'debt' ? UP_COLOR : '$textPrimary'}>
+              {formatCNY(asset.currentAmount)}
+            </Text>
+          </XStack>
+        </Card>
+      ))}
+
+      <Text fontSize="$1" color="$textSecondary">
+        UMK：{umk === null ? '未派生' : '已派生 ✓'} · 数据仅存本机，同步时以密文上行
       </Text>
     </YStack>
   );
