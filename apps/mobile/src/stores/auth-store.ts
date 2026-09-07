@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@family-wealth/api';
 import { getAuthClient } from '@family-wealth/api';
+import { saveSalt, saveSession, clearAll } from '../services/secure-storage';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'error';
 
@@ -43,6 +44,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       session: result.data!.session,
       error: null,
     });
+    // 持久化 salt 与 token，供重启后离线解锁
+    await saveSalt(result.data!.user.salt);
+    await saveSession({
+      accessToken: result.data!.session.accessToken,
+      refreshToken: result.data!.session.refreshToken,
+    });
     return true;
   },
 
@@ -59,11 +66,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       session: result.data!.session,
       error: null,
     });
+    await saveSalt(result.data!.user.salt);
+    await saveSession({
+      accessToken: result.data!.session.accessToken,
+      refreshToken: result.data!.session.refreshToken,
+    });
     return true;
   },
 
   async signOut() {
     await getAuthClient().signOut();
+    await clearAll();
     set({ status: 'idle', user: null, session: null, error: null });
   },
 

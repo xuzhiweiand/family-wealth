@@ -14,6 +14,7 @@ out/
 .expo/
 .expo-shared/
 web-build/
+.tamagui/
 *.orig.*
 *.jks
 *.p8

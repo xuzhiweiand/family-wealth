@@ -9,8 +9,10 @@
     "test": "jest"
   },
   "dependencies": {
+    "@family-wealth/crypto": "workspace:*",
     "@family-wealth/shared-types": "workspace:*",
-    "@noble/hashes": "^1.6.1"
+    "@noble/hashes": "^1.6.1",
+    "@supabase/supabase-js": "^2.45.6"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -91,3 +91,93 @@ describe('generateInviteCode', () => {
     expect(typeof inviteModule.generateInviteCode).toBe('function');
   });
 });
+
+// ============================================================
+// 边界测试（W3 补强）：空数组 / 负数 / 超大金额 / 临界值
+// ============================================================
+
+describe('边界测试：formatCNY', () => {
+  it('formats zero', () => {
+    expect(formatCNY(0)).toBe('¥0.00');
+  });
+  it('formats zero without fraction', () => {
+    expect(formatCNY(0, { fraction: false })).toBe('¥0');
+  });
+  it('handles very large amount without throwing', () => {
+    expect(formatCNY(Number.MAX_SAFE_INTEGER)).toMatch(/^¥[\d,]+\.\d{2}$/);
+  });
+  it('formats a deterministic 14-digit amount', () => {
+    expect(formatCNY(12345678901234)).toBe('¥123,456,789,012.34');
+  });
+});
+
+describe('边界测试：formatCNYCompact', () => {
+  it('switches to 亿 exactly at 1e8 yuan', () => {
+    expect(formatCNYCompact(10000000000)).toBe('¥1.00亿');
+  });
+  it('switches to 万 exactly at 1e4 yuan', () => {
+    expect(formatCNYCompact(1000000)).toBe('¥1.0万');
+  });
+  it('keeps sign for negative 亿', () => {
+    expect(formatCNYCompact(-10000000000)).toBe('¥-1.00亿');
+  });
+  it('formats zero as plain CNY', () => {
+    expect(formatCNYCompact(0)).toBe('¥0.00');
+  });
+});
+
+describe('边界测试：formatPct', () => {
+  it('formats zero with no sign', () => {
+    expect(formatPct(0)).toBe('0.00%');
+  });
+  it('formats large percentage', () => {
+    expect(formatPct(12345.678)).toBe('+12345.68%');
+  });
+});
+
+describe('边界测试：aggregateTrend', () => {
+  it('returns zeros for empty array', () => {
+    expect(aggregateTrend([])).toEqual({ totalAssets: 0, totalLiabilities: 0, netWorth: 0 });
+  });
+  it('computes negative net worth when only liabilities present', () => {
+    const assets = [{ type: 'debt', currentAmount: 50000000 }] as Asset[];
+    const r = aggregateTrend(assets);
+    expect(r.totalAssets).toBe(0);
+    expect(r.totalLiabilities).toBe(50000000);
+    expect(r.netWorth).toBe(-50000000);
+  });
+  it('treats negative debt amount as its absolute value', () => {
+    const assets = [{ type: 'debt', currentAmount: -50000000 }] as Asset[];
+    expect(aggregateTrend(assets).totalLiabilities).toBe(50000000);
+  });
+  it('sums a single asset at MAX_SAFE_INTEGER without overflow', () => {
+    const assets = [{ type: 'cash', currentAmount: Number.MAX_SAFE_INTEGER }] as Asset[];
+    expect(aggregateTrend(assets).netWorth).toBe(Number.MAX_SAFE_INTEGER);
+  });
+});
+
+describe('边界测试：pctChange', () => {
+  it('returns -100 when current drops to zero', () => {
+    expect(pctChange(0, 100)).toBe(-100);
+  });
+  it('returns 0 when no change', () => {
+    expect(pctChange(100, 100)).toBe(0);
+  });
+  it('handles large values', () => {
+    expect(pctChange(2000000000, 1000000000)).toBe(100);
+  });
+});
+
+describe('边界测试：generateInviteCode', () => {
+  it('returns empty string for length 0', () => {
+    expect(generateInviteCode(0)).toBe('');
+  });
+  it('returns empty string for negative length', () => {
+    expect(generateInviteCode(-1)).toBe('');
+  });
+  it('returns single char for length 1', () => {
+    const code = generateInviteCode(1);
+    expect(code).toHaveLength(1);
+    expect(INVITE_ALPHABET_CANDIDATES).not.toContain(code);
+  });
+});
