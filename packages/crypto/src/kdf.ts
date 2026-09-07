@@ -41,6 +41,11 @@ export function deriveUMK(password: string, salt: Uint8Array): Uint8Array {
 
 /**
  * 从 UMK 派生家庭数据密钥（FDK）
+ *
+ * @deprecated 单用户遗留路径（W2/W3）。多成员家庭请改用 share.ts 的
+ * `generateFDK()` + `wrapFDK()`：本函数让每个成员派生出**不同的** FDK，
+ * 多成员场景下彼此解不开对方的数据（W5 修正，详见 ADR-0010）。
+ *
  * @param umk 用户主密钥
  * @param familyId 家庭 ID（AAD 绑定，避免跨家庭重放）
  */

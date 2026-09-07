@@ -24,6 +24,7 @@
     "@family-wealth/api": "workspace:*",
     "@family-wealth/crypto": "workspace:*",
     "@family-wealth/db": "workspace:*",
+    "@family-wealth/family": "workspace:*",
     "@family-wealth/ocr": "workspace:*",
     "@family-wealth/shared-types": "workspace:*",
     "@family-wealth/shared-utils": "workspace:*",

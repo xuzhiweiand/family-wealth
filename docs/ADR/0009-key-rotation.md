@@ -1,8 +1,13 @@
 # ADR-0009: 主密钥 (UMK) 与家庭密钥 (FDK) 的轮换与生命周期
 
-**状态**: Accepted  
-**日期**: 2026-09-07  
+**状态**: Accepted（W5 修订）
+**日期**: 2026-09-07（W5 修订：2026-09-08）
 **对应技术方案**: §11.5
+**修订说明**: 原文假设 `FDK = HKDF(UMK, familyId)`。W5 引入多成员后该
+派生方式不成立（各成员 UMK 不同 → FDK 不同 → 互相解不开数据），
+FDK 已改为**家庭级随机密钥**，见 ADR-0010。本文流程已按新模型修订；
+关键原则「UMK 永不入库、改密码只换自己的副本不动业务数据」在新模型下
+才真正成立——原派生模型下改密码会导致所有 FDK 变化。
 
 ## 背景
 
@@ -23,12 +28,13 @@
 ```
 旧密码 → PBKDF2 → UMK_old → 验证服务端旧 UMK 加密的"密码校验信封"（decrypt 成功即正确）
 新密码 → PBKDF2 → UMK_new
-UMK_new → HKDF → FDK_new（所有 familyId）
-所有 envelope 用 FDK_new 重加密（re-wrap 模式，不重新上传数据）
+对每个家庭：FDK 不变，用 UMK_new 重新包裹自己的 wrapped_fdk 副本上传
 新 salt（避免旧密码反推）写回服务端
 ```
 
-**关键原则**: UMK 永不入库，所有 envelope 用 FDK 加密，密码改了只换 FDK。
+**关键原则**: UMK 永不入库。FDK 是家庭级随机密钥（ADR-0010），
+与任何人的密码无关——改密码只重写自己那份副本，业务数据零重加密。
+（原派生模型下改密码会导致 FDK 变化、需要全家 re-wrap，这正是弃用它的原因。）
 
 ### 2. FDK 轮换（成员变更）
 
@@ -37,10 +43,12 @@ UMK_new → HKDF → FDK_new（所有 familyId）
 **流程**:
 
 ```
-Owner → UMK → HKDF → FDK_new（familyId）
-批量重加密所有 envelope（仍是 re-wrap，本地完成）
-Owner 用所有当前成员公钥加密 FDK_new 上传服务端
-被移除成员的旧公钥加密记录从服务端删除
+Owner → FDK_new = random(32B)
+所有 envelope 用 FDK_new 重加密（re-wrap 模式，不重新上传数据）
+Owner 用 FDK_old 加密 FDK_new 上传 family_key_rotations
+剩余成员各自：FDK_old 解出 FDK_new → 用自己 UMK 重写副本 → 标记已领取
+被移除成员的 family_members 行已删，RLS 使其读不到轮换条目 → 拿不到 FDK_new
+全员领取完成（computeRotationProgress().complete）后旧 FDK 废弃
 ```
 
 ### 3. UMK 强制失效（设备丢失）

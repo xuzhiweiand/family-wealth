@@ -13,6 +13,7 @@ import { formatCNY, formatCNYCompact, formatPct } from '@family-wealth/shared-ut
 import { useAuthStore } from '../src/stores/auth-store';
 import { useKeyStore } from '../src/stores/key-store';
 import { useAssetStore } from '../src/stores/asset-store';
+import { useFamilyStore } from '../src/stores/family-store';
 import { TrendChart } from '../src/components/TrendChart';
 
 /** A 股习惯：涨红跌绿 */
@@ -31,14 +32,15 @@ export default function HomeScreen() {
   const signOut = useAuthStore((s) => s.signOut);
   const umk = useKeyStore((s) => s.umk);
   const storedFamilyId = useKeyStore((s) => s.familyId);
+  const sharedFamily = useFamilyStore((s) => s.family);
 
   const assets = useAssetStore((s) => s.assets);
   const snapshots = useAssetStore((s) => s.snapshots);
   const loading = useAssetStore((s) => s.loading);
   const load = useAssetStore((s) => s.load);
 
-  // W2 的 mock 登录流程没有真实 familyId，这里兜底一个，保证 UI 可跑
-  const familyId = storedFamilyId ?? 'demo-family';
+  // 加入/创建家庭后用真实家庭 id；W2 的 mock 登录兜底 demo-family 保证 UI 可跑
+  const familyId = sharedFamily?.id ?? storedFamilyId ?? 'demo-family';
 
   useEffect(() => {
     void load(familyId);
@@ -104,9 +106,14 @@ export default function HomeScreen() {
         <Text fontSize="$4" fontWeight="600" color="$textPrimary">
           资产列表
         </Text>
-        <Button size="$3" backgroundColor="$primary" color="white" onPress={() => router.push('/asset/new')}>
-          + 录入
-        </Button>
+        <XStack space="$sm">
+          <Button size="$3" theme="active" onPress={() => router.push('/family')}>
+            家庭
+          </Button>
+          <Button size="$3" backgroundColor="$primary" color="white" onPress={() => router.push('/asset/new')}>
+            + 录入
+          </Button>
+        </XStack>
       </XStack>
 
       {loading ? (

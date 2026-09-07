@@ -42,6 +42,9 @@ importers:
       '@family-wealth/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@family-wealth/family':
+        specifier: workspace:*
+        version: link:../../packages/family
       '@family-wealth/ocr':
         specifier: workspace:*
         version: link:../../packages/ocr
@@ -229,6 +232,31 @@ importers:
       '@nozbe/watermelondb':
         specifier: ^0.27.1
         version: 0.27.1
+    devDependencies:
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.20.1)
+      ts-jest:
+        specifier: ^29.2.5
+        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.7))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.20.1))(typescript@5.7.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.3
+
+  packages/family:
+    dependencies:
+      '@family-wealth/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@family-wealth/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
     devDependencies:
       '@types/jest':
         specifier: ^29.5.14
