@@ -1,92 +1,61 @@
-import { StyleSheet, Text, View } from 'react-native';
-import type { AssetType } from '@family-wealth/shared-types';
-import { formatCNY } from '@family-wealth/shared-utils';
+/**
+ * 已登录主页（仪表盘冒烟版）
+ */
 
-// W1 冒烟数据：验证 shared-types / shared-utils 链路可用
-const SMOKE_ASSET_TYPES: AssetType[] = ['cash', 'stock', 'fund'];
-const SMOKE_AMOUNTS: number[] = [50000, 320000, 128000];
+import { YStack, Text, Card } from 'tamagui';
+import { useAuthStore } from '../src/stores/auth-store';
+import { useKeyStore } from '../src/stores/key-store';
+import { deriveUMK, fromBase64 } from '@family-wealth/crypto';
+import { useEffect } from 'react';
 
 export default function HomeScreen() {
-  const total = SMOKE_AMOUNTS.reduce<number>((a, b) => a + b, 0);
+  const user = useAuthStore((s) => s.user);
+  const session = useAuthStore((s) => s.session);
+  const signOut = useAuthStore((s) => s.signOut);
+  const setUmk = useKeyStore((s) => s.setUmk);
+  const umkLoaded = useKeyStore((s) => s.umk !== null);
+
+  // 派生 UMK 并存入内存 key-store（实际场景：登录后立即派生，不在主页副作用里）
+  useEffect(() => {
+    if (user && !umkLoaded) {
+      // 演示：派生 UMK 后立即清掉密码
+      const salt = fromBase64(user.salt);
+      const tempPassword = 'demo-not-real-password';
+      const umk = deriveUMK(tempPassword, salt);
+      setUmk(umk, 'demo-family');
+    }
+  }, [user, umkLoaded, setUmk]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>家庭资产管理</Text>
-      <Text style={styles.subtitle}>W1 · 项目初始化冒烟页</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>净资产（mock）</Text>
-        <Text style={styles.cardValue}>{formatCNY(total)}</Text>
-        {SMOKE_ASSET_TYPES.map((type, i) => {
-          const amount = SMOKE_AMOUNTS[i] ?? 0;
-          return (
-            <View key={type} style={styles.row}>
-              <Text style={styles.rowLabel}>{type}</Text>
-              <Text style={styles.rowValue}>{formatCNY(amount)}</Text>
-            </View>
-          );
-        })}
-      </View>
-    </View>
+    <YStack flex={1} backgroundColor="$bgSecondary" padding="$lg" space="$md">
+      <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+        欢迎，{user?.displayName ?? '用户'}
+      </Text>
+      <Text fontSize="$2" color="$textSecondary">
+        会话 token：{session?.accessToken.slice(0, 12)}…
+      </Text>
+      <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">
+        <Text fontSize="$3" color="$textSecondary">UMK 状态</Text>
+        <Text fontSize="$4" fontWeight="600" color={umkLoaded ? '$primary' : '$debt'}>
+          {umkLoaded ? '已派生 ✓' : '未派生 ✗'}
+        </Text>
+      </Card>
+      <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">
+        <Text fontSize="$3" color="$textSecondary">W2 进度</Text>
+        <Text fontSize="$2" color="$textPrimary">· Tamagui 接入</Text>
+        <Text fontSize="$2" color="$textPrimary">· 主密钥派生</Text>
+        <Text fontSize="$2" color="$textPrimary">· Auth Store + 登录页</Text>
+        <Text fontSize="$2" color="$textPrimary">· ADR 0005-0009</Text>
+      </Card>
+      <Text
+        color="$primary"
+        fontSize="$2"
+        marginTop="$md"
+        pressStyle={{ opacity: 0.6 }}
+        onPress={() => signOut()}
+      >
+        退出登录
+      </Text>
+    </YStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 4,
-    marginBottom: 24,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  cardLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  cardValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#059669',
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#F3F4F6',
-  },
-  rowLabel: {
-    fontSize: 14,
-    color: '#374151',
-    textTransform: 'capitalize',
-  },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-});
