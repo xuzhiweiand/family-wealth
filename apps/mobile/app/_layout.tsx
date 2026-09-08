@@ -23,7 +23,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status === 'idle') return; // hydrate 还没结束
-    const inAuth = segments[0] === 'login';
+    // OCR Lab 是开发态联调页，绕过 AuthGuard（无登录态也能用）
+    // 注：expo-router typed-routes 在 .expo/types 未重生成时把 'ocr-lab'
+    //     视为类型外值，这里用字符串常量绕过 TS 误报
+    const head = segments[0] as string | undefined;
+    if (head === 'ocr-lab') return;
+    const inAuth = head === 'login';
     if (status === 'authenticated' && inAuth) {
       router.replace('/');
     } else if (status !== 'authenticated' && !inAuth) {
@@ -51,6 +56,7 @@ export default function RootLayout() {
             <Stack.Screen name="asset/new" />
             <Stack.Screen name="family" />
             <Stack.Screen name="join" />
+            <Stack.Screen name="ocr-lab" />
           </Stack>
         </AuthGuard>
       </SafeAreaProvider>

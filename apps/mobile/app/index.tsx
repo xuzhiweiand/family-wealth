@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { buildTrendSeries, summarizeTrend } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, formatPct } from '@family-wealth/shared-utils';
@@ -64,9 +64,18 @@ export default function HomeScreen() {
         <Text fontSize="$5" fontWeight="700" color="$textPrimary">
           {user?.displayName ?? '我的家庭'}
         </Text>
-        <Text fontSize="$2" color="$primary" pressStyle={{ opacity: 0.6 }} onPress={() => void signOut()}>
-          退出
-        </Text>
+        <XStack space="$md" alignItems="center">
+          {__DEV__ ? (
+            <Link href="/ocr-lab" asChild>
+              <Text fontSize="$2" color="$textSecondary" pressStyle={{ opacity: 0.6 }}>
+                OCR Lab
+              </Text>
+            </Link>
+          ) : null}
+          <Text fontSize="$2" color="$primary" pressStyle={{ opacity: 0.6 }} onPress={() => void signOut()}>
+            退出
+          </Text>
+        </XStack>
       </XStack>
 
       <Card padded elevate backgroundColor="$bgPrimary" borderColor="$border" borderWidth={1} borderRadius="$lg">

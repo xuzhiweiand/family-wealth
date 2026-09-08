@@ -49,6 +49,10 @@ Thumbs.db
 coverage/
 *.lcov
 
+# ===== OCR 真机语料（个人/敏感数据，不进仓库） =====
+packages/*/device-samples.jsonl
+device-samples.jsonl
+
 # ===== Logs =====
 *.log
 logs/
