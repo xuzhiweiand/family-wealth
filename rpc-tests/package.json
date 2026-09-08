@@ -1,0 +1,13 @@
+{
+  "name": "family-wealth-rpc-tests",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Supabase RPC 迁移的 PGlite 集成测试（auth shim + SET ROLE 验证 RLS）",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.0"
+  }
+}
