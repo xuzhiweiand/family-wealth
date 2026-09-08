@@ -10,16 +10,18 @@
  */
 
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
-import { ASSET_TYPES, type AssetType } from '@family-wealth/shared-types';
+import { ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
 import type { AmountCandidate } from '@family-wealth/ocr';
+import { can, VISIBILITY_LABELS } from '@family-wealth/family';
 import { useAssetStore } from '../../src/stores/asset-store';
 import { useAuthStore } from '../../src/stores/auth-store';
 import { useKeyStore } from '../../src/stores/key-store';
+import { useMyFamilyRole } from '../../src/stores/family-store';
 import { getOcrEngine } from '../../src/services/ocr';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
@@ -51,10 +53,13 @@ export default function NewAssetScreen() {
   const user = useAuthStore((s) => s.user);
   const familyId = useKeyStore((s) => s.familyId);
   const addAsset = useAssetStore((s) => s.addAsset);
+  const myRole = useMyFamilyRole();
+  const canCreate = can(myRole, 'create_asset');
 
   const [type, setType] = useState<AssetType>('bank_deposit');
   const [name, setName] = useState('');
   const [amountText, setAmountText] = useState('');
+  const [visibility, setVisibility] = useState<Visibility>('family');
   const [candidates, setCandidates] = useState<AmountCandidate[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,6 +67,26 @@ export default function NewAssetScreen() {
   const [fromOcr, setFromOcr] = useState(false);
 
   const cents = parseYuanToCents(amountText);
+
+  // viewer：无 create_asset 能力，整页禁用并给一句解释（不直接回退，
+  // 让用户知道为什么不能录入——产品反馈 W2 原型就嫌黑盒）
+  if (!canCreate) {
+    return (
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+        <YStack space="$md" marginTop="$xl">
+          <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+            录入资产
+          </Text>
+          <Text fontSize="$2" color="$textSecondary">
+            查看者角色无法录入资产。请联系管理员升级为编辑者后再试。
+          </Text>
+          <Button size="$3" theme="active" onPress={() => router.back()}>
+            返回
+          </Button>
+        </YStack>
+      </ScrollView>
+    );
+  }
 
   async function recognize() {
     setError(null);
@@ -118,6 +143,7 @@ export default function NewAssetScreen() {
         name: name.trim(),
         amountInCents: cents,
         source: fromOcr ? 'ocr' : 'manual',
+        visibility,
       });
       router.back();
     } catch (err) {
@@ -203,6 +229,31 @@ export default function NewAssetScreen() {
         >
           {ocrLoading ? '识别中…' : '拍照识别金额'}
         </Button>
+
+        <XStack
+          backgroundColor="$bgPrimary"
+          borderColor="$border"
+          borderWidth={1}
+          borderRadius="$md"
+          padding="$sm"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <YStack flex={1}>
+            <Text fontSize="$3" color="$textPrimary">
+              {VISIBILITY_LABELS[visibility]}
+            </Text>
+            <Text fontSize="$1" color="$textSecondary">
+              {visibility === 'private'
+                ? '其他家庭成员看不到这条资产，也不会计入家庭净资产'
+                : '家庭成员都能看到、都会计入家庭净资产'}
+            </Text>
+          </YStack>
+          <Switch
+            value={visibility === 'private'}
+            onValueChange={(v) => setVisibility(v ? 'private' : 'family')}
+          />
+        </XStack>
 
         {candidates.length > 0 ? (
           <YStack space="$xs">

@@ -12,7 +12,7 @@
  *   2. 只有 owner 能邀请成员 —— 防止 editor 把权限扩散出去
  */
 
-import type { FamilyRole } from '@family-wealth/shared-types';
+import type { Asset, FamilyRole, Visibility } from '@family-wealth/shared-types';
 import type { AssetAccessContext, AssetAction, MemberRemovalRejection, RoleChangeRejection } from './types';
 
 export type Capability =
@@ -69,6 +69,36 @@ export function canDoOnAsset(ctx: AssetAccessContext, action: AssetAction): bool
   if (action === 'delete' && !isOwn) return false;
   return true;
 }
+
+/**
+ * 列表场景：当前用户能看到哪些资产？
+ *
+ * 等价于「canDoOnAsset(ctx, 'view')」按资产批量过滤。
+ * 这是 mobile 仪表盘 + 趋势聚合的可见口径——私有资产不计入家庭净资产（产品决策 W6 phase 3）。
+ */
+export function filterVisibleAssets(
+  assets: readonly Asset[],
+  viewerUserId: string,
+  role: FamilyRole,
+): Asset[] {
+  return assets.filter((a) =>
+    canDoOnAsset({ role, visibility: a.visibility, isOwn: a.ownerId === viewerUserId }, 'view'),
+  );
+}
+
+/**
+ * 给上层 UI 用的「能不能创建私有资产」判定。
+ * 直接复用 can(role, 'create_asset')，但显式命名让意图自描述——viewer 不该看到那个开关。
+ */
+export function canCreatePrivateAsset(role: FamilyRole): boolean {
+  return can(role, 'create_asset');
+}
+
+/** 角色 + 资产 visibility 的展示文案（UI 标签用） */
+export const VISIBILITY_LABELS: Record<Visibility, string> = {
+  family: '家庭共享',
+  private: '仅自己可见',
+};
 
 export interface RoleChangeInput {
   actor: { userId: string; role: FamilyRole };

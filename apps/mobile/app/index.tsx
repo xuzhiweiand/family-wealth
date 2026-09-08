@@ -10,10 +10,11 @@ import { Link, useRouter } from 'expo-router';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { buildTrendSeries, summarizeTrend } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, formatPct } from '@family-wealth/shared-utils';
+import { VISIBILITY_LABELS, can, filterVisibleAssets } from '@family-wealth/family';
 import { useAuthStore } from '../src/stores/auth-store';
 import { useKeyStore } from '../src/stores/key-store';
 import { useAssetStore } from '../src/stores/asset-store';
-import { useFamilyStore } from '../src/stores/family-store';
+import { useFamilyStore, useMyFamilyRole } from '../src/stores/family-store';
 import { TrendChart } from '../src/components/TrendChart';
 
 /** A 股习惯：涨红跌绿 */
@@ -41,16 +42,27 @@ export default function HomeScreen() {
 
   // 加入/创建家庭后用真实家庭 id；W2 的 mock 登录兜底 demo-family 保证 UI 可跑
   const familyId = sharedFamily?.id ?? storedFamilyId ?? 'demo-family';
+  const myRole = useMyFamilyRole();
 
   useEffect(() => {
     void load(familyId);
   }, [familyId, load]);
 
-  const activeAssets = useMemo(() => assets.filter((a) => a.deletedAt === null), [assets]);
+  // 1) 软删过滤（数据模型 §C7）
+  // 2) 可见性过滤（私有资产仅本人/owner 可见，且不计入家庭净资产——产品决策 W6 phase 3）
+  const visibleAssets = useMemo(
+    () =>
+      filterVisibleAssets(
+        assets.filter((a) => a.deletedAt === null),
+        user?.id ?? '',
+        myRole,
+      ),
+    [assets, user?.id, myRole],
+  );
 
   const series = useMemo(
-    () => buildTrendSeries(snapshots, activeAssets, { from: fromDaysAgo(TREND_WINDOW_DAYS), familyId }),
-    [snapshots, activeAssets, familyId],
+    () => buildTrendSeries(snapshots, visibleAssets, { from: fromDaysAgo(TREND_WINDOW_DAYS), familyId }),
+    [snapshots, visibleAssets, familyId],
   );
 
   const summary = useMemo(() => summarizeTrend(series, 30), [series]);
@@ -113,15 +125,17 @@ export default function HomeScreen() {
 
       <XStack justifyContent="space-between" alignItems="center">
         <Text fontSize="$4" fontWeight="600" color="$textPrimary">
-          资产列表
+          资产列表（{visibleAssets.length}）
         </Text>
         <XStack space="$sm">
           <Button size="$3" theme="active" onPress={() => router.push('/family')}>
             家庭
           </Button>
-          <Button size="$3" backgroundColor="$primary" color="white" onPress={() => router.push('/asset/new')}>
-            + 录入
-          </Button>
+          {can(myRole, 'create_asset') ? (
+            <Button size="$3" backgroundColor="$primary" color="white" onPress={() => router.push('/asset/new')}>
+              + 录入
+            </Button>
+          ) : null}
         </XStack>
       </XStack>
 
@@ -131,13 +145,14 @@ export default function HomeScreen() {
         </Text>
       ) : null}
 
-      {activeAssets.length === 0 && !loading ? (
+      {visibleAssets.length === 0 && !loading ? (
         <Text fontSize="$2" color="$textSecondary">
-          还没有资产，点「+ 录入」添加第一笔（可以拍照识别金额）
+          还没有资产
+          {can(myRole, 'create_asset') ? '，点「+ 录入」添加第一笔（可以拍照识别金额）' : '。请联系管理员录入资产'}
         </Text>
       ) : null}
 
-      {activeAssets.map((asset) => (
+      {visibleAssets.map((asset) => (
         <Card
           key={asset.id}
           padded
@@ -146,12 +161,21 @@ export default function HomeScreen() {
           borderColor="$border"
           borderWidth={1}
           borderRadius="$md"
+          pressStyle={{ opacity: 0.6 }}
+          onPress={() => router.push(`/asset/${asset.id}`)}
         >
           <XStack justifyContent="space-between" alignItems="center">
-            <YStack>
-              <Text fontSize="$4" fontWeight="600" color="$textPrimary">
-                {asset.name}
-              </Text>
+            <YStack flex={1}>
+              <XStack space="$xs" alignItems="center">
+                <Text fontSize="$4" fontWeight="600" color="$textPrimary">
+                  {asset.name}
+                </Text>
+                {asset.visibility === 'private' ? (
+                  <Text fontSize="$1" color="$primary">
+                    🔒 {VISIBILITY_LABELS.private}
+                  </Text>
+                ) : null}
+              </XStack>
               <Text fontSize="$1" color="$textSecondary">
                 {asset.type}
               </Text>

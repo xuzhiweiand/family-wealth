@@ -7,7 +7,16 @@
  *   - editor 能改但不能删他人资产（删错要靠软删恢复，代价高）
  */
 
-import { ROLE_LABELS, can, canDoOnAsset, checkMemberRemoval, checkRoleChange } from '../permission';
+import {
+  ROLE_LABELS,
+  VISIBILITY_LABELS,
+  can,
+  canCreatePrivateAsset,
+  canDoOnAsset,
+  checkMemberRemoval,
+  checkRoleChange,
+  filterVisibleAssets,
+} from '../permission';
 import type { FamilyRole, Visibility } from '@family-wealth/shared-types';
 import type { AssetAccessContext } from '../types';
 
@@ -145,3 +154,76 @@ describe('ROLE_LABELS', () => {
     expect(ROLE_LABELS.viewer).toBe('查看者');
   });
 });
+
+describe('VISIBILITY_LABELS', () => {
+  it('covers both visibilities', () => {
+    expect(VISIBILITY_LABELS.family).toBe('家庭共享');
+    expect(VISIBILITY_LABELS.private).toBe('仅自己可见');
+  });
+});
+
+describe('filterVisibleAssets', () => {
+  const alice = 'u-alice';
+  const bob = 'u-bob';
+
+  const alicePrivate = mkAsset('a1', alice, 'private');
+  const aliceFamily = mkAsset('a2', alice, 'family');
+  const bobPrivate = mkAsset('a3', bob, 'private');
+  const bobFamily = mkAsset('a4', bob, 'family');
+  const all = [alicePrivate, aliceFamily, bobPrivate, bobFamily];
+
+  it('owner sees everything (even others\' private)', () => {
+    const visible = filterVisibleAssets(all, alice, 'owner');
+    expect(visible.map((a) => a.id).sort()).toEqual(['a1', 'a2', 'a3', 'a4']);
+  });
+
+  it('editor sees own private + all family assets, but not others\' private', () => {
+    const visible = filterVisibleAssets(all, alice, 'editor');
+    expect(visible.map((a) => a.id).sort()).toEqual(['a1', 'a2', 'a4']);
+  });
+
+  it('viewer sees all family assets + own private only', () => {
+    const visible = filterVisibleAssets(all, alice, 'viewer');
+    expect(visible.map((a) => a.id).sort()).toEqual(['a1', 'a2', 'a4']);
+  });
+
+  it('swapping the viewer swaps which private is hidden', () => {
+    const visible = filterVisibleAssets(all, bob, 'editor');
+    expect(visible.map((a) => a.id).sort()).toEqual(['a2', 'a3', 'a4']);
+  });
+
+  it('soft-deleted assets are caller\'s responsibility (filter is visibility-only)', () => {
+    const deleted = mkAsset('a5', alice, 'family', { deletedAt: '2026-09-01T00:00:00Z' });
+    const visible = filterVisibleAssets([...all, deleted], alice, 'owner');
+    expect(visible.map((a) => a.id)).toContain('a5');
+  });
+});
+
+describe('canCreatePrivateAsset', () => {
+  it('owner can', () => expect(canCreatePrivateAsset('owner')).toBe(true));
+  it('editor can', () => expect(canCreatePrivateAsset('editor')).toBe(true));
+  it('viewer cannot', () => expect(canCreatePrivateAsset('viewer')).toBe(false));
+});
+
+function mkAsset(
+  id: string,
+  ownerId: string,
+  visibility: Visibility,
+  overrides: Partial<{ deletedAt: string | null }> = {},
+) {
+  return {
+    id,
+    familyId: 'f1',
+    ownerId,
+    type: 'cash' as const,
+    name: id,
+    currentAmount: 0,
+    currency: 'CNY' as const,
+    visibility,
+    details: {},
+    createdAt: '2026-09-01T00:00:00Z',
+    updatedAt: '2026-09-01T00:00:00Z',
+    deletedAt: null as string | null,
+    ...overrides,
+  };
+}

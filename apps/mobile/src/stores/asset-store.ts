@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import type { Asset, AssetSnapshot, AssetType } from '@family-wealth/shared-types';
+import type { Asset, AssetSnapshot, AssetType, Visibility } from '@family-wealth/shared-types';
 import { assetRepository, snapshotRepository } from '../services/bootstrap';
 
 /** 本地 id：真机上可换成 uuid 库，这里避免引入 native 依赖 */
@@ -22,6 +22,8 @@ export interface AddAssetInput {
   /** 单位「分」 */
   amountInCents: number;
   source: AssetSnapshot['source'];
+  /** 默认 'family'（家庭共享）；owner/editor 可选 'private'（仅创建者本人与 owner 可见） */
+  visibility?: Visibility;
   details?: Record<string, unknown>;
 }
 
@@ -34,6 +36,8 @@ interface AssetState {
   load: (familyId: string) => Promise<void>;
   addAsset: (input: AddAssetInput) => Promise<Asset>;
   updateAmount: (assetId: string, amountInCents: number, familyId: string, source?: AssetSnapshot['source']) => Promise<void>;
+  /** 改资产元数据（名称/类型/可见性/details）。金额变更请走 updateAmount 以触发快照 */
+  updateAssetMeta: (assetId: string, patch: Partial<Pick<Asset, 'name' | 'type' | 'visibility' | 'details'>>) => Promise<void>;
   removeAsset: (assetId: string) => Promise<void>;
 }
 
@@ -66,7 +70,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       name: input.name,
       currentAmount: input.amountInCents,
       currency: 'CNY',
-      visibility: 'family',
+      visibility: input.visibility ?? 'family',
       details: input.details ?? {},
       createdAt: now,
       updatedAt: now,
@@ -123,5 +127,14 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const removed: Asset = { ...existing, deletedAt: now, updatedAt: now };
     await assetRepository.upsert(removed);
     set({ assets: get().assets.map((a) => (a.id === assetId ? removed : a)) });
+  },
+
+  async updateAssetMeta(assetId, patch) {
+    const existing = get().assets.find((a) => a.id === assetId);
+    if (!existing) return;
+    const now = new Date().toISOString();
+    const updated: Asset = { ...existing, ...patch, updatedAt: now };
+    await assetRepository.upsert(updated);
+    set({ assets: get().assets.map((a) => (a.id === assetId ? updated : a)) });
   },
 }));
