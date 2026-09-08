@@ -39,6 +39,8 @@ interface AssetState {
   /** 改资产元数据（名称/类型/可见性/details）。金额变更请走 updateAmount 以触发快照 */
   updateAssetMeta: (assetId: string, patch: Partial<Pick<Asset, 'name' | 'type' | 'visibility' | 'details'>>) => Promise<void>;
   removeAsset: (assetId: string) => Promise<void>;
+  /** 软删恢复：把 deletedAt 改回 null，不写新快照（曲线按 carry-forward 延续） */
+  restoreAsset: (assetId: string) => Promise<void>;
 }
 
 export const useAssetStore = create<AssetState>((set, get) => ({
@@ -136,5 +138,17 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const updated: Asset = { ...existing, ...patch, updatedAt: now };
     await assetRepository.upsert(updated);
     set({ assets: get().assets.map((a) => (a.id === assetId ? updated : a)) });
+  },
+
+  async restoreAsset(assetId) {
+    // 恢复：把 deletedAt 改回 null。故意不写快照——删除期间的快照历史还在，
+    // 资产恢复后由 carry-forward 基线把曲线接回原值，不会在图上画出假的"暴涨"
+    const existing = get().assets.find((a) => a.id === assetId);
+    if (!existing) return;
+    if (existing.deletedAt === null) return; // 已经在 active，无需操作
+    const now = new Date().toISOString();
+    const restored: Asset = { ...existing, deletedAt: null, updatedAt: now };
+    await assetRepository.upsert(restored);
+    set({ assets: get().assets.map((a) => (a.id === assetId ? restored : a)) });
   },
 }));

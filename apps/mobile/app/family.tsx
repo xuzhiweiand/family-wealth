@@ -137,6 +137,16 @@ export default function FamilyScreen() {
           </Text>
         ) : null}
 
+        <Text
+          fontSize="$2"
+          color="$primary"
+          marginTop="$sm"
+          pressStyle={{ opacity: 0.6 }}
+          onPress={() => router.push('/asset/trash')}
+        >
+          回收站 ›
+        </Text>
+
         <Text fontSize="$4" fontWeight="600" color="$textPrimary" marginTop="$md">
           邀请成员
         </Text>

@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { ScrollView } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
@@ -104,12 +104,17 @@ export default function AssetDetailScreen() {
 
   function confirmAndRemove() {
     if (!asset) return;
-    // 真机上接 Alert.alert；这里先简单 confirm 占位
-    // eslint-disable-next-line no-alert
-    if (typeof window !== 'undefined' && window.confirm(`删除「${asset!.name}」？此操作可从回收站恢复`)) {
-      void removeAsset(asset!.id);
-      router.back();
-    }
+    Alert.alert('删除资产', `删除「${asset.name}」？删除后可在回收站恢复。`, [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: () => {
+          void removeAsset(asset.id);
+          router.back();
+        },
+      },
+    ]);
   }
 
   return (
