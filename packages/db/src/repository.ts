@@ -1,8 +1,8 @@
 /**
  * 资产仓库接口
  *
- * 设计：W2 提供 InMemoryAssetRepository（mock，便于单测）
- *      W3 接入 WatermelonDB 实现（ADR-0007）
+ * 实现：InMemoryAssetRepository（开发兜底/单测）+ WatermelonDB 实现（ADR-0007，真机）。
+ * 业务层只依赖本接口，不感知底层是内存还是 SQLite。
  */
 
 import type { Asset } from '@family-wealth/shared-types';

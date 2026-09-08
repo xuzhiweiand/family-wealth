@@ -2,7 +2,7 @@
  * Auth 服务初始化 + 应用启动
  *
  * mobile 启动时调用本模块：
- * - 注入 AuthClient（mock 或真实 supabase）
+ * - 注入 AuthClient（内存兜底 或 真实 supabase）
  * - 注入 AssetRepository
  * - hydrate 当前会话
  */

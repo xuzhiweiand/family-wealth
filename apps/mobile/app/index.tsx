@@ -40,7 +40,7 @@ export default function HomeScreen() {
   const loading = useAssetStore((s) => s.loading);
   const load = useAssetStore((s) => s.load);
 
-  // 加入/创建家庭后用真实家庭 id；W2 的 mock 登录兜底 demo-family 保证 UI 可跑
+  // 加入/创建家庭后用真实家庭 id；未配置 env 时的内存兜底用 demo-family 保证 UI 可跑
   const familyId = sharedFamily?.id ?? storedFamilyId ?? 'demo-family';
   const myRole = useMyFamilyRole();
 

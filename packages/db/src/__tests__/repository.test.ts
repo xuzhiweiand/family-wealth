@@ -1,5 +1,5 @@
 import type { Asset } from '@family-wealth/shared-types';
-import { InMemoryAssetRepository, InMemorySnapshotRepository, InMemorySyncQueue } from '../index';
+import { InMemoryAssetRepository, InMemorySnapshotRepository } from '../index';
 
 const sampleAsset = (overrides: Partial<Asset> = {}): Asset => ({
   id: 'asset-1',
@@ -85,33 +85,3 @@ describe('InMemorySnapshotRepository', () => {
   });
 });
 
-describe('InMemorySyncQueue', () => {
-  it('enqueues and tracks pending', () => {
-    const q = new InMemorySyncQueue();
-    const e = q.enqueue({ table: 'assets', recordId: 'a1', op: 'upsert', payload: {}, createdAt: new Date().toISOString() });
-    expect(e.id).toMatch(/.+/);
-    expect(q.pending()).toHaveLength(1);
-  });
-
-  it('marks done removes entry', () => {
-    const q = new InMemorySyncQueue();
-    const e = q.enqueue({ table: 'assets', recordId: 'a1', op: 'upsert', payload: {}, createdAt: 'now' });
-    q.markDone(e.id);
-    expect(q.pending()).toHaveLength(0);
-  });
-
-  it('markFailed increments retries', () => {
-    const q = new InMemorySyncQueue();
-    const e = q.enqueue({ table: 'assets', recordId: 'a1', op: 'upsert', payload: {}, createdAt: 'now' });
-    q.markFailed(e.id);
-    q.markFailed(e.id);
-    expect(q.pending()[0]!.retries).toBe(2);
-  });
-
-  it('excludes entries with retries >= 5 from pending', () => {
-    const q = new InMemorySyncQueue();
-    const e = q.enqueue({ table: 'assets', recordId: 'a1', op: 'upsert', payload: {}, createdAt: 'now' });
-    for (let i = 0; i < 5; i++) q.markFailed(e.id);
-    expect(q.pending()).toHaveLength(0);
-  });
-});

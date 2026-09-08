@@ -1,5 +1,8 @@
 /**
- * 内存版资产仓库（W2 mock，W3 替换为 WatermelonDB 实现）
+ * 内存版资产仓库（开发兜底 + 单测 fixture）
+ *
+ * WatermelonDB 实现见 ./watermelon（ADR-0007）。本类在 mobile 未配置
+ * 真实 DB 时兜底（见 bootstrap.ts），也让 jest 能脱离 native 模块直接测业务层。
  */
 
 import type { Asset } from '@family-wealth/shared-types';

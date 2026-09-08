@@ -1,5 +1,5 @@
 /**
- * InMemoryAuthClient — W2 mock，便于单测
+ * InMemoryAuthClient — 开发兜底 + 单测 fixture（无 env 配置时使用，见 mobile bootstrap.ts）
  *
  * 密码校验：用 PBKDF2-SHA256(password, salt) 与内存中的 passwordHash 对比
  * 不依赖任何外部服务
