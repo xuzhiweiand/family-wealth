@@ -6,6 +6,7 @@
  * 走 packages/family 的纯函数裁决，不在 store 里手写 if。
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type { Invite, MemberRecord, RotationPlan } from '@family-wealth/family';
 import type { FamilyRole } from '@family-wealth/shared-types';
@@ -194,6 +195,9 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
 /** 当前用户在本家庭的角色（无家庭时视为 viewer） */
 export function useMyFamilyRole(): FamilyRole {
-  const user = useAuthStore.getState().user;
-  return useFamilyStore((s) => myRole(s.members, user?.id ?? ''));
+  const user = useAuthStore((s) => s.user);
+  const members = useFamilyStore((s) => s.members);
+  // user 与 members 都是订阅态：任一变化都会重算角色，
+  // 修复之前 getState() 只在渲染时读一次、user 切换不重渲染的 bug。
+  return useMemo(() => myRole(members, user?.id ?? ''), [members, user?.id]);
 }
