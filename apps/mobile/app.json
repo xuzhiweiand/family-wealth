@@ -4,12 +4,10 @@
     "slug": "family-wealth",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "scheme": "jiazi",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#10B981"
     },
@@ -22,8 +20,7 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "拍摄银行/券商界面，自动识别金额",
-        "NSFaceIDUsageDescription": "使用 Face ID 解锁家庭密钥库"
+        "NSCameraUsageDescription": "拍摄银行/券商界面，自动识别金额"
       }
     },
     "android": {
@@ -31,16 +28,10 @@
       "versionCode": 1,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT",
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/icon.png"
-    },
+    "platforms": ["android", "ios"],
     "plugins": [
       "expo-router",
       [

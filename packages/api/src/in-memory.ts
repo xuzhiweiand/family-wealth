@@ -7,7 +7,8 @@
 
 import { pbkdf2 } from '@noble/hashes/pbkdf2';
 import { sha256 } from '@noble/hashes/sha2';
-import { randomBytes } from '@noble/hashes/utils';
+import { bytesToHex, randomBytes } from '@noble/hashes/utils';
+import { fromBase64, toBase64 } from '@family-wealth/crypto';
 import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
 
 interface StoredUser extends User {
@@ -25,15 +26,7 @@ function hashPassword(password: string, salt: Uint8Array): Uint8Array {
 
 function randomToken(prefix: string): string {
   const bytes = randomBytes(24);
-  return `${prefix}_${Buffer.from(bytes).toString('hex')}`;
-}
-
-function toBase64(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString('base64');
-}
-
-function fromBase64(s: string): Uint8Array {
-  return new Uint8Array(Buffer.from(s, 'base64'));
+  return `${prefix}_${bytesToHex(bytes)}`;
 }
 
 export class InMemoryAuthClient implements AuthClient {

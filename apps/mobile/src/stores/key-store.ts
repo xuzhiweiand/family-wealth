@@ -2,10 +2,11 @@
  * 密钥运行时存储
  *
  * UMK 派生后存内存，应用退到后台 5 分钟后清空（由 useAutoLock hook 驱动）
- * 不持久化 UMK，只持久化服务端 salt（用于重派生）
+ * 不持久化 UMK，只持久化服务端 salt（用于重派生）。
  *
- * 现状：UMK 仅存内存；服务端 salt 的安全持久化（react-native-keychain）待真机接入——
- * native 模块本机沙箱装不上（见 MEMORY pitfall #6），需真机 prebuild 后验证。
+ * salt / session 的持久化由 services/secure-storage.ts（react-native-keychain）承担，
+ * 已在 auth-store 的 signIn / signUp / signOut 接入；本 store 只管内存态 UMK。
+ * keychain 是 native 模块，本机沙箱装不上，需真机 prebuild 后验证（见 MEMORY pitfall #6）。
  */
 
 import { create } from 'zustand';

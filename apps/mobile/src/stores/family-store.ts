@@ -99,6 +99,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         ownerName: user.displayName,
         umk,
       });
+      // 绑定 familyId：资产录入页从 key-store 读它，否则会报"尚未解锁密钥"
+      useKeyStore.getState().setUmk(umk, family.id);
       set({ family, members: familyService.listMembers(family.id), error: null });
     } catch (err) {
       set({ error: (err as Error).message });
@@ -145,6 +147,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         members: familyService.listMembers(result.family.id),
         notice: `已加入「${result.family.name}」`,
       });
+      // 加入家庭后同样绑定 familyId，供资产录入使用
+      useKeyStore.getState().setUmk(umk, result.family.id);
       return true;
     } catch (err) {
       set({ loading: false, error: (err as Error).message });

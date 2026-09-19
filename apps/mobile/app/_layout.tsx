@@ -5,6 +5,10 @@
  * - 路由守卫：根据 auth status 跳转 login 或首页
  */
 
+// 必须在任何可能用到 @noble/hashes 随机数的模块之前加载：
+// Hermes 没有全局 crypto.getRandomValues，否则注册时
+// salt/token 生成直接抛 "crypto.getRandomValues must be defined"。
+import 'react-native-get-random-values';
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -22,7 +26,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'idle') return; // hydrate 还没结束
+    if (status === 'loading') return; // hydrate 还没结束
     // OCR Lab 是开发态联调页，绕过 AuthGuard（无登录态也能用）
     // 注：expo-router typed-routes 在 .expo/types 未重生成时把 'ocr-lab'
     //     视为类型外值，这里用字符串常量绕过 TS 误报
