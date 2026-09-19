@@ -85,7 +85,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
           </Text>
-          <Button size="$3" onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -105,7 +105,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             你没有权限修改这条资产。
           </Text>
-          <Button size="$3" onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -181,7 +181,8 @@ export default function EditAssetScreen() {
               {ASSET_TYPES.map((t) => (
                 <Button
                   key={t}
-                  size="$3"
+                  size={36}
+                  fontSize={14}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
                   color={t === type ? 'white' : '$textPrimary'}
                   onPress={() => setType(t)}
@@ -198,6 +199,9 @@ export default function EditAssetScreen() {
             名称
           </Text>
           <Input
+            height={48}
+            fontSize={16}
+            paddingHorizontal={16}
             value={name}
             onChangeText={setName}
             backgroundColor="$bgPrimary"
@@ -210,6 +214,9 @@ export default function EditAssetScreen() {
             金额（元）
           </Text>
           <Input
+            height={48}
+            fontSize={16}
+            paddingHorizontal={16}
             value={amountText}
             onChangeText={setAmountText}
             keyboardType="decimal-pad"
@@ -273,7 +280,8 @@ export default function EditAssetScreen() {
         ) : null}
 
         <Button
-          size="$5"
+          size={52}
+          fontSize={18}
           backgroundColor="$primary"
           color="white"
           disabled={saving || !hasChange || cents === null}

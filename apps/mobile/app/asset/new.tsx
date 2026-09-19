@@ -80,7 +80,7 @@ export default function NewAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             查看者角色无法录入资产。请联系管理员升级为编辑者后再试。
           </Text>
-          <Button size="$3" onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -170,7 +170,8 @@ export default function NewAssetScreen() {
               {ASSET_TYPES.map((t) => (
                 <Button
                   key={t}
-                  size="$3"
+                  size={36}
+                  fontSize={14}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
                   color={t === type ? 'white' : '$textPrimary'}
                   onPress={() => setType(t)}
@@ -187,6 +188,9 @@ export default function NewAssetScreen() {
             名称
           </Text>
           <Input
+            height={48}
+            fontSize={16}
+            paddingHorizontal={16}
             value={name}
             onChangeText={setName}
             placeholder="如：招商银行活期"
@@ -200,6 +204,9 @@ export default function NewAssetScreen() {
             金额（元）
           </Text>
           <Input
+            height={48}
+            fontSize={16}
+            paddingHorizontal={16}
             value={amountText}
             onChangeText={(t) => {
               setAmountText(t);
@@ -218,7 +225,8 @@ export default function NewAssetScreen() {
         </YStack>
 
         <Button
-          size="$4"
+          size={48}
+          fontSize={16}
           backgroundColor="$bgPrimary"
           color="$primary"
           borderColor="$primary"
@@ -294,7 +302,8 @@ export default function NewAssetScreen() {
         ) : null}
 
         <Button
-          size="$5"
+          size={52}
+          fontSize={18}
           backgroundColor="$primary"
           color="white"
           disabled={saving || cents === null}

@@ -41,6 +41,9 @@ export default function LoginScreen() {
       <YStack space="$sm">
         {mode === 'signup' && (
           <Input
+            height={48}
+            fontSize={16}
+            paddingHorizontal={16}
             placeholder="昵称"
             value={displayName}
             onChangeText={setDisplayName}
@@ -49,6 +52,9 @@ export default function LoginScreen() {
           />
         )}
         <Input
+          height={48}
+          fontSize={16}
+          paddingHorizontal={16}
           placeholder="邮箱"
           value={email}
           onChangeText={setEmail}
@@ -58,6 +64,9 @@ export default function LoginScreen() {
           borderColor="$border"
         />
         <Input
+          height={48}
+          fontSize={16}
+          paddingHorizontal={16}
           placeholder="密码"
           value={password}
           onChangeText={setPassword}
@@ -74,6 +83,8 @@ export default function LoginScreen() {
       )}
 
       <Button
+        size={52}
+        fontSize={18}
         backgroundColor="$primary"
         color="white"
         onPress={onSubmit}
