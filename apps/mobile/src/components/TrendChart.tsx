@@ -13,9 +13,9 @@ import type { TrendPoint } from '@family-wealth/shared-types';
 export type TrendLineKey = 'netWorth' | 'totalAssets' | 'totalLiabilities';
 
 export const TREND_LINE_COLORS: Record<TrendLineKey, string> = {
-  netWorth: '#2563EB', // 净资产（主线）
-  totalAssets: '#16A34A', // 总资产
-  totalLiabilities: '#DC2626', // 总负债
+  netWorth: '#10B981', // 净资产（主线，emerald）
+  totalAssets: '#F59E0B', // 总资产（橙）
+  totalLiabilities: '#DC2626', // 总负债（红）
 };
 
 const PADDING = 10;

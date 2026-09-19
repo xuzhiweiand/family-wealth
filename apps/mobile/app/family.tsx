@@ -42,7 +42,7 @@ export default function FamilyScreen() {
 
   if (!family) {
     return (
-      <ScrollView backgroundColor="$bgSecondary" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
         <YStack space="$lg" marginTop="$xl">
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
             家庭共享
@@ -55,7 +55,6 @@ export default function FamilyScreen() {
           </Button>
           <Button
             size="$4"
-            theme="active"
             onPress={() => router.push('/join')}
           >
             输入邀请码加入
@@ -71,7 +70,7 @@ export default function FamilyScreen() {
   }
 
   return (
-    <ScrollView backgroundColor="$bgSecondary" contentContainerStyle={{ padding: 24 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
       <YStack space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
@@ -123,7 +122,7 @@ export default function FamilyScreen() {
                 </Text>
               </YStack>
               {can(myRole, 'remove_member') && m.userId !== user?.id ? (
-                <Button size="$2" theme="active" onPress={() => removeMember(m.userId)}>
+                <Button size="$2" onPress={() => removeMember(m.userId)}>
                   移除
                 </Button>
               ) : null}

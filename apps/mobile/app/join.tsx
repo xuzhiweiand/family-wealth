@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { normalizeInviteCode } from '@family-wealth/crypto';
 import { useFamilyStore } from '../src/stores/family-store';
@@ -26,7 +26,8 @@ export default function JoinFamilyScreen() {
 
   async function onSubmit() {
     const ok = await joinByCode(code);
-    if (ok) router.replace('/');
+    // 运行时根路径 '/' 解析到 (tabs)/index；typed-routes 类型不含裸 '/'，显式转换
+    if (ok) router.replace('/' as Href);
   }
 
   return (

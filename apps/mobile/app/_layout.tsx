@@ -10,13 +10,14 @@
 // salt/token 生成直接抛 "crypto.getRandomValues must be defined"。
 import 'react-native-get-random-values';
 import { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 import { config } from '../tamagui.config';
 import { bootstrap } from '../src/services/bootstrap';
 import { useAuthStore } from '../src/stores/auth-store';
+import { useFamilyStore } from '../src/stores/family-store';
 
 bootstrap();
 
@@ -34,11 +35,21 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (head === 'ocr-lab') return;
     const inAuth = head === 'login';
     if (status === 'authenticated' && inAuth) {
-      router.replace('/');
+      // 运行时根路径 '/' 解析到 (tabs)/index；typed-routes 生成的联合里
+      // 只有 '/index' 与 '/(tabs)/index'，但二者在本工程均无法匹配，故显式转换
+      router.replace('/' as Href);
     } else if (status !== 'authenticated' && !inAuth) {
       router.replace('/login');
     }
   }, [status, segments, router]);
+
+  // 登录态建立后加载当前家庭：总览/资产/趋势首次进入即拿到真实 family，
+  // 不必等用户手动打开家庭页（修复回归用户被误判为「无家庭」）
+  useEffect(() => {
+    if (status === 'authenticated') {
+      useFamilyStore.getState().refresh();
+    }
+  }, [status]);
 
   return <>{children}</>;
 }
@@ -55,11 +66,14 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <AuthGuard>
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
             <Stack.Screen name="login" />
-            <Stack.Screen name="asset/new" />
             <Stack.Screen name="family" />
             <Stack.Screen name="join" />
+            <Stack.Screen name="asset/new" />
+            <Stack.Screen name="asset/[id]" />
+            <Stack.Screen name="asset/[id]/edit" />
+            <Stack.Screen name="asset/trash" />
             <Stack.Screen name="ocr-lab" />
           </Stack>
         </AuthGuard>

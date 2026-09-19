@@ -18,6 +18,8 @@ interface KeyState {
   lastActiveAt: number;
 
   setUmk: (umk: Uint8Array | null, familyId?: string | null) => void;
+  /** 只切换当前家庭上下文，不动 UMK（登录后恢复家庭用） */
+  setFamilyId: (familyId: string | null) => void;
   markActive: () => void;
   clear: () => void;
 }
@@ -29,6 +31,10 @@ export const useKeyStore = create<KeyState>((set) => ({
 
   setUmk(umk, familyId = null) {
     set({ umk, familyId, lastActiveAt: Date.now() });
+  },
+
+  setFamilyId(familyId) {
+    set({ familyId });
   },
 
   markActive() {

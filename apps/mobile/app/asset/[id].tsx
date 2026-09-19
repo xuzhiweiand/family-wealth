@@ -17,6 +17,7 @@ import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
 import { useAssetStore } from '../../src/stores/asset-store';
 import { useAuthStore } from '../../src/stores/auth-store';
 import { useMyFamilyRole } from '../../src/stores/family-store';
+import { getAssetNote } from '../../src/services/export';
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   cash: '现金',
@@ -69,7 +70,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             可能已被删除，或链接已失效。
           </Text>
-          <Button size="$3" theme="active" onPress={() => router.back()}>
+          <Button size="$3" onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -91,7 +92,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             该资产仅对创建者本人与家庭管理员可见。
           </Text>
-          <Button size="$3" theme="active" onPress={() => router.back()}>
+          <Button size="$3" onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -149,6 +150,9 @@ export default function AssetDetailScreen() {
           <Row label="可见性">
             {asset.visibility === 'private' ? `🔒 ${VISIBILITY_LABELS.private}` : VISIBILITY_LABELS.family}
           </Row>
+          {getAssetNote(asset) ? (
+            <Row label="备注">{getAssetNote(asset)}</Row>
+          ) : null}
         </Card>
 
         <XStack space="$sm">
@@ -156,7 +160,6 @@ export default function AssetDetailScreen() {
             <Button
               size="$4"
               flex={1}
-              theme="active"
               onPress={() => router.push(`/asset/${asset.id}/edit`)}
             >
               编辑

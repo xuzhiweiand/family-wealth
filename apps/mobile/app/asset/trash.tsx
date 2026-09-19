@@ -108,7 +108,7 @@ export default function TrashScreen() {
                 <Text fontSize="$3" color="$textSecondary">
                   {formatCNY(asset.currentAmount)}
                 </Text>
-                <Button size="$2" theme="active" onPress={() => void restoreAsset(asset.id)}>
+                <Button size="$2" onPress={() => void restoreAsset(asset.id)}>
                   恢复
                 </Button>
               </YStack>

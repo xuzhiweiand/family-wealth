@@ -20,6 +20,7 @@ import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
 import { useAssetStore } from '../../../src/stores/asset-store';
 import { useAuthStore } from '../../../src/stores/auth-store';
 import { useMyFamilyRole } from '../../../src/stores/family-store';
+import { getAssetNote } from '../../../src/services/export';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -63,6 +64,7 @@ export default function EditAssetScreen() {
   const [amountText, setAmountText] = useState(
     asset ? (asset.currentAmount / 100).toFixed(2) : '',
   );
+  const [note, setNote] = useState(asset ? getAssetNote(asset) : '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +75,7 @@ export default function EditAssetScreen() {
     setType(asset.type);
     setVisibility(asset.visibility);
     setAmountText((asset.currentAmount / 100).toFixed(2));
+    setNote(getAssetNote(asset));
   }, [asset]);
 
   if (!asset) {
@@ -82,7 +85,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
           </Text>
-          <Button size="$3" theme="active" onPress={() => router.back()}>
+          <Button size="$3" onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -102,7 +105,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             你没有权限修改这条资产。
           </Text>
-          <Button size="$3" theme="active" onPress={() => router.back()}>
+          <Button size="$3" onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -117,7 +120,8 @@ export default function EditAssetScreen() {
   const typeChanged = type !== asset.type;
   const visibilityChanged = visibility !== asset.visibility;
   const amountChanged = cents !== null && cents !== asset.currentAmount;
-  const hasMetaChange = nameChanged || typeChanged || visibilityChanged;
+  const noteChanged = note.trim() !== getAssetNote(asset);
+  const hasMetaChange = nameChanged || typeChanged || visibilityChanged || noteChanged;
   const hasChange = hasMetaChange || amountChanged;
 
   async function save() {
@@ -141,6 +145,9 @@ export default function EditAssetScreen() {
           name: name.trim(),
           ...(typeChanged ? { type } : {}),
           ...(visibilityChanged ? { visibility } : {}),
+          ...(noteChanged
+            ? { details: { ...asset.details, note: note.trim() } }
+            : {}),
         });
       }
       if (amountChanged) {
@@ -175,7 +182,6 @@ export default function EditAssetScreen() {
                 <Button
                   key={t}
                   size="$3"
-                  theme={t === type ? 'active' : undefined}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
                   color={t === type ? 'white' : '$textPrimary'}
                   onPress={() => setType(t)}
@@ -237,10 +243,28 @@ export default function EditAssetScreen() {
             </Text>
           </YStack>
           <Switch
-            value={visibility === 'private'}
-            onValueChange={(v) => setVisibility(v ? 'private' : 'family')}
+            value={visibility === 'family'}
+            onValueChange={(v) => setVisibility(v ? 'family' : 'private')}
           />
         </XStack>
+
+        <YStack space="$xs">
+          <Text fontSize="$2" color="$textSecondary">
+            备注
+          </Text>
+          <Input
+            value={note}
+            onChangeText={setNote}
+            placeholder="账号、开户行、到期日等（可选）"
+            placeholderTextColor="$textTertiary"
+            multiline
+            minHeight={72}
+            verticalAlign="top"
+            padding="$sm"
+            backgroundColor="$bgPrimary"
+            borderColor="$border"
+          />
+        </YStack>
 
         {error !== null ? (
           <Text fontSize="$2" color="$debt">

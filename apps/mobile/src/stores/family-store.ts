@@ -77,6 +77,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false });
       return;
     }
+    // 回归用户：把当前家庭上下文绑到 key-store，资产录入页从那里读 familyId
+    useKeyStore.getState().setFamilyId(family.id);
     set({
       family,
       members: familyService.listMembers(family.id),

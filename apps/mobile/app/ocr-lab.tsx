@@ -181,7 +181,6 @@ export default function OcrLabScreen() {
               <Button
                 key={d}
                 size="$3"
-                theme={d === difficulty ? 'active' : undefined}
                 backgroundColor={d === difficulty ? '$primary' : '$bgPrimary'}
                 color={d === difficulty ? 'white' : '$textPrimary'}
                 onPress={() => setDifficulty(d)}

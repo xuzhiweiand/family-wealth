@@ -80,7 +80,7 @@ export default function NewAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             查看者角色无法录入资产。请联系管理员升级为编辑者后再试。
           </Text>
-          <Button size="$3" theme="active" onPress={() => router.back()}>
+          <Button size="$3" onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -171,7 +171,6 @@ export default function NewAssetScreen() {
                 <Button
                   key={t}
                   size="$3"
-                  theme={t === type ? 'active' : undefined}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
                   color={t === type ? 'white' : '$textPrimary'}
                   onPress={() => setType(t)}
@@ -250,8 +249,8 @@ export default function NewAssetScreen() {
             </Text>
           </YStack>
           <Switch
-            value={visibility === 'private'}
-            onValueChange={(v) => setVisibility(v ? 'private' : 'family')}
+            value={visibility === 'family'}
+            onValueChange={(v) => setVisibility(v ? 'family' : 'private')}
           />
         </XStack>
 
