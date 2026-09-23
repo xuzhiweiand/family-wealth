@@ -49,6 +49,9 @@ Thumbs.db
 coverage/
 *.lcov
 
+# ===== 图标设计中间稿（仅本地保留，正式稿为 assets/icon.png） =====
+apps/mobile/assets/brand/
+
 # ===== OCR 真机语料（个人/敏感数据，不进仓库） =====
 packages/*/device-samples.jsonl
 device-samples.jsonl

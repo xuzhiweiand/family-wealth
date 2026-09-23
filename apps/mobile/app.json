@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "Family Wealth",
+    "name": "家资",
     "slug": "family-wealth",
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "jiazi",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "newArchEnabled": false,
     "splash": {
       "resizeMode": "contain",
@@ -17,6 +18,7 @@
     ],
     "ios": {
       "supportsTablet": false,
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.familywealth.app",
       "buildNumber": "1",
       "infoPlist": {
