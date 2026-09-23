@@ -13,6 +13,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
@@ -21,6 +23,7 @@ import { useAssetStore } from '../../../src/stores/asset-store';
 import { useAuthStore } from '../../../src/stores/auth-store';
 import { useMyFamilyRole } from '../../../src/stores/family-store';
 import { getAssetNote } from '../../../src/services/export';
+import { todayDate, dateToNoonIso, formatDate } from '../new';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -48,10 +51,12 @@ function parseYuanToCents(text: string): number | null {
 
 export default function EditAssetScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
   const assets = useAssetStore((s) => s.assets);
+  const snapshots = useAssetStore((s) => s.snapshots);
   const updateAmount = useAssetStore((s) => s.updateAmount);
   const updateAssetMeta = useAssetStore((s) => s.updateAssetMeta);
 
@@ -65,8 +70,27 @@ export default function EditAssetScreen() {
     asset ? (asset.currentAmount / 100).toFixed(2) : '',
   );
   const [note, setNote] = useState(asset ? getAssetNote(asset) : '');
+  // 记账日期：回填该资产最新快照的日期（无快照则当天）；修改后将写一条该日期的余额快照
+  const [date, setDate] = useState<Date>(todayDate);
+  const [initialDate, setInitialDate] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const latestCapturedAt = useMemo(() => {
+    const list = snapshots
+      .filter((s) => s.assetId === id)
+      .sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1));
+    return list[0]?.capturedAt ?? null;
+  }, [snapshots, id]);
+
+  useEffect(() => {
+    const fallback = todayDate();
+    const d = latestCapturedAt ? new Date(latestCapturedAt) : fallback;
+    const safe = Number.isNaN(d.getTime()) ? fallback : d;
+    setDate(safe);
+    setInitialDate(formatDate(safe));
+  }, [latestCapturedAt]);
 
   // asset 异步到达（首屏可能 store 还在 hydrate），name/type/visibility 也要随之回填
   useEffect(() => {
@@ -80,7 +104,7 @@ export default function EditAssetScreen() {
 
   if (!asset) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
@@ -97,7 +121,7 @@ export default function EditAssetScreen() {
   const canEdit = canDoOnAsset({ role: myRole, visibility: asset.visibility, isOwn }, 'edit');
   if (!canEdit) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             无权编辑
@@ -120,9 +144,11 @@ export default function EditAssetScreen() {
   const typeChanged = type !== asset.type;
   const visibilityChanged = visibility !== asset.visibility;
   const amountChanged = cents !== null && cents !== asset.currentAmount;
+  const dateChanged = initialDate !== null && formatDate(date) !== initialDate;
   const noteChanged = note.trim() !== getAssetNote(asset);
   const hasMetaChange = nameChanged || typeChanged || visibilityChanged || noteChanged;
-  const hasChange = hasMetaChange || amountChanged;
+  // 日期被修改时，即使金额没变也写一条该日余额快照（确认余额）
+  const hasChange = hasMetaChange || amountChanged || dateChanged;
 
   async function save() {
     if (!asset) return;
@@ -138,6 +164,7 @@ export default function EditAssetScreen() {
       router.back();
       return;
     }
+    const capturedAt = dateToNoonIso(date);
     setSaving(true);
     try {
       if (hasMetaChange) {
@@ -150,8 +177,8 @@ export default function EditAssetScreen() {
             : {}),
         });
       }
-      if (amountChanged) {
-        await updateAmount(asset.id, cents, asset.familyId, 'manual');
+      if (amountChanged || dateChanged) {
+        await updateAmount(asset.id, cents, asset.familyId, 'manual', capturedAt);
       }
       router.back();
     } catch (err) {
@@ -161,7 +188,7 @@ export default function EditAssetScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
@@ -230,6 +257,39 @@ export default function EditAssetScreen() {
           ) : null}
         </YStack>
 
+        <YStack space="$xs">
+          <Text fontSize="$2" color="$textSecondary">
+            记账日期
+          </Text>
+          <Button
+            size={48}
+            fontSize={16}
+            justifyContent="flex-start"
+            paddingHorizontal={16}
+            backgroundColor="$bgPrimary"
+            color="$textPrimary"
+            borderColor="$border"
+            borderWidth={1}
+            onPress={() => setShowDatePicker(true)}
+          >
+            {formatDate(date)}
+          </Button>
+          {showDatePicker ? (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={(event, d) => {
+                setShowDatePicker(false);
+                if (d) setDate(d);
+              }}
+            />
+          ) : null}
+          <Text fontSize="$1" color="$textSecondary">
+            修改日期会记录一条该日余额快照（可补录历史）
+          </Text>
+        </YStack>
+
         <XStack
           backgroundColor="$bgPrimary"
           borderColor="$border"
@@ -282,6 +342,7 @@ export default function EditAssetScreen() {
         <Button
           size={52}
           fontSize={18}
+          marginTop={12}
           backgroundColor="$primary"
           color="white"
           disabled={saving || !hasChange || cents === null}

@@ -43,7 +43,7 @@ export default function JoinFamilyScreen() {
           </Text>
 
           <Input
-            size="$4"
+            height={56}
             value={code}
             onChangeText={setCode}
             placeholder="如 K7M2-X9AB"
@@ -57,7 +57,8 @@ export default function JoinFamilyScreen() {
           />
 
           <Button
-            size="$4"
+            size={48}
+            fontSize={16}
             backgroundColor={canSubmit ? '$primary' : '$border'}
             color={canSubmit ? 'white' : '$textSecondary'}
             disabled={!canSubmit || loading}

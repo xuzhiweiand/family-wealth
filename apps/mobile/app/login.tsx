@@ -85,6 +85,7 @@ export default function LoginScreen() {
       <Button
         size={52}
         fontSize={18}
+        marginTop={16}
         backgroundColor="$primary"
         color="white"
         onPress={onSubmit}

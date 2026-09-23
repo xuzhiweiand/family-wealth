@@ -8,6 +8,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { ROLE_LABELS, can } from '@family-wealth/family';
 import { useAuthStore } from '../src/stores/auth-store';
@@ -18,6 +19,7 @@ const WARN_COLOR = '#DC2626';
 
 export default function FamilyScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
 
   const family = useFamilyStore((s) => s.family);
@@ -42,7 +44,7 @@ export default function FamilyScreen() {
 
   if (!family) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24, flexGrow: 1 }}>
         <YStack space="$lg" marginTop="$xl">
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
             家庭共享
@@ -50,11 +52,12 @@ export default function FamilyScreen() {
           <Text fontSize="$2" color="$textSecondary">
             家庭数据端到端加密：服务端只见密文。邀请成员时，家庭密钥会通过邀请码安全地交到对方手里。
           </Text>
-          <Button size="$4" backgroundColor="$primary" color="white" onPress={() => createFamily('我的家庭')}>
+          <Button size={48} fontSize={16} backgroundColor="$primary" color="white" onPress={() => createFamily('我的家庭')}>
             创建家庭
           </Button>
           <Button
-            size="$4"
+            size={48}
+            fontSize={16}
             onPress={() => router.push('/join')}
           >
             输入邀请码加入
@@ -70,7 +73,7 @@ export default function FamilyScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
       <YStack space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
@@ -98,7 +101,7 @@ export default function FamilyScreen() {
               被移除的成员将无法读取新数据，但其在撤销前已下载的数据仍可被其解开。轮换后彻底切断。
             </Text>
             {can(myRole, 'rotate_family_key') ? (
-              <Button size="$2" backgroundColor={WARN_COLOR} color="white" marginTop="$sm" onPress={rotateNow}>
+              <Button size={36} fontSize={14} backgroundColor={WARN_COLOR} color="white" marginTop="$sm" onPress={rotateNow}>
                 立即轮换密钥
               </Button>
             ) : null}
@@ -122,7 +125,7 @@ export default function FamilyScreen() {
                 </Text>
               </YStack>
               {can(myRole, 'remove_member') && m.userId !== user?.id ? (
-                <Button size="$2" onPress={() => removeMember(m.userId)}>
+                <Button size={36} fontSize={14} onPress={() => removeMember(m.userId)}>
                   移除
                 </Button>
               ) : null}
@@ -155,7 +158,7 @@ export default function FamilyScreen() {
             <Text fontSize="$1" color="$textSecondary">
               邀请码 15 分钟内有效、仅可使用一次。生成后请当面或私下告知对方，不要发到群里。
             </Text>
-            <Button size="$3" backgroundColor="$primary" color="white" onPress={makeInvite}>
+            <Button size={48} fontSize={16} backgroundColor="$primary" color="white" onPress={makeInvite}>
               生成邀请码
             </Button>
             {activeInvite ? (

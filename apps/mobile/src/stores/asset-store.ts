@@ -25,6 +25,8 @@ export interface AddAssetInput {
   /** 默认 'family'（家庭共享）；owner/editor 可选 'private'（仅创建者本人与 owner 可见） */
   visibility?: Visibility;
   details?: Record<string, unknown>;
+  /** 快照记账日期（ISO）；默认当前时间。补录历史余额时传用户选择的时间 */
+  capturedAt?: string;
 }
 
 interface AssetState {
@@ -35,7 +37,7 @@ interface AssetState {
 
   load: (familyId: string) => Promise<void>;
   addAsset: (input: AddAssetInput) => Promise<Asset>;
-  updateAmount: (assetId: string, amountInCents: number, familyId: string, source?: AssetSnapshot['source']) => Promise<void>;
+  updateAmount: (assetId: string, amountInCents: number, familyId: string, source?: AssetSnapshot['source'], capturedAt?: string) => Promise<void>;
   /** 改资产元数据（名称/类型/可见性/details）。金额变更请走 updateAmount 以触发快照 */
   updateAssetMeta: (assetId: string, patch: Partial<Pick<Asset, 'name' | 'type' | 'visibility' | 'details'>>) => Promise<void>;
   removeAsset: (assetId: string) => Promise<void>;
@@ -85,7 +87,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       familyId: asset.familyId,
       amount: asset.currentAmount,
       currency: asset.currency,
-      capturedAt: now,
+      capturedAt: input.capturedAt ?? now,
       source: input.source,
     };
 
@@ -96,7 +98,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     return asset;
   },
 
-  async updateAmount(assetId, amountInCents, familyId, source = 'manual') {
+  async updateAmount(assetId, amountInCents, familyId, source = 'manual', capturedAt) {
     const existing = get().assets.find((a) => a.id === assetId);
     if (!existing) return;
 
@@ -108,7 +110,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       familyId,
       amount: amountInCents,
       currency: updated.currency,
-      capturedAt: now,
+      capturedAt: capturedAt ?? now,
       source,
     };
 

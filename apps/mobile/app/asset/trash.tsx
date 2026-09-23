@@ -11,6 +11,7 @@
 import { useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, filterVisibleAssets } from '@family-wealth/family';
@@ -34,6 +35,7 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
 
 export default function TrashScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
   const assets = useAssetStore((s) => s.assets);
@@ -53,7 +55,7 @@ export default function TrashScreen() {
 
   // 进页提示：超过 90 天的软删数据按 runbook 不再自助恢复（这里只展示，不强制）
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
       <YStack space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
@@ -108,7 +110,7 @@ export default function TrashScreen() {
                 <Text fontSize="$3" color="$textSecondary">
                   {formatCNY(asset.currentAmount)}
                 </Text>
-                <Button size="$2" onPress={() => void restoreAsset(asset.id)}>
+                <Button size={36} fontSize={14} onPress={() => void restoreAsset(asset.id)}>
                   恢复
                 </Button>
               </YStack>

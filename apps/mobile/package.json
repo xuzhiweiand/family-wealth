@@ -29,6 +29,7 @@
     "@family-wealth/shared-types": "workspace:*",
     "@family-wealth/shared-utils": "workspace:*",
     "@family-wealth/sync": "workspace:*",
+    "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-ml-kit/text-recognition": "^2.0.0",
     "@supabase/supabase-js": "^2.45.6",

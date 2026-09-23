@@ -11,6 +11,7 @@
 import { useEffect, useMemo } from 'react';
 import { Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
@@ -42,6 +43,7 @@ const RECENT_SNAPSHOT_LIMIT = 20;
 
 export default function AssetDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
@@ -62,7 +64,7 @@ export default function AssetDetailScreen() {
   // 路由参数缺失/资产不存在（可能刚被删、可能路由输错）
   if (!asset) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
@@ -70,7 +72,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             可能已被删除，或链接已失效。
           </Text>
-          <Button size="$3" onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -84,7 +86,7 @@ export default function AssetDetailScreen() {
   if (!canView) {
     // 私有资产对非本人+非owner：只挡，不暴露金额/名称细节
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             无权查看
@@ -92,7 +94,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             该资产仅对创建者本人与家庭管理员可见。
           </Text>
-          <Button size="$3" onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => router.back()}>
             返回
           </Button>
         </YStack>
@@ -119,7 +121,7 @@ export default function AssetDetailScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
@@ -158,7 +160,8 @@ export default function AssetDetailScreen() {
         <XStack space="$sm">
           {canEdit ? (
             <Button
-              size="$4"
+              size={48}
+              fontSize={16}
               flex={1}
               onPress={() => router.push(`/asset/${asset.id}/edit`)}
             >
@@ -166,7 +169,7 @@ export default function AssetDetailScreen() {
             </Button>
           ) : null}
           {canDelete ? (
-            <Button size="$4" flex={1} backgroundColor="$debt" color="white" onPress={confirmAndRemove}>
+            <Button size={48} fontSize={16} flex={1} backgroundColor="$debt" color="white" onPress={confirmAndRemove}>
               删除
             </Button>
           ) : null}

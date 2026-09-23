@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
@@ -48,8 +50,28 @@ export function parseYuanToCents(text: string): number | null {
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
+/** YYYY-MM-DD（本地时区显示格式） */
+export function formatDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** 本地时区的今天（零点） */
+export function todayDate(): Date {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+/** 取当天正午转 ISO——正午规避 UTC 显示日期偏移（东八区 12:00 → 04:00Z，同日；
+ *  若取零点会显示成前一天） */
+export function dateToNoonIso(d: Date): string {
+  const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+  return noon.toISOString();
+}
+
 export default function NewAssetScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const familyId = useKeyStore((s) => s.familyId);
   const addAsset = useAssetStore((s) => s.addAsset);
@@ -57,9 +79,13 @@ export default function NewAssetScreen() {
   const canCreate = can(myRole, 'create_asset');
 
   const [type, setType] = useState<AssetType>('bank_deposit');
-  const [name, setName] = useState('');
+  // 名称默认值跟随类型名；用户手动输入过后不再自动覆盖
+  const [name, setName] = useState(ASSET_TYPE_LABELS['bank_deposit']);
+  const [nameEdited, setNameEdited] = useState(false);
   const [amountText, setAmountText] = useState('');
-  const [visibility, setVisibility] = useState<Visibility>('family');
+  const [date, setDate] = useState<Date>(todayDate);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [visibility, setVisibility] = useState<Visibility>('private');
   const [candidates, setCandidates] = useState<AmountCandidate[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,7 +98,7 @@ export default function NewAssetScreen() {
   // 让用户知道为什么不能录入——产品反馈 W2 原型就嫌黑盒）
   if (!canCreate) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             录入资产
@@ -134,6 +160,7 @@ export default function NewAssetScreen() {
       setError('尚未解锁密钥，无法录入');
       return;
     }
+    const capturedAt = dateToNoonIso(date);
     setSaving(true);
     try {
       await addAsset({
@@ -144,6 +171,7 @@ export default function NewAssetScreen() {
         amountInCents: cents,
         source: fromOcr ? 'ocr' : 'manual',
         visibility,
+        capturedAt,
       });
       router.back();
     } catch (err) {
@@ -155,7 +183,7 @@ export default function NewAssetScreen() {
   return (
     // 页面容器用 RN 的 ScrollView（tamagui 的 ScrollView 在部分版本不导出），
     // 内层仍用 tamagui 的 YStack 保持间距/主题一致
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         <Text fontSize="$5" fontWeight="700" color="$textPrimary">
           录入资产
@@ -174,7 +202,10 @@ export default function NewAssetScreen() {
                   fontSize={14}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
                   color={t === type ? 'white' : '$textPrimary'}
-                  onPress={() => setType(t)}
+                  onPress={() => {
+                    setType(t);
+                    if (!nameEdited) setName(ASSET_TYPE_LABELS[t]);
+                  }}
                 >
                   {ASSET_TYPE_LABELS[t]}
                 </Button>
@@ -192,7 +223,10 @@ export default function NewAssetScreen() {
             fontSize={16}
             paddingHorizontal={16}
             value={name}
-            onChangeText={setName}
+            onChangeText={(t) => {
+              setName(t);
+              setNameEdited(t.trim() !== '');
+            }}
             placeholder="如：招商银行活期"
             backgroundColor="$bgPrimary"
             borderColor="$border"
@@ -222,6 +256,39 @@ export default function NewAssetScreen() {
               = {formatCNY(cents)}
             </Text>
           ) : null}
+        </YStack>
+
+        <YStack space="$xs">
+          <Text fontSize="$2" color="$textSecondary">
+            记账日期
+          </Text>
+          <Button
+            size={48}
+            fontSize={16}
+            justifyContent="flex-start"
+            paddingHorizontal={16}
+            backgroundColor="$bgPrimary"
+            color="$textPrimary"
+            borderColor="$border"
+            borderWidth={1}
+            onPress={() => setShowDatePicker(true)}
+          >
+            {formatDate(date)}
+          </Button>
+          {showDatePicker ? (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={(event, d) => {
+                setShowDatePicker(false);
+                if (d) setDate(d);
+              }}
+            />
+          ) : null}
+          <Text fontSize="$1" color="$textSecondary">
+            默认今天，可修改为历史日期（补录）
+          </Text>
         </YStack>
 
         <Button
@@ -304,6 +371,7 @@ export default function NewAssetScreen() {
         <Button
           size={52}
           fontSize={18}
+          marginTop={12}
           backgroundColor="$primary"
           color="white"
           disabled={saving || cents === null}
