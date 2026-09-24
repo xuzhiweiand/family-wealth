@@ -24,7 +24,7 @@ import { useFamilyStore } from '../../src/stores/family-store';
 import { TrendChart, TREND_LINE_COLORS, type TrendLineKey } from '../../src/components/TrendChart';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
 import {
-  buildCategorySlices, findPeak,
+  buildCategorySlices, findPeak, latestSnapshotAmountMap,
 } from '../../src/lib/asset-meta';
 
 type RangeKey = 'D' | 'W' | 'M' | 'Y';
@@ -126,7 +126,15 @@ export default function TrendsScreen() {
 
   const peak = useMemo(() => findPeak(series), [series]);
 
-  const cat = useMemo(() => buildCategorySlices(visibleAssets), [visibleAssets]);
+  // 分类对比：用最新快照金额替代 currentAmount（快照口径 = 最新录入日期的数据）
+  const cat = useMemo(() => {
+    const amountMap = latestSnapshotAmountMap(snapshots);
+    const assetsWithSnapshot = visibleAssets.map((a) => {
+      const snapAmount = amountMap.get(a.id);
+      return snapAmount !== undefined ? { ...a, currentAmount: snapAmount } : a;
+    });
+    return buildCategorySlices(assetsWithSnapshot);
+  }, [visibleAssets, snapshots]);
   const maxCatAmount = cat.slices[0]?.amount ?? 1;
 
   return (

@@ -3,6 +3,8 @@
  *
  * W2 用 Tamagui 组件 + InMemoryAuthClient 做演示
  * 真实流程：用户输入 → signIn() → 派生 UMK → setKeyStore → 进入主页
+ *
+ * 0.1.5：自动登录由 Keychain 持久化 UMK+session 实现，无需记住密码功能
  */
 
 import { useState } from 'react';

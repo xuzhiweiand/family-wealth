@@ -199,6 +199,25 @@ export function latestCapturedDateMap(snapshots: readonly AssetSnapshot[]): Map<
   return out;
 }
 
+/**
+ * assetId -> 最新一条快照的金额（分）。
+ * 用于分类对比等需要「最新快照口径」的场景：用快照金额替代 asset.currentAmount。
+ * 无快照的资产不在 Map 中（调用方决定是否回落到 currentAmount）。
+ *
+ * 口径：capturedAt 降序；同 capturedAt（同日重录/修正）后写入的胜出
+ * （快照数组按写入序追加，与 packages/analytics 的同日口径一致）。
+ */
+export function latestSnapshotAmountMap(snapshots: readonly AssetSnapshot[]): Map<string, number> {
+  const best = new Map<string, AssetSnapshot>();
+  for (const s of snapshots) {
+    const prev = best.get(s.assetId);
+    if (!prev || s.capturedAt >= prev.capturedAt) best.set(s.assetId, s);
+  }
+  const out = new Map<string, number>();
+  for (const [id, snap] of best) out.set(id, snap.amount);
+  return out;
+}
+
 export interface PeakInfo {
   amount: number;
   date: string;
