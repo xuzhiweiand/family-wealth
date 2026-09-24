@@ -10,15 +10,16 @@
 
 import { useEffect, useMemo } from 'react';
 import { Alert, ScrollView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useMyFamilyRole } from '../../src/stores/family-store';
-import { getAssetNote } from '../../src/services/export';
+import { useAppNavigation, type RootStackParamList } from '../lib/navigation';
+import { useAssetStore } from '../stores/asset-store';
+import { useAuthStore } from '../stores/auth-store';
+import { useMyFamilyRole } from '../stores/family-store';
+import { getAssetNote } from '../services/export';
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   cash: '现金',
@@ -42,9 +43,9 @@ const SNAPSHOT_SOURCE_LABELS: Record<string, string> = {
 const RECENT_SNAPSHOT_LIMIT = 20;
 
 export default function AssetDetailScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useRoute<RouteProp<RootStackParamList, 'AssetDetail'>>().params;
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
   const assets = useAssetStore((s) => s.assets);
@@ -73,7 +74,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             可能已被删除，或链接已失效。
           </Text>
-          <Button size={44} fontSize={16} onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => navigation.goBack()}>
             返回
           </Button>
         </YStack>
@@ -95,7 +96,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$2" color="$textSecondary">
             该资产仅对创建者本人与家庭管理员可见。
           </Text>
-          <Button size={44} fontSize={16} onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => navigation.goBack()}>
             返回
           </Button>
         </YStack>
@@ -115,7 +116,7 @@ export default function AssetDetailScreen() {
         style: 'destructive',
         onPress: () => {
           void removeAsset(asset.id);
-          router.back();
+          navigation.goBack();
         },
       },
     ]);
@@ -141,7 +142,7 @@ export default function AssetDetailScreen() {
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             {asset.name}
           </Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.back()}>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
             返回
           </Text>
         </XStack>
@@ -177,7 +178,7 @@ export default function AssetDetailScreen() {
               size={48}
               fontSize={16}
               flex={1}
-              onPress={() => router.push(`/asset/${asset.id}/edit`)}
+              onPress={() => navigation.navigate('AssetEdit', { id: asset.id })}
             >
               编辑
             </Button>

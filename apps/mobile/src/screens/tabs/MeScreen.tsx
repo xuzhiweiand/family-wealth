@@ -15,17 +15,16 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, ScrollView, Switch, TouchableOpacity, View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 import { Text, XStack, YStack } from 'tamagui';
 import { ROLE_LABELS } from '@family-wealth/family';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useFamilyStore, useMyFamilyRole } from '../../src/stores/family-store';
-import { OfflineBanner } from '../../src/components/OfflineBanner';
-import { exportAssetsCsv } from '../../src/services/export';
+import { useAuthStore } from '../../stores/auth-store';
+import { useAssetStore } from '../../stores/asset-store';
+import { useFamilyStore, useMyFamilyRole } from '../../stores/family-store';
+import { OfflineBanner } from '../../components/OfflineBanner';
+import { exportAssetsCsv } from '../../services/export';
 
 type IconGlyph = React.ReactNode;
 
@@ -72,7 +71,7 @@ const HOME: IconGlyph = (
 );
 
 export default function MeScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
 
   const user = useAuthStore((s) => s.user);
@@ -97,7 +96,7 @@ export default function MeScreen() {
     [assets],
   );
 
-  const version = Constants.expoConfig?.version ?? '0.1.0';
+  const version = '0.1.5';
 
   const handleExport = async () => {
     if (exporting) return;
@@ -125,7 +124,6 @@ export default function MeScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut();
-          router.replace('/login');
         },
       },
     ]);
@@ -166,7 +164,7 @@ export default function MeScreen() {
             label={family ? family.name : '尚未加入家庭'}
             {...(family ? { value: ROLE_LABELS[role] } : {})}
             chevron
-            onPress={() => router.push('/family')}
+            onPress={() => navigation.navigate('Family')}
           />
         </Group>
 

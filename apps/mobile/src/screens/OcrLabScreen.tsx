@@ -16,11 +16,11 @@
 
 import { useState } from 'react';
 import { ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Button, Card, Input, Text, XStack, YStack, TextArea } from 'tamagui';
 import { extractCandidates, type AmountCandidate } from '@family-wealth/ocr';
 import { blocksFromLines } from '@family-wealth/ocr';
 import { formatCNY } from '@family-wealth/shared-utils';
+import { useAppNavigation } from '../lib/navigation';
 
 interface DraftSample {
   id: string;
@@ -46,7 +46,7 @@ function buildCorpusSnippet(d: DraftSample): string {
 }
 
 export default function OcrLabScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const [fullText, setFullText] = useState('');
   const [candidates, setCandidates] = useState<AmountCandidate[]>([]);
   const [picked, setPicked] = useState<AmountCandidate | null>(null);
@@ -98,7 +98,7 @@ export default function OcrLabScreen() {
       <YStack padding="$lg" space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">OCR Lab（开发态）</Text>
-          <Button size="$3" backgroundColor="$bgPrimary" color="$primary" onPress={() => router.back()}>
+          <Button size="$3" backgroundColor="$bgPrimary" color="$primary" onPress={() => navigation.goBack()}>
             返回
           </Button>
         </XStack>

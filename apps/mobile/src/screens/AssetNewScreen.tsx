@@ -11,8 +11,7 @@
 
 import { useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
+import { launchCamera } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
@@ -20,11 +19,12 @@ import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family
 import { formatCNY } from '@family-wealth/shared-utils';
 import type { AmountCandidate } from '@family-wealth/ocr';
 import { can, VISIBILITY_LABELS } from '@family-wealth/family';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useKeyStore } from '../../src/stores/key-store';
-import { useMyFamilyRole } from '../../src/stores/family-store';
-import { getOcrEngine } from '../../src/services/ocr';
+import { useAppNavigation } from '../lib/navigation';
+import { useAssetStore } from '../stores/asset-store';
+import { useAuthStore } from '../stores/auth-store';
+import { useKeyStore } from '../stores/key-store';
+import { useMyFamilyRole } from '../stores/family-store';
+import { getOcrEngine } from '../services/ocr';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -70,7 +70,7 @@ export function dateToNoonIso(d: Date): string {
 }
 
 export default function NewAssetScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const familyId = useKeyStore((s) => s.familyId);
@@ -106,7 +106,7 @@ export default function NewAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             查看者角色无法录入资产。请联系管理员升级为编辑者后再试。
           </Text>
-          <Button size={44} fontSize={16} onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => navigation.goBack()}>
             返回
           </Button>
         </YStack>
@@ -116,14 +116,8 @@ export default function NewAssetScreen() {
 
   async function recognize() {
     setError(null);
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setError('没有相机权限，请手动输入金额');
-      return;
-    }
-    const shot = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (shot.canceled) return;
-    const uri = shot.assets[0]?.uri;
+    const shot = await launchCamera({ mediaType: 'photo', quality: 0.8 });
+    const uri = shot.assets?.[0]?.uri;
     if (!uri) return;
 
     setOcrLoading(true);
@@ -173,7 +167,7 @@ export default function NewAssetScreen() {
         visibility,
         capturedAt,
       });
-      router.back();
+      navigation.goBack();
     } catch (err) {
       setError((err as Error).message);
       setSaving(false);

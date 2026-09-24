@@ -18,14 +18,14 @@ import { buildTrendSeries } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
 import type { TrendPoint } from '@family-wealth/shared-types';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useFamilyStore } from '../../src/stores/family-store';
-import { TrendChart, TREND_LINE_COLORS, type TrendLineKey } from '../../src/components/TrendChart';
-import { OfflineBanner } from '../../src/components/OfflineBanner';
+import { useAuthStore } from '../../stores/auth-store';
+import { useAssetStore } from '../../stores/asset-store';
+import { useFamilyStore } from '../../stores/family-store';
+import { TrendChart, TREND_LINE_COLORS, type TrendLineKey } from '../../components/TrendChart';
+import { OfflineBanner } from '../../components/OfflineBanner';
 import {
   buildCategorySlices, findPeak, latestSnapshotAmountMap,
-} from '../../src/lib/asset-meta';
+} from '../../lib/asset-meta';
 
 type RangeKey = 'D' | 'W' | 'M' | 'Y';
 

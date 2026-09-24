@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
@@ -16,19 +16,19 @@ import { buildTrendSeries } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
 import type { TrendPoint } from '@family-wealth/shared-types';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useKeyStore } from '../../src/stores/key-store';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useFamilyStore } from '../../src/stores/family-store';
-import { TrendChart } from '../../src/components/TrendChart';
-import { DonutChart } from '../../src/components/DonutChart';
-import { GradientCard } from '../../src/components/GradientCard';
-import { OfflineBanner } from '../../src/components/OfflineBanner';
+import { useAuthStore } from '../../stores/auth-store';
+import { useKeyStore } from '../../stores/key-store';
+import { useAssetStore } from '../../stores/asset-store';
+import { useFamilyStore } from '../../stores/family-store';
+import { TrendChart } from '../../components/TrendChart';
+import { DonutChart } from '../../components/DonutChart';
+import { GradientCard } from '../../components/GradientCard';
+import { OfflineBanner } from '../../components/OfflineBanner';
 import {
   buildCategorySlices,
   buildMonthTotals,
   buildRecentChanges,
-} from '../../src/lib/asset-meta';
+} from '../../lib/asset-meta';
 
 const TREND_WINDOW_DAYS = 365;
 const PAGE_PAD = 20;
@@ -62,7 +62,7 @@ function greeting(): string {
 }
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - PAGE_PAD * 2;
   const insets = useSafeAreaInsets();
@@ -166,7 +166,7 @@ export default function HomeScreen() {
             <Text fontSize="$3" fontWeight="700" color="#065F46">先创建或加入一个家庭</Text>
             <Text fontSize="$2" color="#047857">家庭是数据隔离与共享的边界，之后即可录入资产。</Text>
             <XStack space="$sm" marginTop="$xs">
-              <TouchableOpacity style={styles.pillPrimary} onPress={() => router.push('/family')}>
+              <TouchableOpacity style={styles.pillPrimary} onPress={() => navigation.navigate('Family')}>
                 <Text fontSize="$2" color="white" fontWeight="600">创建 / 加入家庭</Text>
               </TouchableOpacity>
             </XStack>
@@ -216,19 +216,19 @@ export default function HomeScreen() {
         <XStack justifyContent="space-between" marginVertical="$lg">
           <QuickAction label="录入" bg="#D1FAE5" color="#059669"
             icon={<Path d="M12 5v14M5 12h14" />}
-            onPress={() => router.push('/asset/new')} />
+            onPress={() => navigation.navigate('AssetNew')} />
           <QuickAction label="趋势" bg="#EDE9FE" color="#7C3AED"
             icon={<><Path d="M3 3v18h18" /><Path d="M8 17v-5M13 17V8M18 17v-3" /></>}
-            onPress={() => router.navigate('/trends')} />
+            onPress={() => navigation.navigate('Trends')} />
           <QuickAction label="家庭" bg="#FEF3C7" color="#D97706"
             icon={<><Path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" /><CircleDef /><Path d="M21 21v-2a4 4 0 0 0-3-3.9" /><Path d="M16 3.1a4 4 0 0 1 0 7.8" /></>}
-            onPress={() => router.push('/family')} />
+            onPress={() => navigation.navigate('Family')} />
         </XStack>
 
         {/* 近一年趋势（月粒度） */}
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
           <Text fontSize="$4" fontWeight="700" color="$textPrimary">近一年趋势</Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.navigate('/trends')}>全屏 ›</Text>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.navigate('Trends')}>全屏 ›</Text>
         </XStack>
         <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
           borderColor="$border" borderWidth={1} marginBottom="$md">
@@ -238,7 +238,7 @@ export default function HomeScreen() {
         {/* 资产分布 */}
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
           <Text fontSize="$4" fontWeight="700" color="$textPrimary">资产分布</Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.navigate('/trends')}>详情 ›</Text>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.navigate('Trends')}>详情 ›</Text>
         </XStack>
         <YStack padding="$md" backgroundColor="white" borderRadius="$lg"
           borderColor="$border" borderWidth={1}>
@@ -288,7 +288,7 @@ export default function HomeScreen() {
             const up = rc.delta >= 0;
             return (
               <TouchableOpacity key={rc.asset.id} activeOpacity={0.7}
-                onPress={() => router.push(`/asset/${rc.asset.id}`)}>
+                onPress={() => navigation.navigate('AssetDetail', { id: rc.asset.id })}>
                 <XStack padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
                   borderColor="$border" borderWidth={1} alignItems="center" space="$md">
                   <YStack flex={1}>

@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { YStack, XStack, Text, Input, Button, Spinner } from 'tamagui';
-import { useAuthStore } from '../src/stores/auth-store';
+import { useAuthStore } from '../stores/auth-store';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

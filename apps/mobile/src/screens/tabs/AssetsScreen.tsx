@@ -11,18 +11,18 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   SectionList, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
 import type { Asset, AssetType } from '@family-wealth/shared-types';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useFamilyStore } from '../../src/stores/family-store';
-import { OfflineBanner } from '../../src/components/OfflineBanner';
-import { ASSET_TYPE_COLORS, ASSET_TYPE_LABELS, latestCapturedDateMap } from '../../src/lib/asset-meta';
+import { useAuthStore } from '../../stores/auth-store';
+import { useAssetStore } from '../../stores/asset-store';
+import { useFamilyStore } from '../../stores/family-store';
+import { OfflineBanner } from '../../components/OfflineBanner';
+import { ASSET_TYPE_COLORS, ASSET_TYPE_LABELS, latestCapturedDateMap } from '../../lib/asset-meta';
 
 type ChipKey = AssetType | 'all';
 
@@ -41,7 +41,7 @@ function displayAmount(asset: Asset): { text: string; color: string } {
 }
 
 export default function AssetsScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
 
   const user = useAuthStore((s) => s.user);
@@ -132,7 +132,7 @@ export default function AssetsScreen() {
                 </Text>
               </YStack>
               <TouchableOpacity
-                onPress={() => router.push('/asset/trash')}
+                onPress={() => navigation.navigate('AssetTrash')}
                 style={styles.trashBtn}
                 hitSlop={8}
               >
@@ -209,7 +209,7 @@ export default function AssetsScreen() {
           return (
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push(`/asset/${item.id}`)}
+              onPress={() => navigation.navigate('AssetDetail', { id: item.id })}
             >
               <XStack padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
                 borderColor="$border" borderWidth={1} alignItems="center" space="$md">

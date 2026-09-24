@@ -12,18 +12,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
-import { useAssetStore } from '../../../src/stores/asset-store';
-import { useAuthStore } from '../../../src/stores/auth-store';
-import { useMyFamilyRole } from '../../../src/stores/family-store';
-import { getAssetNote } from '../../../src/services/export';
-import { todayDate, dateToNoonIso, formatDate } from '../new';
+import { useAppNavigation, type RootStackParamList } from '../lib/navigation';
+import { useAssetStore } from '../stores/asset-store';
+import { useAuthStore } from '../stores/auth-store';
+import { useMyFamilyRole } from '../stores/family-store';
+import { getAssetNote } from '../services/export';
+import { todayDate, dateToNoonIso, formatDate } from './AssetNewScreen';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -50,9 +51,9 @@ function parseYuanToCents(text: string): number | null {
 }
 
 export default function EditAssetScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useRoute<RouteProp<RootStackParamList, 'AssetEdit'>>().params;
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
   const assets = useAssetStore((s) => s.assets);
@@ -109,7 +110,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
           </Text>
-          <Button size={44} fontSize={16} onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => navigation.goBack()}>
             返回
           </Button>
         </YStack>
@@ -129,7 +130,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$2" color="$textSecondary">
             你没有权限修改这条资产。
           </Text>
-          <Button size={44} fontSize={16} onPress={() => router.back()}>
+          <Button size={44} fontSize={16} onPress={() => navigation.goBack()}>
             返回
           </Button>
         </YStack>
@@ -167,7 +168,7 @@ export default function EditAssetScreen() {
       return;
     }
     if (!hasChange) {
-      router.back();
+      navigation.goBack();
       return;
     }
     const capturedAt = dateToNoonIso(date);
@@ -186,7 +187,7 @@ export default function EditAssetScreen() {
       if (amountChanged || dateChanged) {
         await updateAmount(asset.id, cents, asset.familyId, 'manual', capturedAt);
       }
-      router.back();
+      navigation.goBack();
     } catch (err) {
       setError((err as Error).message);
       setSaving(false);
@@ -200,7 +201,7 @@ export default function EditAssetScreen() {
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             编辑资产
           </Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.back()}>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
             取消
           </Text>
         </XStack>

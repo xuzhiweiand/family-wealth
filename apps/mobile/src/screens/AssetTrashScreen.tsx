@@ -10,14 +10,14 @@
 
 import { useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, filterVisibleAssets } from '@family-wealth/family';
-import { useAssetStore } from '../../src/stores/asset-store';
-import { useAuthStore } from '../../src/stores/auth-store';
-import { useMyFamilyRole } from '../../src/stores/family-store';
+import { useAppNavigation } from '../lib/navigation';
+import { useAssetStore } from '../stores/asset-store';
+import { useAuthStore } from '../stores/auth-store';
+import { useMyFamilyRole } from '../stores/family-store';
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   cash: '现金',
@@ -34,7 +34,7 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TrashScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const myRole = useMyFamilyRole();
@@ -61,7 +61,7 @@ export default function TrashScreen() {
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
             回收站
           </Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.back()}>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
             返回
           </Text>
         </XStack>

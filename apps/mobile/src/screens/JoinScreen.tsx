@@ -7,15 +7,15 @@
  */
 
 import { useState } from 'react';
-import { useRouter, type Href } from 'expo-router';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { normalizeInviteCode } from '@family-wealth/crypto';
-import { useFamilyStore } from '../src/stores/family-store';
+import { useAppNavigation } from '../lib/navigation';
+import { useFamilyStore } from '../stores/family-store';
 
 const WARN_COLOR = '#DC2626';
 
 export default function JoinFamilyScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const [code, setCode] = useState('');
 
   const joinByCode = useFamilyStore((s) => s.joinByCode);
@@ -26,8 +26,7 @@ export default function JoinFamilyScreen() {
 
   async function onSubmit() {
     const ok = await joinByCode(code);
-    // 运行时根路径 '/' 解析到 (tabs)/index；typed-routes 类型不含裸 '/'，显式转换
-    if (ok) router.replace('/' as Href);
+    if (ok) navigation.popToTop();
   }
 
   return (
@@ -76,7 +75,7 @@ export default function JoinFamilyScreen() {
       </Card>
 
       <XStack justifyContent="center">
-        <Text fontSize="$2" color="$primary" onPress={() => router.back()}>
+        <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
           返回
         </Text>
       </XStack>

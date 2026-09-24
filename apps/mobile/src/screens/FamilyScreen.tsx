@@ -6,19 +6,19 @@
  */
 
 import { useEffect } from 'react';
-import { useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text, XStack, YStack } from 'tamagui';
 import { ROLE_LABELS, can } from '@family-wealth/family';
-import { useAuthStore } from '../src/stores/auth-store';
-import { useFamilyStore } from '../src/stores/family-store';
+import { useAppNavigation } from '../lib/navigation';
+import { useAuthStore } from '../stores/auth-store';
+import { useFamilyStore } from '../stores/family-store';
 
 /** 撤销成员后未轮换 → 必须强提示（ADR-0010） */
 const WARN_COLOR = '#DC2626';
 
 export default function FamilyScreen() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
 
@@ -58,7 +58,7 @@ export default function FamilyScreen() {
           <Button
             size={48}
             fontSize={16}
-            onPress={() => router.push('/join')}
+            onPress={() => navigation.navigate('Join')}
           >
             输入邀请码加入
           </Button>
@@ -79,7 +79,7 @@ export default function FamilyScreen() {
           <Text fontSize="$6" fontWeight="700" color="$textPrimary">
             {family.name}
           </Text>
-          <Text fontSize="$2" color="$primary" onPress={() => router.back()}>
+          <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
             返回
           </Text>
         </XStack>
@@ -144,7 +144,7 @@ export default function FamilyScreen() {
           color="$primary"
           marginTop="$sm"
           pressStyle={{ opacity: 0.6 }}
-          onPress={() => router.push('/asset/trash')}
+          onPress={() => navigation.navigate('AssetTrash')}
         >
           回收站 ›
         </Text>

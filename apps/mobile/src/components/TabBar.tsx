@@ -11,7 +11,6 @@
 
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IconProps = { focused: boolean };
@@ -91,7 +90,6 @@ interface TabBarProps {
 }
 
 export function TabBar({ state, navigation }: TabBarProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const nav = navigation as MinimalNavigation;
 
@@ -131,7 +129,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
           <TouchableOpacity
             style={styles.fab}
             activeOpacity={0.85}
-            onPress={() => router.push('/asset/new')}
+            onPress={() => nav.navigate('AssetNew')}
           >
             <Svg width={28} height={28} viewBox="0 0 24 24" fill="none"
               stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round">
