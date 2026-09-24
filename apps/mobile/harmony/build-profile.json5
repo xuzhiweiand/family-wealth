@@ -1,20 +1,6 @@
 {
   "app": {
-    "signingConfigs": [
-      {
-        "name": "default",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "signature/familywealth.cer",
-          "storePassword": "familywealth",
-          "keyAlias": "familywealth",
-          "keyPassword": "familywealth",
-          "profile": "signature/familywealth.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "signature/familywealth.p12"
-        }
-      }
-    ],
+    "signingConfigs": [],
     "products": [
       {
         "name": "default",
@@ -31,7 +17,7 @@
     ],
     "buildModeSet": [
       {
-        "name": "debug"
+        "name": "debug",
       },
       {
         "name": "release"
