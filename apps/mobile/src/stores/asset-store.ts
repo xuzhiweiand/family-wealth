@@ -38,6 +38,8 @@ interface AssetState {
   /** 改资产元数据（名称/类型/可见性/details）。金额变更请走 updateAmount 以触发快照 */
   updateAssetMeta: (assetId: string, patch: Partial<Pick<Asset, 'name' | 'type' | 'visibility' | 'details'>>) => Promise<void>;
   removeAsset: (assetId: string) => Promise<void>;
+  /** 删除单条快照（本地移除 + 云端墓碑上行；曲线回落到上一条快照） */
+  removeSnapshot: (snapshotId: string) => Promise<void>;
   /** 软删恢复：把 deletedAt 改回 null，不写新快照（曲线按 carry-forward 延续） */
   restoreAsset: (assetId: string) => Promise<void>;
 }
@@ -146,6 +148,20 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     set({
       assets: get().assets.map((a) => {
         return a.id === assetId ? removed : a;
+      }),
+    });
+  },
+
+  async removeSnapshot(snapshotId) {
+    const snap = get().snapshots.find((s) => s.id === snapshotId);
+    if (!snap) return;
+    await snapshotRepository.remove(snapshotId);
+    // 云端按 delete 语义上行（sync_records 置 deleted_at 墓碑），其他设备下行时同步移除
+    enqueueChange('asset_snapshots', snapshotId, 'delete', snap);
+    void syncNow(snap.familyId);
+    set({
+      snapshots: get().snapshots.filter((s) => {
+        return s.id !== snapshotId;
       }),
     });
   },

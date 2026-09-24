@@ -69,10 +69,12 @@ export interface AssetPort {
   upsert(asset: Asset): Promise<void>;
 }
 
-/** 快照落库端口（append-only，需要 has 做幂等） */
+/** 快照落库端口（append-only + 墓碑删除，需要 has 做幂等） */
 export interface SnapshotPort {
   has(id: string): Promise<boolean>;
   append(snapshot: AssetSnapshot): Promise<void>;
+  /** 处理下行删除墓碑（deleted_at 非空的快照行） */
+  remove(id: string): Promise<void>;
 }
 
 export interface PullStats {

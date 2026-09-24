@@ -93,6 +93,14 @@ export class SyncEngine {
         });
         stats.applied++;
       } else {
+        // 删除墓碑：远端行 deleted_at 非空表示该快照已被删除，本地同步移除
+        if (row.deletedAt !== null) {
+          if (await this.deps.snapshots.has(row.id)) {
+            await this.deps.snapshots.remove(row.id);
+            stats.applied++;
+          }
+          continue;
+        }
         const payload = decodeRecord<AssetSnapshot>(row.envelope, this.deps.fdk, aad);
         if (payload === null) {
           stats.failed++;

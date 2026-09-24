@@ -50,6 +50,7 @@ export default function AssetDetailScreen() {
   const assets = useAssetStore((s) => s.assets);
   const snapshots = useAssetStore((s) => s.snapshots);
   const removeAsset = useAssetStore((s) => s.removeAsset);
+  const removeSnapshot = useAssetStore((s) => s.removeSnapshot);
 
   const asset = useMemo(() => assets.find((a) => a.id === id), [assets, id]);
   const assetSnapshots = useMemo(
@@ -115,6 +116,19 @@ export default function AssetDetailScreen() {
         onPress: () => {
           void removeAsset(asset.id);
           router.back();
+        },
+      },
+    ]);
+  }
+
+  function confirmAndRemoveSnapshot(snapshotId: string) {
+    Alert.alert('删除快照', '删除后趋势曲线会回落到上一条快照，确定删除？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: () => {
+          void removeSnapshot(snapshotId);
         },
       },
     ]);
@@ -202,6 +216,16 @@ export default function AssetDetailScreen() {
                     {SNAPSHOT_SOURCE_LABELS[s.source] ?? s.source}
                   </Text>
                 </YStack>
+                {canEdit ? (
+                  <Text
+                    fontSize="$2"
+                    color="$debt"
+                    onPress={() => confirmAndRemoveSnapshot(s.id)}
+                    hitSlop={8}
+                  >
+                    删除
+                  </Text>
+                ) : null}
               </XStack>
             </Card>
           ))

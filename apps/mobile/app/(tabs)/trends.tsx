@@ -21,13 +21,19 @@ import type { TrendPoint } from '@family-wealth/shared-types';
 import { useAuthStore } from '../../src/stores/auth-store';
 import { useAssetStore } from '../../src/stores/asset-store';
 import { useFamilyStore } from '../../src/stores/family-store';
-import { TrendChart } from '../../src/components/TrendChart';
+import { TrendChart, TREND_LINE_COLORS, type TrendLineKey } from '../../src/components/TrendChart';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
 import {
   buildCategorySlices, findPeak,
 } from '../../src/lib/asset-meta';
 
 type RangeKey = 'D' | 'W' | 'M' | 'Y';
+
+const METRIC_LABELS: Record<TrendLineKey, string> = {
+  netWorth: '净资产',
+  totalAssets: '总资产',
+  totalLiabilities: '总负债',
+};
 
 const RANGE_PRESETS: Record<RangeKey, { label: string; days: number; bucket: 'day' | 'week' | 'month' | 'year' }> = {
   D: { label: '日', days: 30, bucket: 'day' },
@@ -68,6 +74,16 @@ function bucketize(series: readonly TrendPoint[], bucket: 'day' | 'week' | 'mont
 export default function TrendsScreen() {
   const insets = useSafeAreaInsets();
   const [range, setRange] = useState<RangeKey>('M');
+  // 三线指标切换：点 chip 显示/隐藏对应曲线（默认全开，保持三线图）
+  const [metrics, setMetrics] = useState<Record<TrendLineKey, boolean>>({
+    netWorth: true,
+    totalAssets: true,
+    totalLiabilities: true,
+  });
+  const activeLines = useMemo(
+    () => (Object.keys(METRIC_LABELS) as TrendLineKey[]).filter((k) => metrics[k]),
+    [metrics],
+  );
 
   const user = useAuthStore((s) => s.user);
   const assets = useAssetStore((s) => s.assets);
@@ -165,19 +181,30 @@ export default function TrendsScreen() {
           </YStack>
         </XStack>
 
-        {/* 三线图 + 图例 */}
+        {/* 三线图 + 指标切换 */}
         <YStack padding="$md" backgroundColor="white" borderRadius="$lg"
           borderColor="$border" borderWidth={1} marginTop="$md">
-          <XStack space="$md" marginBottom="$sm">
-            <Legend color="#10B981" label="净资产" />
-            <Legend color="#F59E0B" label="总资产" />
-            <Legend color="#DC2626" label="总债务" />
+          <XStack space="$sm" marginBottom="$sm" flexWrap="wrap">
+            {(Object.keys(METRIC_LABELS) as TrendLineKey[]).map((k) => (
+              <TouchableOpacity
+                key={k}
+                onPress={() => setMetrics((m) => ({ ...m, [k]: !m[k] }))}
+                style={[styles.metricChip, metrics[k]
+                  ? { backgroundColor: TREND_LINE_COLORS[k], borderColor: TREND_LINE_COLORS[k] }
+                  : null]}
+              >
+                <Text fontSize="$1" fontWeight={metrics[k] ? '700' : '500'}
+                  color={metrics[k] ? 'white' : '$textSecondary'}>
+                  {METRIC_LABELS[k]}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </XStack>
           {loading && series.length === 0 ? null : (
             <TrendChart
               data={series}
               height={220}
-              lines={['netWorth', 'totalAssets', 'totalLiabilities']}
+              lines={activeLines}
             />
           )}
         </YStack>
@@ -230,15 +257,6 @@ export default function TrendsScreen() {
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <XStack space="$xs" alignItems="center">
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
-      <Text fontSize="$1" color="$textSecondary">{label}</Text>
-    </XStack>
-  );
-}
-
 const styles = {
   segment: {
     flexDirection: 'row', backgroundColor: '#F3F4F6',
@@ -248,6 +266,10 @@ const styles = {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8,
   },
   segmentActive: { backgroundColor: '#10B981' },
+  metricChip: {
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
+    backgroundColor: 'white', borderColor: '#E5E7EB', borderWidth: 1,
+  },
   barTrack: {
     height: 8, borderRadius: 999, backgroundColor: '#F3F4F6',
     overflow: 'hidden',

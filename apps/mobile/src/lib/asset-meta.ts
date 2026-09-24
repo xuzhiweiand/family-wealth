@@ -106,6 +106,9 @@ export interface RecentChange {
 /**
  * 计算每笔资产的最近一次变化（最新快照相对上一条快照）。
  * 只返回最近窗口内有更新、且能算出变化的条目，按时间倒序。
+ *
+ * 排序口径：capturedAt 降序；同 capturedAt（同日重录/修正）后写入的胜出
+ * （快照数组按写入顺序追加，与 packages/analytics 的同日口径一致）。
  */
 export function buildRecentChanges(
   assets: readonly Asset[],
@@ -118,8 +121,15 @@ export function buildRecentChanges(
 
   for (const asset of assets) {
     const rows = snapshots
-      .filter((s) => s.assetId === asset.id)
-      .sort((x, y) => (x.capturedAt < y.capturedAt ? 1 : -1));
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => s.assetId === asset.id)
+      .sort((a, b) => {
+        if (a.s.capturedAt !== b.s.capturedAt) {
+          return a.s.capturedAt < b.s.capturedAt ? 1 : -1;
+        }
+        return b.i - a.i;
+      })
+      .map(({ s }) => s);
     const latest = rows[0];
     if (!latest) continue;
     if (Date.parse(latest.capturedAt) < since) continue;
@@ -132,6 +142,61 @@ export function buildRecentChanges(
   }
 
   return out.sort((x, y) => (x.at < y.at ? 1 : -1)).slice(0, limit);
+}
+
+export interface MonthTotals {
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+}
+
+/**
+ * 月度台账口径（0.1.3）：总览三卡（家庭净资产/总资产/总负债）只统计
+ * ref 所在月份内有快照的资产，每笔资产取当月最新一条快照
+ * （capturedAt 最大；同 capturedAt 后写入胜出）。
+ * 当月无快照的资产不计入 —— 往月的历史录入不再被加总进当月卡片。
+ */
+export function buildMonthTotals(
+  assets: readonly Asset[],
+  snapshots: readonly AssetSnapshot[],
+  ref: Date = new Date(),
+): MonthTotals {
+  const month = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
+  const best = new Map<string, AssetSnapshot>();
+  for (const s of snapshots) {
+    const d = new Date(s.capturedAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (key !== month) continue;
+    const prev = best.get(s.assetId);
+    if (!prev || s.capturedAt >= prev.capturedAt) best.set(s.assetId, s);
+  }
+
+  let totalAssets = 0;
+  let totalLiabilities = 0;
+  for (const a of assets) {
+    const snap = best.get(a.id);
+    if (!snap) continue;
+    if (a.type === 'debt') {
+      totalLiabilities += Math.abs(snap.amount);
+    } else {
+      totalAssets += snap.amount;
+    }
+  }
+  return { totalAssets, totalLiabilities, netWorth: totalAssets - totalLiabilities };
+}
+
+/**
+ * assetId -> 最新一条快照的录入日期（'YYYY-MM-DD'，本地时区口径由 capturedAt 决定）。
+ * 供资产列表/最近变化展示「录入日期」用；无快照的资产不在 Map 中。
+ */
+export function latestCapturedDateMap(snapshots: readonly AssetSnapshot[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const s of snapshots) {
+    const key = s.capturedAt.slice(0, 10);
+    const prev = out.get(s.assetId);
+    if (prev === undefined || key >= prev) out.set(s.assetId, key);
+  }
+  return out;
 }
 
 export interface PeakInfo {

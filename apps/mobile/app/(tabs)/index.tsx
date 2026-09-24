@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
-import { buildTrendSeries, summarizeTrend } from '@family-wealth/analytics';
+import { buildTrendSeries } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
 import { useAuthStore } from '../../src/stores/auth-store';
@@ -25,6 +25,7 @@ import { GradientCard } from '../../src/components/GradientCard';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
 import {
   buildCategorySlices,
+  buildMonthTotals,
   buildRecentChanges,
 } from '../../src/lib/asset-meta';
 
@@ -86,25 +87,29 @@ export default function HomeScreen() {
     [snapshots, visibleAssets, familyId],
   );
 
-  const summary = useMemo(() => summarizeTrend(series, 30), [series]);
-  const latest = summary.latest;
-  const netWorth = latest?.netWorth ?? 0;
+  // 卡片三值：月度台账口径 —— 只统计当月有快照的资产（每笔取当月最新一条），
+  // 往月的历史录入不再被加总进当月卡片
+  const monthTotals = useMemo(
+    () => buildMonthTotals(visibleAssets, snapshots),
+    [visibleAssets, snapshots],
+  );
+  const lastMonthTotals = useMemo(() => {
+    const prev = new Date();
+    prev.setDate(1);
+    prev.setMonth(prev.getMonth() - 1);
+    return buildMonthTotals(visibleAssets, snapshots, prev);
+  }, [visibleAssets, snapshots]);
 
-  // 本月（month-to-date）：最后一点相对本月 1 日之前最后一个点
-  const monthStats = useMemo(() => {
-    if (series.length === 0) return { delta: 0, pct: 0 };
-    const d = new Date();
-    const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-    let base = series[0]!;
-    for (let i = series.length - 1; i >= 0; i--) {
-      if (series[i]!.date < monthStart) {
-        base = series[i]!;
-        break;
-      }
-    }
-    const end = series[series.length - 1]!;
-    return { delta: end.netWorth - base.netWorth, pct: pctChange(end.netWorth, base.netWorth) };
-  }, [series]);
+  const netWorth = monthTotals.netWorth;
+
+  // 本月变化：当月合计相对上月合计
+  const monthStats = useMemo(
+    () => ({
+      delta: monthTotals.netWorth - lastMonthTotals.netWorth,
+      pct: pctChange(monthTotals.netWorth, lastMonthTotals.netWorth),
+    }),
+    [monthTotals, lastMonthTotals],
+  );
 
   const cat = useMemo(() => buildCategorySlices(visibleAssets), [visibleAssets]);
   const recent = useMemo(() => buildRecentChanges(visibleAssets, snapshots), [visibleAssets, snapshots]);
@@ -178,13 +183,13 @@ export default function HomeScreen() {
               <View style={styles.subBox}>
                 <Text fontSize="$1" color="white" opacity={0.8}>总资产</Text>
                 <Text fontSize="$3" color="white" fontWeight="600">
-                  {formatCNYCompact(latest?.totalAssets ?? 0)}
+                  {formatCNYCompact(monthTotals.totalAssets)}
                 </Text>
               </View>
               <View style={styles.subBox}>
                 <Text fontSize="$1" color="white" opacity={0.8}>总负债</Text>
                 <Text fontSize="$3" color="white" fontWeight="600">
-                  {formatCNYCompact(latest?.totalLiabilities ?? 0)}
+                  {formatCNYCompact(monthTotals.totalLiabilities)}
                 </Text>
               </View>
             </XStack>

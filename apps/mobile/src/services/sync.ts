@@ -121,6 +121,7 @@ export async function syncNow(familyId: string): Promise<SyncResult | null> {
         has: async (id) =>
           (await snapshotRepository.list({ familyId })).some((s) => s.id === id),
         append: (s) => snapshotRepository.append(s),
+        remove: (id) => snapshotRepository.remove(id),
       },
       queue: syncQueue,
       fdk,

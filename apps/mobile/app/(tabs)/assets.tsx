@@ -22,7 +22,7 @@ import { useAuthStore } from '../../src/stores/auth-store';
 import { useAssetStore } from '../../src/stores/asset-store';
 import { useFamilyStore } from '../../src/stores/family-store';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
-import { ASSET_TYPE_COLORS, ASSET_TYPE_LABELS } from '../../src/lib/asset-meta';
+import { ASSET_TYPE_COLORS, ASSET_TYPE_LABELS, latestCapturedDateMap } from '../../src/lib/asset-meta';
 
 type ChipKey = AssetType | 'all';
 
@@ -46,6 +46,7 @@ export default function AssetsScreen() {
 
   const user = useAuthStore((s) => s.user);
   const assets = useAssetStore((s) => s.assets);
+  const snapshots = useAssetStore((s) => s.snapshots);
   const loading = useAssetStore((s) => s.loading);
   const load = useAssetStore((s) => s.load);
   const sharedFamily = useFamilyStore((s) => s.family);
@@ -80,6 +81,9 @@ export default function AssetsScreen() {
       (Object.keys(ASSET_TYPE_LABELS) as AssetType[]).filter((t) => counts.has(t)),
     [counts],
   );
+
+  // 列表时间字段展示「录入日期」（最新快照的记账日期），不再显示更新时间
+  const capturedDates = useMemo(() => latestCapturedDateMap(snapshots), [snapshots]);
 
   // 过滤后的分组
   const sections = useMemo<AssetSection[]>(() => {
@@ -221,7 +225,7 @@ export default function AssetsScreen() {
                     ) : null}
                   </XStack>
                   <Text fontSize="$1" color="$textTertiary">
-                    {item.updatedAt.slice(0, 10)} 更新
+                    {capturedDates.get(item.id) ?? item.createdAt.slice(0, 10)} 录入
                   </Text>
                 </YStack>
                 <Text fontSize="$3" fontWeight="600" color={d.color}>{d.text}</Text>

@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
-import { ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
+import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
 import { useAssetStore } from '../../../src/stores/asset-store';
@@ -139,6 +139,12 @@ export default function EditAssetScreen() {
 
   const cents = parseYuanToCents(amountText);
 
+  // 类型选项：收敛后的可选类型；历史资产若是已下架类型，保留该选项供显示
+  // （普通表达式而非 hook：本组件在 asset 未就绪时会提前 return，不能有条件 hook）
+  const typeOptions: readonly AssetType[] = (SELECTABLE_ASSET_TYPES as readonly AssetType[]).includes(type)
+    ? SELECTABLE_ASSET_TYPES
+    : [type, ...SELECTABLE_ASSET_TYPES];
+
   // 字段变更检测
   const nameChanged = name.trim() !== asset.name;
   const typeChanged = type !== asset.type;
@@ -205,7 +211,7 @@ export default function EditAssetScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <XStack space="$xs">
-              {ASSET_TYPES.map((t) => (
+              {typeOptions.map((t) => (
                 <Button
                   key={t}
                   size={36}

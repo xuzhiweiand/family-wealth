@@ -81,6 +81,9 @@ class MemorySnapshots implements SnapshotPort {
   async append(s: AssetSnapshot): Promise<void> {
     this.store.set(s.id, s);
   }
+  async remove(id: string): Promise<void> {
+    this.store.delete(id);
+  }
 }
 
 class MemoryQueue implements QueuePort {
@@ -223,6 +226,20 @@ describe('SyncEngine.pull', () => {
     remote.rows = [remoteRowOf(snap, { id: 's1', kind: 'snapshot', updatedAt: '2026-09-07T10:00:00.000Z' })];
     await engine.pull(['snapshot']);
     expect(snapshots.store.size).toBe(1);
+  });
+
+  it('removes a local snapshot when a delete tombstone arrives', async () => {
+    const { engine, remote, snapshots } = setup();
+    await snapshots.append(makeSnapshot('s1', 'a1'));
+    remote.rows = [
+      { id: 's1', kind: 'snapshot', updatedAt: '2026-09-08T10:00:00.000Z', deletedAt: '2026-09-08T10:00:00.000Z', envelope: 'ignored' },
+    ];
+    const stats = await engine.pull(['snapshot']);
+    expect(stats.applied).toBe(1);
+    expect(snapshots.store.has('s1')).toBe(false);
+    // 重复全量拉取同一墓碑是幂等的
+    const again = await engine.pull(['snapshot']);
+    expect(again.applied).toBe(0);
   });
 
   it('can pull only the requested kinds', async () => {

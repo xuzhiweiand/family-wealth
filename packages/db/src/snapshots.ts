@@ -15,6 +15,8 @@ export interface SnapshotRepository {
   append(snapshot: AssetSnapshot): Promise<void>;
   list(filter?: SnapshotFilter): Promise<AssetSnapshot[]>;
   count(filter?: SnapshotFilter): Promise<number>;
+  /** 物理移除（快照被用户删除后调用；云端以墓碑同步，见 packages/sync） */
+  remove(id: string): Promise<void>;
 }
 
 export class InMemorySnapshotRepository implements SnapshotRepository {
@@ -35,5 +37,9 @@ export class InMemorySnapshotRepository implements SnapshotRepository {
 
   async count(filter?: SnapshotFilter): Promise<number> {
     return (await this.list(filter)).length;
+  }
+
+  async remove(id: string): Promise<void> {
+    this.store = this.store.filter((s) => s.id !== id);
   }
 }

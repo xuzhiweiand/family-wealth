@@ -20,6 +20,21 @@ export const ASSET_TYPES = [
 
 export type AssetType = (typeof ASSET_TYPES)[number];
 
+/**
+ * 录入页可选的资产类型（0.1.3 起收敛）。
+ * ASSET_TYPES 保留全量用于历史数据展示；房产/车辆/数字货币不再开放新录入。
+ */
+export const SELECTABLE_ASSET_TYPES = [
+  'cash', // 现金
+  'bank_deposit', // 银行存款
+  'stock', // 股票
+  'fund', // 基金
+  'wealth_management', // 理财
+  'precious_metal', // 贵金属
+  'receivable', // 债权
+  'debt', // 债务
+] as const;
+
 /** 债务类资产（在净资产计算中做减项） */
 export const LIABILITY_TYPES: readonly AssetType[] = ['debt'];
 

@@ -103,8 +103,9 @@ export function buildTrendSeries(
       perAsset.set(s.assetId, byDate);
     }
     const prev = byDate.get(key);
-    // 同日多快照：保留 capturedAt 最大的那条
-    if (!prev || s.capturedAt > prev.capturedAt) {
+    // 同日多快照：保留 capturedAt 最大的那条；capturedAt 相同（同日重录/修正）
+    // 时后写入的胜出 —— 快照数组按写入顺序追加，>= 让后者覆盖前者
+    if (!prev || s.capturedAt >= prev.capturedAt) {
       byDate.set(key, { capturedAt: s.capturedAt, amount: s.amount });
     }
   }
@@ -172,7 +173,8 @@ export function buildAssetSeries(
     if (minKey === null || key < minKey) minKey = key;
     if (maxKey === null || key > maxKey) maxKey = key;
     const prev = byDate.get(key);
-    if (!prev || s.capturedAt > prev.capturedAt) {
+    // 同日同 capturedAt 时后写入的胜出（与 buildTrendSeries 口径一致）
+    if (!prev || s.capturedAt >= prev.capturedAt) {
       byDate.set(key, { capturedAt: s.capturedAt, amount: s.amount });
     }
   }

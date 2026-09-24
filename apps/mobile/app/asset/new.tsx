@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
-import { ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
+import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
 import type { AmountCandidate } from '@family-wealth/ocr';
 import { can, VISIBILITY_LABELS } from '@family-wealth/family';
@@ -195,7 +195,7 @@ export default function NewAssetScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <XStack space="$xs">
-              {ASSET_TYPES.map((t) => (
+              {SELECTABLE_ASSET_TYPES.map((t) => (
                 <Button
                   key={t}
                   size={36}
