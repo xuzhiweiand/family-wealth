@@ -63,22 +63,27 @@ function bucketKey(dateStr: string, bucket: 'day' | 'week' | 'month' | 'year'): 
   return dateStr.slice(0, 4);
 }
 
-/** 每日序列 → 分桶序列（每桶取最后一点，Map 插入顺序保持时间先后） */
+/**
+ * 每日序列 → 分桶序列（每桶取最后一点，Map 插入顺序保持时间先后）。
+ * 非日桶把 date 规范为桶 key（月 'YYYY-MM' / 周 'YYYY-Www' / 年 'YYYY'），
+ * 让横坐标只显示对应粒度的短标签（月视图只显示月份），避免长日期重叠。
+ */
 function bucketize(series: readonly TrendPoint[], bucket: 'day' | 'week' | 'month' | 'year'): TrendPoint[] {
   if (bucket === 'day') return [...series];
   const map = new Map<string, TrendPoint>();
   for (const p of series) map.set(bucketKey(p.date, bucket), p);
-  return [...map.values()];
+  return [...map.entries()].map(([key, p]) => ({ ...p, date: key }));
 }
 
 export default function TrendsScreen() {
   const insets = useSafeAreaInsets();
   const [range, setRange] = useState<RangeKey>('M');
-  // 三线指标切换：点 chip 显示/隐藏对应曲线（默认全开，保持三线图）
+  // 三线指标切换：点 chip 显示/隐藏对应曲线（默认只展示净资产主线，
+  // 总资产 / 总负债由用户点选后再叠加显示）
   const [metrics, setMetrics] = useState<Record<TrendLineKey, boolean>>({
     netWorth: true,
-    totalAssets: true,
-    totalLiabilities: true,
+    totalAssets: false,
+    totalLiabilities: false,
   });
   const activeLines = useMemo(
     () => (Object.keys(METRIC_LABELS) as TrendLineKey[]).filter((k) => metrics[k]),

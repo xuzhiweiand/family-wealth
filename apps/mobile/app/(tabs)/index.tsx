@@ -15,6 +15,7 @@ import { Text, XStack, YStack } from 'tamagui';
 import { buildTrendSeries } from '@family-wealth/analytics';
 import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
+import type { TrendPoint } from '@family-wealth/shared-types';
 import { useAuthStore } from '../../src/stores/auth-store';
 import { useKeyStore } from '../../src/stores/key-store';
 import { useAssetStore } from '../../src/stores/asset-store';
@@ -29,7 +30,7 @@ import {
   buildRecentChanges,
 } from '../../src/lib/asset-meta';
 
-const TREND_WINDOW_DAYS = 90;
+const TREND_WINDOW_DAYS = 365;
 const PAGE_PAD = 20;
 
 /** A 股习惯：涨红跌绿 */
@@ -38,6 +39,17 @@ const DOWN_COLOR = '#16A34A';
 
 function fromDaysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * 每日序列 → 按月序列（每月取桶内最后一点）。
+ * 日序列已做前向填充，窗口内每个月都会有值，所以得到连续 12 个月的轴。
+ * date 规范为桶 key 'YYYY-MM'，横坐标只显示月份。
+ */
+function bucketizeMonth(series: readonly TrendPoint[]): TrendPoint[] {
+  const map = new Map<string, TrendPoint>();
+  for (const p of series) map.set(p.date.slice(0, 7), p);
+  return [...map.entries()].map(([month, p]) => ({ ...p, date: month }));
 }
 
 function greeting(): string {
@@ -82,10 +94,14 @@ export default function HomeScreen() {
     [assets, user?.id],
   );
 
-  const series = useMemo(
-    () => buildTrendSeries(snapshots, visibleAssets, { from: fromDaysAgo(TREND_WINDOW_DAYS), familyId }),
-    [snapshots, visibleAssets, familyId],
-  );
+  // 近一年：先取每日三线序列（carry-forward），再按自然月归并
+  const series = useMemo(() => {
+    const daily = buildTrendSeries(snapshots, visibleAssets, {
+      from: fromDaysAgo(TREND_WINDOW_DAYS),
+      familyId,
+    });
+    return bucketizeMonth(daily);
+  }, [snapshots, visibleAssets, familyId]);
 
   // 卡片三值：月度台账口径 —— 只统计当月有快照的资产（每笔取当月最新一条），
   // 往月的历史录入不再被加总进当月卡片
@@ -201,9 +217,6 @@ export default function HomeScreen() {
           <QuickAction label="录入" bg="#D1FAE5" color="#059669"
             icon={<Path d="M12 5v14M5 12h14" />}
             onPress={() => router.push('/asset/new')} />
-          <QuickAction label="截图识别" bg="#DBEAFE" color="#2563EB"
-            icon={<><Path d="M3 9a2 2 0 0 1 2-2h.9a2 2 0 0 0 1.7-.9l.8-1.2A2 2 0 0 1 10.1 4h3.8a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><Path d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /></>}
-            onPress={() => router.push('/asset/new')} />
           <QuickAction label="趋势" bg="#EDE9FE" color="#7C3AED"
             icon={<><Path d="M3 3v18h18" /><Path d="M8 17v-5M13 17V8M18 17v-3" /></>}
             onPress={() => router.navigate('/trends')} />
@@ -212,9 +225,9 @@ export default function HomeScreen() {
             onPress={() => router.push('/family')} />
         </XStack>
 
-        {/* 近 90 天趋势 */}
+        {/* 近一年趋势（月粒度） */}
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
-          <Text fontSize="$4" fontWeight="700" color="$textPrimary">近 90 天趋势</Text>
+          <Text fontSize="$4" fontWeight="700" color="$textPrimary">近一年趋势</Text>
           <Text fontSize="$2" color="$primary" onPress={() => router.navigate('/trends')}>全屏 ›</Text>
         </XStack>
         <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"

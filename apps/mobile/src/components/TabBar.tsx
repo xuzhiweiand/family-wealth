@@ -99,13 +99,12 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const left = state.routes.slice(0, 2);
   const right = state.routes.slice(2, 4);
 
-  const renderTab = (route: TabRoute, i: number, absoluteIndex: number) => {
+  const renderTab = (route: TabRoute, absoluteIndex: number) => {
     const focused = state.index === absoluteIndex;
-    const Icon = i === 0 ? (absoluteIndex === 0 ? HomeIcon : LayersIcon)
-      : absoluteIndex === 3 ? ChartIcon : UserIcon;
-    const label = absoluteIndex === 0 ? '总览'
-      : absoluteIndex === 1 ? '资产'
-      : absoluteIndex === 3 ? '趋势' : '我的';
+    const Icon = absoluteIndex === 0 ? HomeIcon
+      : absoluteIndex === 1 ? LayersIcon
+      : absoluteIndex === 2 ? ChartIcon
+      : UserIcon;
 
     const onPress = () => {
       const event = nav.emit({
@@ -127,7 +126,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.row}>
-        {left.map((r, i) => renderTab(r, i, i))}
+        {left.map((r, i) => renderTab(r, i))}
         <View style={styles.fabSlot}>
           <TouchableOpacity
             style={styles.fab}
@@ -140,7 +139,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
             </Svg>
           </TouchableOpacity>
         </View>
-        {right.map((r, i) => renderTab(r, i, i + 3))}
+        {right.map((r, i) => renderTab(r, i + 2))}
       </View>
     </View>
   );

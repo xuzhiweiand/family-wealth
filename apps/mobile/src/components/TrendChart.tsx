@@ -75,6 +75,22 @@ function axisLabel(dateKey: string): string {
   return dateKey;
 }
 
+const X_LABEL_COUNT = 7;
+const X_LABEL_ALL_MAX = 13;
+
+/**
+ * 选要画日期刻度的点下标：点数 ≤ 13 全部标出（近一年 12 个月 → 每月一刻度）；
+ * 点数多时均匀取约 X_LABEL_COUNT 个，且一定包含首末。
+ */
+function pickLabelIndices(n: number): number[] {
+  if (n <= X_LABEL_ALL_MAX) return Array.from({ length: n }, (_, i) => i);
+  const indices = new Set<number>([0, n - 1]);
+  for (let i = 1; i < X_LABEL_COUNT - 1; i++) {
+    indices.add(Math.round((i / (X_LABEL_COUNT - 1)) * (n - 1)));
+  }
+  return [...indices].sort((a, b) => a - b);
+}
+
 export function TrendChart({
   data,
   height = 160,
@@ -111,9 +127,10 @@ export function TrendChart({
   const yOf = (v: number) => PADDING_TOP + plotHeight - ((v - min) / (span || 1)) * plotHeight;
   const ticks: number[] = span === 0 ? [max] : [max, (max + min) / 2, min];
 
-  const firstDate = data[0]!.date;
-  const lastDate = data[data.length - 1]!.date;
-  const midDate = data[Math.floor((data.length - 1) / 2)]!.date;
+  const pointCount = data.length;
+  const labelIndices = pickLabelIndices(pointCount);
+  const xAt = (i: number) =>
+    GUTTER_LEFT + (pointCount === 1 ? plotWidth / 2 : (i / (pointCount - 1)) * plotWidth);
 
   return (
     <Svg width={width} height={height}>
@@ -181,30 +198,23 @@ export function TrendChart({
           })}
       </G>
 
-      {/* X 轴日期刻度：首 / 中 / 末 */}
-      <SvgText x={GUTTER_LEFT} y={height - 5} fontSize={9} fill={AXIS_COLOR} textAnchor="start">
-        {axisLabel(firstDate)}
-      </SvgText>
-      {data.length >= 3 && midDate !== firstDate && midDate !== lastDate ? (
-        <SvgText
-          x={GUTTER_LEFT + plotWidth / 2}
-          y={height - 5}
-          fontSize={9}
-          fill={AXIS_COLOR}
-          textAnchor="middle"
-        >
-          {axisLabel(midDate)}
-        </SvgText>
-      ) : null}
-      <SvgText
-        x={GUTTER_LEFT + plotWidth}
-        y={height - 5}
-        fontSize={9}
-        fill={AXIS_COLOR}
-        textAnchor="end"
-      >
-        {axisLabel(lastDate)}
-      </SvgText>
+      {/* X 轴日期刻度：按月/粒度均匀标注，首末贴边 */}
+      {labelIndices.map((i) => {
+        const anchor: 'start' | 'middle' | 'end' =
+          pointCount === 1 ? 'middle' : i === 0 ? 'start' : i === pointCount - 1 ? 'end' : 'middle';
+        return (
+          <SvgText
+            key={`xlabel-${i}`}
+            x={xAt(i)}
+            y={height - 5}
+            fontSize={9}
+            fill={AXIS_COLOR}
+            textAnchor={anchor}
+          >
+            {axisLabel(data[i]!.date)}
+          </SvgText>
+        );
+      })}
     </Svg>
   );
 }
