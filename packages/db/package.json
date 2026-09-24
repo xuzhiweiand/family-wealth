@@ -9,8 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@family-wealth/shared-types": "workspace:*",
-    "@nozbe/watermelondb": "^0.27.1"
+    "@family-wealth/shared-types": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
