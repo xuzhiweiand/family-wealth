@@ -1,0 +1,8 @@
+{
+  "src": [
+    {
+      "name": "main_pages",
+      "value": "pages/Index"
+    }
+  ]
+}

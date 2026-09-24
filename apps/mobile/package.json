@@ -6,6 +6,9 @@
   "scripts": {
     "start": "react-native start",
     "android": "react-native run-android",
+    "harmony": "react-native run-harmony",
+    "bundle:harmony": "react-native bundle --platform harmony --dev false --entry-file index.js --bundle-output harmony/entry/src/main/resources/rawfile/bundle/index.harmony.bundle --assets-dest harmony/entry/src/main/resources/rawfile/",
+    "bundle:harmony:dev": "react-native bundle --platform harmony --dev true --entry-file index.js --bundle-output harmony/entry/src/main/resources/rawfile/bundle/index.harmony.bundle --assets-dest harmony/entry/src/main/resources/rawfile/",
     "lint": "echo \"(W2 引入 eslint-config + lint 脚本)\" && exit 0",
     "typecheck": "tsc --noEmit",
     "test": "echo \"(W1 无单测，端到端测试见 Detox，见 .github/workflows/ci.yml)\" && exit 0",

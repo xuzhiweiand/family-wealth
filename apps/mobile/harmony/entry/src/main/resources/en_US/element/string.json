@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "Family Wealth Entry Module"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "Family Wealth Main Ability"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "家资"
+    }
+  ]
+}

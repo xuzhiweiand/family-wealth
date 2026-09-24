@@ -27,6 +27,19 @@ web-build/
 ios/
 android/
 
+# ===== HarmonyOS =====
+.hvigor/
+.cxx/
+clangd/
+clang-tidy
+*.hap
+*.app
+oh-package-lock.json5
+signature/*.p12
+signature/*.cer
+signature/*.p7b
+!signature/README.md
+
 # ===== Env / secrets =====
 .env
 .env.local
