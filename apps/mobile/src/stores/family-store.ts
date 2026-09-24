@@ -1,20 +1,24 @@
 /**
  * 家庭共享状态
  *
- * 职责：把 family-service 的结果映射成 UI 状态。
+ * 职责：把家庭服务（InMemory 或 Supabase 网关）的结果映射成 UI 状态。
  * 权限相关展示（能不能移除成员、要不要显示轮换横幅）全部
  * 走 packages/family 的纯函数裁决，不在 store 里手写 if。
+ *
+ * 云端动作均为 async；页面以 fire-and-forget 方式调用，不阻塞 UI。
  */
 
 import { useMemo } from 'react';
 import { create } from 'zustand';
-import type { Invite, MemberRecord, RotationPlan } from '@family-wealth/family';
+import type { Invite, MemberRecord } from '@family-wealth/family';
 import type { FamilyRole } from '@family-wealth/shared-types';
 import {
   familyService,
   type FamilyInfo,
   type JoinFailure,
 } from '../services/family-service';
+import { familyGateway } from '../services/family-supabase';
+import { isCloudEnabled } from '../services/supabase';
 import { useAuthStore } from './auth-store';
 import { useKeyStore } from './key-store';
 
@@ -36,12 +40,12 @@ interface FamilyState {
   notice: string | null;
 
   /** 进入家庭页时刷新 */
-  refresh: () => void;
-  createFamily: (name: string) => void;
-  makeInvite: () => void;
+  refresh: () => Promise<void>;
+  createFamily: (name: string) => Promise<void>;
+  makeInvite: () => Promise<void>;
   joinByCode: (code: string) => Promise<boolean>;
-  removeMember: (targetUserId: string) => void;
-  rotateNow: () => void;
+  removeMember: (targetUserId: string) => Promise<void>;
+  rotateNow: () => Promise<void>;
   clearNotice: () => void;
 }
 
@@ -69,9 +73,48 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   error: null,
   notice: null,
 
-  refresh() {
+  async refresh() {
     const user = useAuthStore.getState().user;
     if (!user) return;
+
+    // ---------- 云端 ----------
+    if (isCloudEnabled && familyGateway) {
+      try {
+        const family = await familyGateway.findFamilyOf(user.id);
+        if (!family) {
+          set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false });
+          return;
+        }
+        useKeyStore.getState().setFamilyId(family.id);
+
+        const umk = useKeyStore.getState().umk;
+        if (umk) {
+          // 恢复 FDK（含自动领取开放轮换）；失败只影响云同步，不阻塞页面
+          try {
+            const r = await familyGateway.recoverKeys({
+              familyId: family.id,
+              userId: user.id,
+              umk,
+            });
+            useKeyStore.getState().setFdk(r.fdk);
+          } catch (err) {
+            console.warn('[family] recoverKeys failed:', (err as Error).message);
+          }
+        }
+
+        const [members, invites] = await Promise.all([
+          familyGateway.listMembers(family.id),
+          familyGateway.listInvites(family.id),
+        ]);
+        const rotationPending = await familyGateway.hasPendingRotation(family.id);
+        set({ family, members, invites, rotationPending });
+      } catch (err) {
+        set({ error: (err as Error).message });
+      }
+      return;
+    }
+
+    // ---------- InMemory ----------
     const family = familyService.findFamilyOf(user.id);
     if (!family) {
       set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false });
@@ -87,13 +130,31 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     });
   },
 
-  createFamily(name) {
+  async createFamily(name) {
     const user = useAuthStore.getState().user;
     const umk = useKeyStore.getState().umk;
     if (!user || !umk) {
       set({ error: '缺少登录态或密钥，无法创建家庭' });
       return;
     }
+
+    if (isCloudEnabled && familyGateway) {
+      try {
+        const { family, fdk } = await familyGateway.createFamily({
+          name: name || '我的家庭',
+          ownerId: user.id,
+          ownerName: user.displayName,
+          umk,
+        });
+        useKeyStore.getState().setUmk(umk, family.id);
+        useKeyStore.getState().setFdk(fdk);
+        set({ family, members: familyGateway ? await familyGateway.listMembers(family.id) : [], error: null });
+      } catch (err) {
+        set({ error: (err as Error).message });
+      }
+      return;
+    }
+
     try {
       const family = familyService.createFamily({
         name: name || '我的家庭',
@@ -109,10 +170,33 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     }
   },
 
-  makeInvite() {
+  async makeInvite() {
     const { family } = get();
     const user = useAuthStore.getState().user;
     if (!family || !user) return;
+
+    if (isCloudEnabled && familyGateway) {
+      const fdk = useKeyStore.getState().fdk;
+      if (!fdk) {
+        set({ error: '密钥未就绪，无法生成邀请' });
+        return;
+      }
+      try {
+        const out = await familyGateway.createFamilyInvite({
+          familyId: family.id,
+          createdBy: user.id,
+          fdk,
+        });
+        set({
+          activeInvite: { code: out.code, displayCode: out.displayCode, expiresAt: out.expiresAt },
+          invites: await familyGateway.listInvites(family.id),
+        });
+      } catch (err) {
+        set({ error: (err as Error).message });
+      }
+      return;
+    }
+
     try {
       const out = familyService.createFamilyInvite({ familyId: family.id, createdBy: user.id });
       set({
@@ -132,6 +216,29 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       return false;
     }
     set({ loading: true, error: null });
+
+    if (isCloudEnabled && familyGateway) {
+      const result = await familyGateway.joinByCode({
+        code,
+        userId: user.id,
+        displayName: user.displayName,
+        umk,
+      });
+      if (!result.ok) {
+        set({ loading: false, error: JOIN_FAILURE_TEXT[result.reason] });
+        return false;
+      }
+      useKeyStore.getState().setUmk(umk, result.family.id);
+      useKeyStore.getState().setFdk(result.fdk);
+      set({
+        loading: false,
+        family: result.family,
+        members: await familyGateway.listMembers(result.family.id),
+        notice: `已加入「${result.family.name}」`,
+      });
+      return true;
+    }
+
     try {
       const result = familyService.joinByCode({
         code,
@@ -158,13 +265,27 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     }
   },
 
-  removeMember(targetUserId) {
+  async removeMember(targetUserId) {
     const { family } = get();
     const user = useAuthStore.getState().user;
     if (!family || !user) return;
     const actorRole = myRole(get().members, user.id);
     const target = get().members.find((m) => m.userId === targetUserId);
     if (!target) return;
+
+    if (isCloudEnabled && familyGateway) {
+      const result = await familyGateway.removeMember(family.id, targetUserId);
+      if (!result.ok) {
+        set({ error: `无法移除：${result.reason}` });
+        return;
+      }
+      set({
+        members: await familyGateway.listMembers(family.id),
+        rotationPending: await familyGateway.hasPendingRotation(family.id),
+        notice: `已移除 ${target.displayName}。请立即轮换密钥，否则其在撤销前下载的数据仍可被其解开`,
+      });
+      return;
+    }
 
     const result = familyService.removeMember({
       familyId: family.id,
@@ -182,11 +303,33 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     });
   },
 
-  rotateNow() {
+  async rotateNow() {
     const { family } = get();
     const user = useAuthStore.getState().user;
     const umk = useKeyStore.getState().umk;
     if (!family || !user || !umk) return;
+
+    if (isCloudEnabled && familyGateway) {
+      const fdkOld = useKeyStore.getState().fdk;
+      if (!fdkOld) return;
+      try {
+        const { fdk } = await familyGateway.completeRotation({
+          familyId: family.id,
+          userId: user.id,
+          umk,
+          fdkOld,
+        });
+        useKeyStore.getState().setFdk(fdk);
+        set({
+          rotationPending: await familyGateway.hasPendingRotation(family.id),
+          notice: '密钥已轮换，新的数据不再对被移除成员可见',
+        });
+      } catch (err) {
+        set({ error: (err as Error).message });
+      }
+      return;
+    }
+
     const plan = familyService.completeRotation(family.id, { userId: user.id, umk });
     set({
       rotationPending: plan ? false : get().rotationPending,
@@ -204,6 +347,6 @@ export function useMyFamilyRole(): FamilyRole {
   const user = useAuthStore((s) => s.user);
   const members = useFamilyStore((s) => s.members);
   // user 与 members 都是订阅态：任一变化都会重算角色，
-  // 修复之前 getState() 只在渲染时读一次、user 切换不重渲染的 bug。
+  // 修复之前 getState() 只在 render 时读一次、user 切换不重渲染的 bug。
   return useMemo(() => myRole(members, user?.id ?? ''), [members, user?.id]);
 }

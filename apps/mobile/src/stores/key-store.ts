@@ -13,11 +13,14 @@ import { create } from 'zustand';
 
 interface KeyState {
   umk: Uint8Array | null;
+  /** 家庭数据密钥（解出后存内存；建家庭/加入/领取轮换时设置） */
+  fdk: Uint8Array | null;
   familyId: string | null;
   /** 最后活跃时间戳（用于自动锁定） */
   lastActiveAt: number;
 
   setUmk: (umk: Uint8Array | null, familyId?: string | null) => void;
+  setFdk: (fdk: Uint8Array | null) => void;
   /** 只切换当前家庭上下文，不动 UMK（登录后恢复家庭用） */
   setFamilyId: (familyId: string | null) => void;
   markActive: () => void;
@@ -26,11 +29,16 @@ interface KeyState {
 
 export const useKeyStore = create<KeyState>((set) => ({
   umk: null,
+  fdk: null,
   familyId: null,
   lastActiveAt: Date.now(),
 
   setUmk(umk, familyId = null) {
     set({ umk, familyId, lastActiveAt: Date.now() });
+  },
+
+  setFdk(fdk) {
+    set({ fdk });
   },
 
   setFamilyId(familyId) {
@@ -42,7 +50,7 @@ export const useKeyStore = create<KeyState>((set) => ({
   },
 
   clear() {
-    set({ umk: null, familyId: null, lastActiveAt: Date.now() });
+    set({ umk: null, fdk: null, familyId: null, lastActiveAt: Date.now() });
   },
 }));
 

@@ -163,7 +163,8 @@ create policy "claims visible to active members"
 create or replace function public.create_family(
   p_name text,
   p_wrapped_fdk text,
-  p_display_name text default null
+  p_display_name text default null,
+  p_family_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -184,8 +185,11 @@ begin
     raise exception 'invalid-wrapped-fdk';
   end if;
 
-  insert into public.families (name, owner_id)
-  values (btrim(p_name), auth.uid())
+  -- family_id 允许由客户端指定：FDK 成员副本的 AAD 含 familyId，
+  -- 客户端必须先知道 id 才能完成 wrap。id 为 UUID 且 owner 行同事务写入，
+  -- 被抢占/伪造均无收益。
+  insert into public.families (id, name, owner_id)
+  values (coalesce(p_family_id, gen_random_uuid()), btrim(p_name), auth.uid())
   returning id into v_family_id;
 
   -- 展示名优先级：入参 > profiles.display_name > 'Owner'
@@ -701,7 +705,7 @@ declare
   sig text;
 begin
   foreach sig in array array[
-    'create_family(text, text, text)',
+    'create_family(text, text, text, uuid)',
     'claim_invite(text)',
     'finalize_join(uuid, text, text)',
     'remove_member(uuid, uuid)',

@@ -2,7 +2,7 @@
   "expo": {
     "name": "家资",
     "slug": "family-wealth",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "scheme": "jiazi",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,7 @@
       "supportsTablet": false,
       "icon": "./assets/icon.png",
       "bundleIdentifier": "com.familywealth.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "拍摄银行/券商界面，自动识别金额"
@@ -28,7 +28,8 @@
     },
     "android": {
       "package": "com.familywealth.app",
-      "versionCode": 2,
+      "versionCode": 3,
+      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"

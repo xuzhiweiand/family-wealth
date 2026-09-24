@@ -8,11 +8,8 @@
 import { create } from 'zustand';
 import type { Asset, AssetSnapshot, AssetType, Visibility } from '@family-wealth/shared-types';
 import { assetRepository, snapshotRepository } from '../services/bootstrap';
-
-/** 本地 id：真机上可换成 uuid 库，这里避免引入 native 依赖 */
-function newId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
+import { enqueueChange, syncNow } from '../services/sync';
+import { uuid as newId } from '../lib/uuid';
 
 export interface AddAssetInput {
   familyId: string;
@@ -59,6 +56,8 @@ export const useAssetStore = create<AssetState>((set, get) => ({
         snapshotRepository.list({ familyId }),
       ]);
       set({ assets, snapshots, loading: false });
+      // 云端：后台同步（推未决变更 + 拉远端），不阻塞当前渲染
+      void syncNow(familyId);
     } catch (err) {
       set({ loading: false, error: (err as Error).message });
     }
@@ -67,7 +66,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   async addAsset(input) {
     const now = new Date().toISOString();
     const asset: Asset = {
-      id: newId('a'),
+      id: newId(),
       familyId: input.familyId,
       ownerId: input.ownerId,
       type: input.type,
@@ -82,7 +81,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     };
 
     const snapshot: AssetSnapshot = {
-      id: newId('s'),
+      id: newId(),
       assetId: asset.id,
       familyId: asset.familyId,
       amount: asset.currentAmount,
@@ -93,6 +92,11 @@ export const useAssetStore = create<AssetState>((set, get) => ({
 
     await assetRepository.upsert(asset);
     await snapshotRepository.append(snapshot);
+
+    // 云端入队并触发同步（无配置时 enqueue/sync 均 no-op）
+    enqueueChange('asset', asset.id, 'upsert', asset);
+    enqueueChange('asset_snapshots', snapshot.id, 'upsert', snapshot);
+    void syncNow(asset.familyId);
 
     set({ assets: [...get().assets, asset], snapshots: [...get().snapshots, snapshot] });
     return asset;
@@ -105,7 +109,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const now = new Date().toISOString();
     const updated: Asset = { ...existing, currentAmount: amountInCents, updatedAt: now };
     const snapshot: AssetSnapshot = {
-      id: newId('s'),
+      id: newId(),
       assetId,
       familyId,
       amount: amountInCents,
@@ -116,6 +120,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
 
     await assetRepository.upsert(updated);
     await snapshotRepository.append(snapshot);
+
+    enqueueChange('asset', assetId, 'upsert', updated);
+    enqueueChange('asset_snapshots', snapshot.id, 'upsert', snapshot);
+    void syncNow(familyId);
 
     set({
       assets: get().assets.map((a) => (a.id === assetId ? updated : a)),
@@ -130,7 +138,16 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const now = new Date().toISOString();
     const removed: Asset = { ...existing, deletedAt: now, updatedAt: now };
     await assetRepository.upsert(removed);
-    set({ assets: get().assets.map((a) => (a.id === assetId ? removed : a)) });
+    // 软删按 delete 语义上行（远端行置 deleted_at；不重传明文）
+    enqueueChange('asset', assetId, 'delete', removed);
+    void syncNow(existing.familyId);
+    // 注：块级函数体。单行箭头 + 三元在「set({ 单属性 })」语境下
+    // 会触发 TS 5.7 解析器歧义（TS1005），块体可规避。
+    set({
+      assets: get().assets.map((a) => {
+        return a.id === assetId ? removed : a;
+      }),
+    });
   },
 
   async updateAssetMeta(assetId, patch) {
@@ -139,7 +156,13 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const now = new Date().toISOString();
     const updated: Asset = { ...existing, ...patch, updatedAt: now };
     await assetRepository.upsert(updated);
-    set({ assets: get().assets.map((a) => (a.id === assetId ? updated : a)) });
+    enqueueChange('asset', assetId, 'upsert', updated);
+    void syncNow(existing.familyId);
+    set({
+      assets: get().assets.map((a) => {
+        return a.id === assetId ? updated : a;
+      }),
+    });
   },
 
   async restoreAsset(assetId) {
@@ -151,6 +174,12 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     const now = new Date().toISOString();
     const restored: Asset = { ...existing, deletedAt: null, updatedAt: now };
     await assetRepository.upsert(restored);
-    set({ assets: get().assets.map((a) => (a.id === assetId ? restored : a)) });
+    enqueueChange('asset', assetId, 'upsert', restored);
+    void syncNow(existing.familyId);
+    set({
+      assets: get().assets.map((a) => {
+        return a.id === assetId ? restored : a;
+      }),
+    });
   },
 }));
