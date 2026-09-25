@@ -2,9 +2,7 @@
   "modelVersion": "5.0.0",
   "description": "Family Wealth HarmonyOS App",
   "dependencies": {
-  },
-  "overrides": {
-    "@rnoh/react-native-openharmony": "./libs/react_native_openharmony.har"
+    "@rnoh/react-native-openharmony": "0.77.74"
   },
   "devDependencies": {
     "@ohos/hypium": "1.0.19",
