@@ -1,6 +1,12 @@
 .git/
 *.class
 
+# ohpm 依赖目录（等价 node_modules），由 ohpm install 生成
+oh_modules/
+
 # RNOH HAR：由 scripts/prepare-harmony-hars.cjs 从 npm 包生成，不纳入版本控制
 libs/*.har
+
+# metro harmony bundle 及拷贝的资源：由 pnpm bundle:harmony 生成
+entry/src/main/resources/rawfile/
 
