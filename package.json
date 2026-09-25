@@ -9,6 +9,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "postinstall": "node apps/mobile/scripts/prepare-harmony-hars.cjs",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

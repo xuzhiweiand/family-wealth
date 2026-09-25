@@ -1,2 +1,6 @@
 .git/
 *.class
+
+# RNOH HAR：由 scripts/prepare-harmony-hars.cjs 从 npm 包生成，不纳入版本控制
+libs/*.har
+
