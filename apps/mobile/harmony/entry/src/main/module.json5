@@ -32,6 +32,18 @@
           }
         ]
       }
+    ],
+    // RN 网络请求需要 INTERNET 权限；自托管 Supabase 走明文 http，需放行 cleartext
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.INTERNET"
+      }
+    ],
+    "metadata": [
+      {
+        "name": "ohos.asset.networkSecurityConfig",
+        "resource": "$profile:network_config"
+      }
     ]
   }
 }

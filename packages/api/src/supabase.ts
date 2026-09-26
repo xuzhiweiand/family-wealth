@@ -11,7 +11,7 @@
  * - 单主密码模型：登录密码 == 加密主密码（同 InMemoryAuthClient，见 ADR-0006）
  */
 
-import { generateSalt, toBase64, fromBase64, createPasswordCheckEnvelope, verifyPasswordCheck } from '@family-wealth/crypto';
+import { generateSalt, toBase64, fromBase64, createPasswordCheckEnvelope, createPasswordCheckEnvelopeWithUMK, verifyPasswordCheck, deriveUMK, verifyEnvelopeWithUMK } from '@family-wealth/crypto';
 import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
 
 /**
@@ -86,6 +86,19 @@ export class SupabaseAuthClient implements AuthClient {
   /** 内存缓存 profile，避免每次 getCurrentUser 都查库 */
   private profileCache = new Map<string, ProfileRow>();
 
+  /**
+   * 最近一次 signIn/signUp 成功时派生的 UMK（避免 store 侧重复 PBKDF2）。
+   * 注意：不主动擦除——UMK 需要由 auth-store 接管存入 keyStore。
+   */
+  private lastDerivedUMK: Uint8Array | null = null;
+
+  /** 取最近一次成功鉴权时派生的 UMK；取走后清除引用 */
+  consumeDerivedUMK(): Uint8Array | null {
+    const umk = this.lastDerivedUMK;
+    this.lastDerivedUMK = null;
+    return umk;
+  }
+
   constructor(private readonly supabase: SupabaseLike) {}
 
   async signUp(input: SignUpInput): Promise<AuthResult<{ user: User; session: Session }>> {
@@ -100,8 +113,10 @@ export class SupabaseAuthClient implements AuthClient {
     }
 
     // 生成 salt + 密码校验信封，写入 profiles（RLS 限制仅本人可写）
+    // 优化：先 deriveUMK 一次，再用 UMK 创建信封并缓存，避免双重 PBKDF2
     const salt = generateSalt();
-    const envelope = createPasswordCheckEnvelope(input.password, salt);
+    const umk = deriveUMK(input.password, salt);
+    const envelope = createPasswordCheckEnvelopeWithUMK(umk);
     const profile: ProfileRow = {
       id: data.user.id,
       email: data.user.email ?? input.email.toLowerCase(),
@@ -113,10 +128,12 @@ export class SupabaseAuthClient implements AuthClient {
     if (profileErr) {
       // 回滚：profiles 写入失败则登出，避免出现「有账号无档案」的半成品
       await this.supabase.auth.signOut();
+      for (let i = 0; i < umk.length; i++) umk[i] = 0;
       return { ok: false, error: { code: 'UNKNOWN', message: `档案写入失败: ${profileErr.message}` } };
     }
 
     this.profileCache.set(data.user.id, profile);
+    this.lastDerivedUMK = umk;
     return { ok: true, data: { user: this.toUser(data.user, profile), session: this.toSession(data.session) } };
   }
 
@@ -136,10 +153,15 @@ export class SupabaseAuthClient implements AuthClient {
     }
 
     // E2E 关键：校验本地 UMK 派生正确（顺带检测 salt 是否被篡改）
+    // 优化：先 deriveUMK 一次，再用 verifyEnvelopeWithUMK 校验，
+    // 避免 verifyPasswordCheck + store.deriveUMK 双重 PBKDF2（Hermes 无 JIT 上各需数分钟）
     const salt = fromBase64(profile.salt);
-    if (!verifyPasswordCheck(input.password, salt, profile.password_check_envelope)) {
+    const umk = deriveUMK(input.password, salt);
+    if (!verifyEnvelopeWithUMK(umk, profile.password_check_envelope)) {
+      for (let i = 0; i < umk.length; i++) umk[i] = 0;
       return { ok: false, error: { code: 'INVALID_CREDENTIALS', message: '邮箱或密码错误' } };
     }
+    this.lastDerivedUMK = umk;
 
     return { ok: true, data: { user: this.toUser(data.user, profile), session: this.toSession(data.session) } };
   }

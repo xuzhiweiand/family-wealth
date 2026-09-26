@@ -23,18 +23,38 @@ export const PASSWORD_CHECK_PLAINTEXT = 'family-wealth:password-check:v1';
 export function createPasswordCheckEnvelope(password: string, salt: Uint8Array): string {
   const umk = deriveUMK(password, salt);
   try {
-    const plaintext = new TextEncoder().encode(PASSWORD_CHECK_PLAINTEXT);
-    const record = encryptEnvelope(plaintext, umk);
-    return serializeEnvelope(record);
+    return createPasswordCheckEnvelopeWithUMK(umk);
   } finally {
     // 立即擦除 UMK，避免残留在堆上
     for (let i = 0; i < umk.length; i++) umk[i] = 0;
   }
 }
 
+/** 用预派生的 UMK 生成校验信封（跳过 PBKDF2，调用方负责 UMK 生命周期） */
+export function createPasswordCheckEnvelopeWithUMK(umk: Uint8Array): string {
+  const plaintext = new TextEncoder().encode(PASSWORD_CHECK_PLAINTEXT);
+  const record = encryptEnvelope(plaintext, umk);
+  return serializeEnvelope(record);
+}
+
 /** 校验密码 + salt 是否能解出固定明文（返回 true 表示 UMK 派生正确） */
 export function verifyPasswordCheck(password: string, salt: Uint8Array, envelope: string): boolean {
   const umk = deriveUMK(password, salt);
+  try {
+    return verifyEnvelopeWithUMK(umk, envelope);
+  } finally {
+    for (let i = 0; i < umk.length; i++) umk[i] = 0;
+  }
+}
+
+/**
+ * 用预派生的 UMK 校验密码信封（跳过 PBKDF2，调用方负责 UMK 生命周期）
+ *
+ * 用途：SupabaseAuthClient.signIn 需要同时校验信封和获取 UMK，
+ * 先调 deriveUMK 一次，再用本函数校验，避免 verifyPasswordCheck + deriveUMK
+ * 双重 PBKDF2（在无 JIT 的 Hermes 上每次 100k 迭代耗时数分钟）。
+ */
+export function verifyEnvelopeWithUMK(umk: Uint8Array, envelope: string): boolean {
   try {
     const record = deserializeEnvelope(envelope);
     if (!record) return false;
@@ -45,10 +65,7 @@ export function verifyPasswordCheck(password: string, salt: Uint8Array, envelope
     for (let i = 0; i < plaintext.length; i++) diff |= plaintext[i]! ^ expected[i]!;
     return diff === 0;
   } catch {
-    // 解密失败（明文被篡改 / salt 不符 / envelope 损坏）一律视为校验失败
     return false;
-  } finally {
-    for (let i = 0; i < umk.length; i++) umk[i] = 0;
   }
 }
 

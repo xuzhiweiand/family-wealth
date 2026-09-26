@@ -44,26 +44,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   async signIn(email, password) {
     set({ status: 'loading', error: null });
-    const result = await getAuthClient().signIn({ email, password });
-    if (!result.ok) {
-      set({ status: 'error', error: result.error?.message ?? '登录失败' });
+    try {
+      const result = await getAuthClient().signIn({ email, password });
+      if (!result.ok) {
+        set({ status: 'error', error: result.error?.message ?? '登录失败' });
+        return false;
+      }
+      const user = result.data!.user;
+      const session = result.data!.session;
+      // 优先用 SupabaseAuthClient 缓存的 UMK（避免重复 PBKDF2）
+      const client = getAuthClient();
+      const cachedUMK = 'consumeDerivedUMK' in client
+        ? (client as { consumeDerivedUMK(): Uint8Array | null }).consumeDerivedUMK()
+        : null;
+      const umk = cachedUMK ?? deriveUMK(password, fromBase64(user.salt));
+
+      set({ status: 'authenticated', user, session, error: null });
+
+      // 持久化全部凭据到 Keychain（fire-and-forget，不阻塞 UI）
+      const umkBase64 = toBase64(umk);
+      void saveSalt(user.salt);
+      void saveSession({ accessToken: session.accessToken, refreshToken: session.refreshToken });
+      void saveUmk(umkBase64);
+      void saveUser(JSON.stringify(user));
+
+      useKeyStore.getState().setUmk(umk);
+      return true;
+    } catch (err) {
+      set({ status: 'error', error: (err as Error)?.message ?? '登录失败' });
       return false;
     }
-    const user = result.data!.user;
-    const session = result.data!.session;
-    const umk = deriveUMK(password, fromBase64(user.salt));
-
-    set({ status: 'authenticated', user, session, error: null });
-
-    // 持久化全部凭据到 Keychain（fire-and-forget，不阻塞 UI）
-    const umkBase64 = toBase64(umk);
-    void saveSalt(user.salt);
-    void saveSession({ accessToken: session.accessToken, refreshToken: session.refreshToken });
-    void saveUmk(umkBase64);
-    void saveUser(JSON.stringify(user));
-
-    useKeyStore.getState().setUmk(umk);
-    return true;
   },
 
   async signUp(email, password, displayName) {
@@ -76,7 +86,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       const user = result.data!.user;
       const session = result.data!.session;
-      const umk = deriveUMK(password, fromBase64(user.salt));
+      // 优先用 SupabaseAuthClient 缓存的 UMK（避免重复 PBKDF2）
+      const client = getAuthClient();
+      const cachedUMK = 'consumeDerivedUMK' in client
+        ? (client as { consumeDerivedUMK(): Uint8Array | null }).consumeDerivedUMK()
+        : null;
+      const umk = cachedUMK ?? deriveUMK(password, fromBase64(user.salt));
 
       set({ status: 'authenticated', user, session, error: null });
 
