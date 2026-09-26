@@ -11,7 +11,7 @@
  * - 单主密码模型：登录密码 == 加密主密码（同 InMemoryAuthClient，见 ADR-0006）
  */
 
-import { generateSalt, toBase64, fromBase64, createPasswordCheckEnvelope, createPasswordCheckEnvelopeWithUMK, verifyPasswordCheck, deriveUMK, verifyEnvelopeWithUMK } from '@family-wealth/crypto';
+import { generateSalt, toBase64, createPasswordCheckEnvelopeWithUMK, deriveUMK } from '@family-wealth/crypto';
 import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
 
 /**
@@ -32,6 +32,23 @@ export interface SupabaseSession {
 export interface SupabaseUser {
   id: string;
   email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * 登录档案缓存端口（由宿主端实现，见 apps/mobile/src/services/login-cache.ts）。
+ * 命中后 signIn 把 PBKDF2 与鉴权网络请求并行，并省去 profiles 查询 RTT。
+ */
+export interface LoginProfileCachePort {
+  get(email: string): Promise<{
+    salt: string;
+    envelope: string | null;
+    displayName: string | null;
+  } | null>;
+  set(
+    email: string,
+    profile: { salt: string; envelope: string; displayName: string },
+  ): Promise<void>;
 }
 
 /** 错误只需要这三个字段，与 SDK 的 AuthError 结构化兼容 */
@@ -99,7 +116,10 @@ export class SupabaseAuthClient implements AuthClient {
     return umk;
   }
 
-  constructor(private readonly supabase: SupabaseLike) {}
+  constructor(
+    private readonly supabase: SupabaseLike,
+    private readonly loginCache: LoginProfileCachePort | null = null,
+  ) {}
 
   async signUp(input: SignUpInput): Promise<AuthResult<{ user: User; session: Session }>> {
     const { data, error } = await this.supabase.auth.signUp({
@@ -138,32 +158,72 @@ export class SupabaseAuthClient implements AuthClient {
   }
 
   async signIn(input: SignInInput): Promise<AuthResult<{ user: User; session: Session }>> {
+    const cached = this.loginCache
+      ? await this.loginCache.get(input.email)
+      : null;
+
+    // 1) 鉴权网络往返（GoTrue 校验密码）；此期间 JS 线程空闲、不做 CPU 重活，
+    //    让网络往返成为唯一等待
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email: input.email,
       password: input.password,
     });
-    if (error) return this.mapAuthError(error);
+    if (error) {
+      const mapped = this.mapAuthError(error);
+      return {
+        ok: false as const,
+        error: { ...mapped.error!, message: `[鉴权] ${mapped.error!.message}` },
+      };
+    }
     if (!data.user || !data.session) {
-      return { ok: false, error: { code: 'UNKNOWN', message: '登录未返回会话' } };
+      return { ok: false, error: { code: 'UNKNOWN', message: '[鉴权] 登录未返回会话' } };
     }
 
-    const profile = await this.fetchProfile(data.user.id);
-    if (!profile) {
-      return { ok: false, error: { code: 'UNKNOWN', message: '用户档案缺失' } };
+    // 2) 解析登录档案（salt/envelope/displayName）：
+    //    完整缓存命中 → 零额外 RTT；否则查询 profiles（首次登录/缓存失效）
+    let saltB64: string;
+    let envelope: string;
+    let displayName: string | null;
+
+    if (cached?.envelope) {
+      saltB64 = cached.salt;
+      envelope = cached.envelope;
+      displayName = cached.displayName;
+      // 后台静默校准本地缓存（不阻塞登录）
+      void this.syncLoginCache(data.user.id, input.email, cached.salt);
+    } else {
+      const profile = await this.fetchProfileFresh(data.user.id);
+      if (!profile) {
+        return { ok: false, error: { code: 'UNKNOWN', message: '[档案缺失] 用户档案缺失' } };
+      }
+      saltB64 = profile.salt;
+      envelope = profile.password_check_envelope;
+      displayName = profile.display_name;
+      // 写满本机缓存，下次登录零 profiles RTT
+      if (this.loginCache) {
+        void this.loginCache.set(input.email, {
+          salt: profile.salt,
+          envelope: profile.password_check_envelope,
+          displayName: profile.display_name,
+        });
+      }
     }
 
-    // E2E 关键：校验本地 UMK 派生正确（顺带检测 salt 是否被篡改）
-    // 优化：先 deriveUMK 一次，再用 verifyEnvelopeWithUMK 校验，
-    // 避免 verifyPasswordCheck + store.deriveUMK 双重 PBKDF2（Hermes 无 JIT 上各需数分钟）
-    const salt = fromBase64(profile.salt);
-    const umk = deriveUMK(input.password, salt);
-    if (!verifyEnvelopeWithUMK(umk, profile.password_check_envelope)) {
-      for (let i = 0; i < umk.length; i++) umk[i] = 0;
-      return { ok: false, error: { code: 'INVALID_CREDENTIALS', message: '邮箱或密码错误' } };
-    }
-    this.lastDerivedUMK = umk;
+    const metaName = typeof data.user.user_metadata?.['display_name'] === 'string'
+      ? (data.user.user_metadata!['display_name'] as string)
+      : null;
 
-    return { ok: true, data: { user: this.toUser(data.user, profile), session: this.toSession(data.session) } };
+    const user: User = {
+      id: data.user.id,
+      email: data.user.email ?? input.email,
+      displayName: metaName ?? displayName ?? data.user.email ?? '用户',
+      salt: saltB64,
+      passwordCheckEnvelope: envelope,
+    };
+
+    // 3) 立即返回登录态：PBKDF2 由宿主端在主页首帧渲染后再执行，
+    //    不阻塞进入主页（见 apps/mobile auth-store signIn）
+    return { ok: true, data: { user, session: this.toSession(data.session) } };
   }
 
   async signOut(): Promise<void> {
@@ -204,6 +264,11 @@ export class SupabaseAuthClient implements AuthClient {
   private async fetchProfile(userId: string): Promise<ProfileRow | null> {
     const cached = this.profileCache.get(userId);
     if (cached) return cached;
+    return this.fetchProfileFresh(userId);
+  }
+
+  /** 跳过内存缓存直查 profiles，并回填内存缓存 */
+  private async fetchProfileFresh(userId: string): Promise<ProfileRow | null> {
     const { data, error } = await this.supabase
       .from('profiles')
       .select('*')
@@ -213,6 +278,27 @@ export class SupabaseAuthClient implements AuthClient {
     const profile = data as ProfileRow;
     this.profileCache.set(userId, profile);
     return profile;
+  }
+
+  /** 后台用服务端档案校准本地缓存；salt 一致才更新，防止异常档案污染 */
+  private async syncLoginCache(
+    userId: string,
+    email: string,
+    cachedSalt: string,
+  ): Promise<void> {
+    if (!this.loginCache) return;
+    try {
+      const profile = await this.fetchProfileFresh(userId);
+      if (profile && profile.salt === cachedSalt) {
+        await this.loginCache.set(email, {
+          salt: profile.salt,
+          envelope: profile.password_check_envelope,
+          displayName: profile.display_name,
+        });
+      }
+    } catch {
+      // 校准失败不影响本次登录
+    }
   }
 
   private toSession(s: SupabaseSession): Session {

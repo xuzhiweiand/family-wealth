@@ -1,7 +1,10 @@
 // bare RN：dotenv 加载 .env（EXPO_PUBLIC_* 历史命名保持不变），
 // transform-inline-environment-variables 在编译期内联 process.env，
 // 使 src/services/supabase.ts 的 process.env.EXPO_PUBLIC_* 零改动可用。
-require('dotenv').config();
+// 显式指定 .env 路径（__dirname 即 apps/mobile），不依赖 process.cwd()：
+// metro 的 babel worker 可能以不同 cwd 启动，曾因此导致 process.env 未被
+// 内联（supabase.ts 拿到 undefined → 静默回退 InMemory，登录报密码错误）。
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
 // 鸿蒙打包时 babel 由 metro 以 --platform harmony 调起；
 // reanimated 4（@react-native-ohos）必须配套其自带插件，否则 worklet

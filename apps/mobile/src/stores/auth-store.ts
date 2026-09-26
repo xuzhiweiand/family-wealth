@@ -11,7 +11,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@family-wealth/api';
 import { getAuthClient } from '@family-wealth/api';
-import { deriveUMK, fromBase64, toBase64 } from '@family-wealth/crypto';
+import { deriveUMKFast, fromBase64, toBase64, verifyEnvelopeWithUMK } from '@family-wealth/crypto';
 import {
   saveSalt, saveSession, saveUmk, saveUser,
   getSessionTokens, getUmk, getUser,
@@ -19,6 +19,8 @@ import {
 } from '../services/secure-storage';
 import { supabase } from '../services/supabase';
 import { useKeyStore } from './key-store';
+import { useFamilyStore } from './family-store';
+import { useAssetStore } from './asset-store';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'error';
 
@@ -45,6 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   async signIn(email, password) {
     set({ status: 'loading', error: null });
     try {
+      // 第一阶段：鉴权 + 档案解析（纯网络等待，无 CPU 重活）
       const result = await getAuthClient().signIn({ email, password });
       if (!result.ok) {
         set({ status: 'error', error: result.error?.message ?? '登录失败' });
@@ -52,23 +55,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       const user = result.data!.user;
       const session = result.data!.session;
-      // 优先用 SupabaseAuthClient 缓存的 UMK（避免重复 PBKDF2）
-      const client = getAuthClient();
-      const cachedUMK = 'consumeDerivedUMK' in client
-        ? (client as { consumeDerivedUMK(): Uint8Array | null }).consumeDerivedUMK()
-        : null;
-      const umk = cachedUMK ?? deriveUMK(password, fromBase64(user.salt));
 
+      // 第二阶段：立即建立登录态，让主页先挂载、首帧先渲染。
+      // salt/session/user 先持久化（UMK 稍后派生后补存）。
       set({ status: 'authenticated', user, session, error: null });
-
-      // 持久化全部凭据到 Keychain（fire-and-forget，不阻塞 UI）
-      const umkBase64 = toBase64(umk);
       void saveSalt(user.salt);
       void saveSession({ accessToken: session.accessToken, refreshToken: session.refreshToken });
-      void saveUmk(umkBase64);
       void saveUser(JSON.stringify(user));
 
+      // 等待主页完成首帧绘制（两帧：挂载帧 + 绘制帧）
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+      // 第三阶段：派生 UMK（鸿蒙走原生 cryptoFramework，异步、不冻结
+      // JS 线程；其他平台回落纯 JS），并校验密码信封。
+      // GoTrue 已验证密码；信封复检用于保留 salt 篡改检测，失败即回登出态。
+      const umk = await deriveUMKFast(password, fromBase64(user.salt));
+      if (!verifyEnvelopeWithUMK(umk, user.passwordCheckEnvelope)) {
+        useKeyStore.getState().clear();
+        await getAuthClient().signOut();
+        await clearAll();
+        set({ status: 'idle', user: null, session: null, error: '安全校验未通过，请重新登录' });
+        return false;
+      }
       useKeyStore.getState().setUmk(umk);
+      void saveUmk(toBase64(umk));
+
+      // 第四阶段：UMK 就绪 → 恢复家庭与 FDK → 拉取资产数据（均在后台）
+      void (async () => {
+        await useFamilyStore.getState().refresh();
+        const familyId = useKeyStore.getState().familyId;
+        if (familyId) await useAssetStore.getState().load(familyId);
+      })();
+
       return true;
     } catch (err) {
       set({ status: 'error', error: (err as Error)?.message ?? '登录失败' });
@@ -91,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const cachedUMK = 'consumeDerivedUMK' in client
         ? (client as { consumeDerivedUMK(): Uint8Array | null }).consumeDerivedUMK()
         : null;
-      const umk = cachedUMK ?? deriveUMK(password, fromBase64(user.salt));
+      const umk = cachedUMK ?? await deriveUMKFast(password, fromBase64(user.salt));
 
       set({ status: 'authenticated', user, session, error: null });
 

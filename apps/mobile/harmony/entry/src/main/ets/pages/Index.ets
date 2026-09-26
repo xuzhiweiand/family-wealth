@@ -19,6 +19,8 @@ import NetInfoPackage from '@react-native-ohos/netinfo';
 import ImagePickerPackage from '@react-native-ohos/react-native-image-picker';
 import GetRandomValuesPackage from '@react-native-ohos/react-native-get-random-values';
 import { AsyncStoragePackage } from '@react-native-ohos/async-storage/src/main/ets/AsyncStoragePackage';
+// 应用自带：原生 PBKDF2（见 entry/src/main/ets/turbo）
+import { CryptoPbkdf2Package } from '../turbo/CryptoPbkdf2Package';
 
 /**
  * RN 容器页。
@@ -48,6 +50,7 @@ struct Index {
           new ImagePickerPackage(ctx),
           new GetRandomValuesPackage(ctx),
           new AsyncStoragePackage(ctx),
+          new CryptoPbkdf2Package(ctx),
         ];
       },
     };

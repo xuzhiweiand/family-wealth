@@ -12,6 +12,7 @@
 import { setAuthClient, InMemoryAuthClient, SupabaseAuthClient, type SupabaseLike } from '@family-wealth/api';
 import { InMemoryAssetRepository, InMemorySnapshotRepository } from '@family-wealth/db';
 import { supabase } from './supabase';
+import { getCachedLogin, saveCachedLogin } from './login-cache';
 
 let isBootstrapped = false;
 
@@ -20,8 +21,14 @@ export function bootstrap() {
 
   if (supabase) {
     // 生产路径：真实 Supabase Auth + profiles 表（见 supabase/migrations）
-    // 全应用内唯一一次 SDK 类型断言：之后一律走 SupabaseLike 最小接口
-    setAuthClient(new SupabaseAuthClient(supabase as unknown as SupabaseLike));
+    // 全应用内唯一一次 SDK 类型断言：之后一律走 SupabaseLike 最小接口。
+    // 第二个参数：本机登录档案缓存（salt/envelope），用于登录并行化（0.1.7）。
+    setAuthClient(
+      new SupabaseAuthClient(supabase as unknown as SupabaseLike, {
+        get: (email) => getCachedLogin(email),
+        set: (email, profile) => saveCachedLogin(email, profile),
+      }),
+    );
   } else {
     // 开发兜底：无 env 配置时用内存 mock，便于 UI 联调
     console.warn('[bootstrap] 未配置 EXPO_PUBLIC_SUPABASE_URL/ANON_KEY，使用 InMemoryAuthClient');

@@ -13,6 +13,7 @@
 #include "RNImagePickerPackage.h"
 #include "GetRandomValuesPackage.h"
 #include "AsyncStoragePackage.h"
+#include "CryptoPbkdf2Package.h"
 
 using namespace rnoh;
 
@@ -28,5 +29,6 @@ std::vector<std::shared_ptr<Package>> PackageProvider::getPackages(Package::Cont
         std::make_shared<RNImagePickerPackage>(ctx),
         std::make_shared<GetRandomValuesPackage>(ctx),
         std::make_shared<AsyncStoragePackage>(ctx),
+        std::make_shared<CryptoPbkdf2Package>(ctx),
     };
 }
