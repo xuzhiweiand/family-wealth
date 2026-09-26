@@ -96,7 +96,7 @@ export default function MeScreen() {
     [assets],
   );
 
-  const version = '0.1.7';
+  const version = '0.1.8';
 
   const handleExport = async () => {
     if (exporting) return;
