@@ -1,85 +1,84 @@
 /**
  * 鸿蒙平台适配层
  *
- * RNOH（react-native-harmony）对部分 Android/iOS 原生模块的支持不完整，
- * 此文件提供鸿蒙侧的替代实现或空实现，确保 JS 代码在鸿蒙上可运行。
- *
- * 使用方式：在 metro.config.js 中配置 resolver，将特定模块重定向到本文件。
+ * RNOH（react-native-harmony）缺少 react-native-keychain 等库的原生实现，
+ * 此文件提供同契约的 JS 实现/空实现。metro.config.js 在 harmony 平台把
+ * 对应模块名重定向到本文件（目录 index.ts）。
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ============ react-native-keychain ============
-// 鸿蒙侧使用鸿蒙 KeyStore / Asset Store 替代，此处提供空实现
-// 实际实现需要开发鸿蒙原生模块桥接
-export const Keychain = {
-  setGenericPassword: async (username: string, password: string) => {
-    console.warn('[HarmonyOS] Keychain.setGenericPassword not implemented');
-    return false;
-  },
-  getGenericPassword: async () => {
-    console.warn('[HarmonyOS] Keychain.getGenericPassword not implemented');
-    return false;
-  },
-  resetGenericPassword: async () => {
-    console.warn('[HarmonyOS] Keychain.resetGenericPassword not implemented');
-    return false;
-  },
-  setInternetCredentials: async (server: string, username: string, password: string) => {
-    console.warn('[HarmonyOS] Keychain.setInternetCredentials not implemented');
-    return false;
-  },
-  getInternetCredentials: async (server: string) => {
-    console.warn('[HarmonyOS] Keychain.getInternetCredentials not implemented');
-    return false;
-  },
-  resetInternetCredentials: async (server: string) => {
-    console.warn('[HarmonyOS] Keychain.resetInternetCredentials not implemented');
-    return false;
-  },
-};
+// 鸿蒙侧暂无 keychain 端口，以应用沙箱内 AsyncStorage 承载
+// （与 Android 应用私有目录同级保护），保持调用契约一致，
+// 使登录态持久化 / 自动登录链路可用。
+interface StoredCredential {
+  username: string;
+  password: string;
+}
 
-// ============ react-native-ml-kit/text-recognition ============
-// 鸿蒙侧使用鸿蒙 AI 引擎的 OCR 能力替代
+const DEFAULT_SERVICE = 'family-wealth.default';
+
+async function setGenericPassword(
+  username: string,
+  password: string,
+  opts?: { service?: string },
+): Promise<true> {
+  const key = opts?.service ?? DEFAULT_SERVICE;
+  const value: StoredCredential = { username, password };
+  await AsyncStorage.setItem(key, JSON.stringify(value));
+  return true;
+}
+
+async function getGenericPassword(opts?: {
+  service?: string;
+}): Promise<false | (StoredCredential & { service: string })> {
+  const key = opts?.service ?? DEFAULT_SERVICE;
+  const raw = await AsyncStorage.getItem(key);
+  if (raw == null) return false;
+  try {
+    const parsed = JSON.parse(raw) as StoredCredential;
+    return { service: key, username: parsed.username, password: parsed.password };
+  } catch {
+    return false;
+  }
+}
+
+async function resetGenericPassword(opts?: { service?: string }): Promise<true> {
+  const key = opts?.service ?? DEFAULT_SERVICE;
+  await AsyncStorage.removeItem(key);
+  return true;
+}
+
+async function setInternetCredentials(
+  server: string,
+  username: string,
+  password: string,
+): Promise<true> {
+  return setGenericPassword(username, password, { service: server });
+}
+
+async function getInternetCredentials(
+  server: string,
+): Promise<false | (StoredCredential & { server: string })> {
+  const result = await getGenericPassword({ service: server });
+  if (result === false) return false;
+  return { server, username: result.username, password: result.password };
+}
+
+async function resetInternetCredentials(server: string): Promise<true> {
+  return resetGenericPassword({ service: server });
+}
+
+// ============ @react-native-ml-kit/text-recognition ============
+// 鸿蒙侧可用鸿蒙 AI OCR 替代；暂为空实现，不阻断其他功能
 export const MLKitTextRecognition = {
-  recognize: async (imagePath: string) => {
-    console.warn('[HarmonyOS] MLKit text recognition not implemented, use HarmonyOS AI OCR instead');
+  recognize: async (_imagePath: string) => {
+    console.warn(
+      '[HarmonyOS] MLKit text recognition not implemented, use HarmonyOS AI OCR instead',
+    );
     return { text: '', blocks: [] };
   },
 };
-
-// ============ react-native-image-picker ============
-// 鸿蒙侧使用鸿蒙 PhotoViewPicker / Camera 替代
-export const ImagePicker = {
-  launchImageLibrary: async (options: any) => {
-    console.warn('[HarmonyOS] ImagePicker.launchImageLibrary not implemented');
-    return { didCancel: true, assets: [] };
-  },
-  launchCamera: async (options: any) => {
-    console.warn('[HarmonyOS] ImagePicker.launchCamera not implemented');
-    return { didCancel: true, assets: [] };
-  },
-};
-
-// ============ react-native-svg ============
-// RNOH 已内置 svg 支持，此处为类型导出占位
-export { Svg, Circle, Rect, Path, G, Text as SvgText } from 'react-native-svg';
-
-// ============ react-native-gesture-handler ============
-// RNOH 已内置 gesture-handler 支持，直接透传
-export * from 'react-native-gesture-handler';
-
-// ============ react-native-safe-area-context ============
-// RNOH 已内置 safe-area 支持
-export { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// ============ react-native-screens ============
-// RNOH 已内置 screens 支持
-export { enableScreens } from 'react-native-screens';
-
-// ============ @react-navigation ============
-// 导航层 RNOH 已支持，直接透传
-export * from '@react-navigation/native';
-export * from '@react-navigation/native-stack';
-export * from '@react-navigation/bottom-tabs';
 
 // ============ Platform 判断 ============
 import { Platform } from 'react-native';
@@ -90,18 +89,28 @@ export const isIOS = Platform.OS === 'ios';
 
 // 鸿蒙平台特定配置
 export const HarmonyConfig = {
-  // 是否启用鸿蒙原生 OCR（替代 ML Kit）
   useNativeOCR: true,
-  // 是否启用鸿蒙原生 Keychain
   useNativeKeychain: true,
-  // 鸿蒙应用版本号
   version: '0.1.5',
 };
 
+export {
+  setGenericPassword,
+  getGenericPassword,
+  resetGenericPassword,
+  setInternetCredentials,
+  getInternetCredentials,
+  resetInternetCredentials,
+};
+
 export default {
-  Keychain,
+  setGenericPassword,
+  getGenericPassword,
+  resetGenericPassword,
+  setInternetCredentials,
+  getInternetCredentials,
+  resetInternetCredentials,
   MLKitTextRecognition,
-  ImagePicker,
   isHarmony,
   isAndroid,
   isIOS,

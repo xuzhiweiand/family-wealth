@@ -3,6 +3,13 @@
 // 使 src/services/supabase.ts 的 process.env.EXPO_PUBLIC_* 零改动可用。
 require('dotenv').config();
 
+// 鸿蒙打包时 babel 由 metro 以 --platform harmony 调起；
+// reanimated 4（@react-native-ohos）必须配套其自带插件，否则 worklet
+// 按 3.x 插件编译、4.x 运行时初始化不兼容。
+const isHarmony =
+  process.env.RN_PLATFORM === 'harmony' ||
+  process.argv.some((a) => a.includes('harmony'));
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -20,7 +27,9 @@ module.exports = function (api) {
           optimize: false,
         },
       ],
-      // Reanimated 必须放最后
+      // Reanimated 必须放最后。
+      // ohos reanimated 3.18.3 仅原生侧，无 babel plugin；直接用原版
+      // react-native-reanimated 的 plugin（与 JS 侧版本一致）。
       'react-native-reanimated/plugin',
     ],
   };

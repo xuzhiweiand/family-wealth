@@ -10,9 +10,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { StatusBar, View } from 'react-native';
+import { Platform, StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
@@ -38,7 +39,13 @@ import AssetEditScreen from './src/screens/AssetEditScreen';
 
 bootstrap();
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// 鸿蒙平台 @react-native-ohos/react-native-screens 与 native-stack 组合
+// 存在白屏兼容问题（原生 RNSScreen 不渲染子树），退回到纯 JS 实现的
+// @react-navigation/stack；Android/iOS 仍用原生栈。
+const isHarmony = (Platform.OS as string) === 'harmony';
+const Stack = isHarmony
+  ? createStackNavigator<RootStackParamList>()
+  : createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function MainTabs() {

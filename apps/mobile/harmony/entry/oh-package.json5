@@ -6,7 +6,18 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "@rnoh/react-native-openharmony": "0.77.74"
+    "@rnoh/react-native-openharmony": "0.77.74",
+    "@ppd/ffrt": "1.1.10",
+    "@react-native-ohos/react-native-reanimated": "file:../../../../node_modules/@react-native-ohos/react-native-reanimated/harmony/reanimated.har",
+    "@react-native-ohos/react-native-safe-area-context": "file:../../../../node_modules/@react-native-ohos/react-native-safe-area-context/harmony/safe_area.har",
+    "@react-native-ohos/react-native-screens": "file:../../../../node_modules/@react-native-ohos/react-native-screens/harmony/screens.har",
+    "@react-native-ohos/react-native-svg": "file:../../../../node_modules/@react-native-ohos/react-native-svg/harmony/svg.har",
+    "@react-native-ohos/react-native-gesture-handler": "file:../../../../node_modules/@react-native-ohos/react-native-gesture-handler/harmony/gesture_handler.har",
+    "@react-native-ohos/netinfo": "file:../../../../node_modules/@react-native-ohos/netinfo/harmony/netinfo.har",
+    "@react-native-ohos/datetimepicker": "file:../../../../node_modules/@react-native-ohos/datetimepicker/harmony/datetimepicker.har",
+    "@react-native-ohos/react-native-image-picker": "file:../../../../node_modules/@react-native-ohos/react-native-image-picker/harmony/image_picker.har",
+    "@react-native-ohos/react-native-get-random-values": "file:../../../../node_modules/@react-native-ohos/react-native-get-random-values/harmony/get_random_values.har",
+    "@react-native-ohos/async-storage": "file:../../../../node_modules/@react-native-ohos/async-storage/harmony/async_storage.har"
   },
   "devDependencies": {}
 }

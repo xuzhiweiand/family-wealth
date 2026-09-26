@@ -1,13 +1,32 @@
 //
-// Created on 2026/9/26.
+// RNOH 三方包注册
 //
-// Node APIs are not fully supported. To solve the compilation error of the interface cannot be found,
-// please include "napi/native_api.h".
-
 #include "RNOH/PackageProvider.h"
+
+#include "ReanimatedPackage.h"
+#include "SafeAreaViewPackage.h"
+#include "ScreensPackage.h"
+#include "SVGPackage.h"
+#include "GestureHandlerPackage.h"
+#include "RNCNetInfoPackage.h"
+#include "DateTimePickerPackage.h"
+#include "RNImagePickerPackage.h"
+#include "GetRandomValuesPackage.h"
+#include "AsyncStoragePackage.h"
 
 using namespace rnoh;
 
 std::vector<std::shared_ptr<Package>> PackageProvider::getPackages(Package::Context ctx) {
-    return {};
+    return {
+        std::make_shared<ReanimatedPackage>(ctx),
+        std::make_shared<SafeAreaViewPackage>(ctx),
+        std::make_shared<ScreensPackage>(ctx),
+        std::make_shared<SVGPackage>(ctx),
+        std::make_shared<GestureHandlerPackage>(ctx),
+        std::make_shared<RNCNetInfoPackage>(ctx),
+        std::make_shared<DateTimePickerPackage>(ctx),
+        std::make_shared<RNImagePickerPackage>(ctx),
+        std::make_shared<GetRandomValuesPackage>(ctx),
+        std::make_shared<AsyncStoragePackage>(ctx),
+    };
 }
