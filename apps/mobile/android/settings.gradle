@@ -1,0 +1,7 @@
+pluginManagement { includeBuild("../../../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'familywealth'
+include ':app'
+// settings 级 includeBuild：替换 buildscript classpath 中的 com.facebook.react:react-native-gradle-plugin
+includeBuild('../../../node_modules/@react-native/gradle-plugin')

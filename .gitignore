@@ -24,8 +24,11 @@ web-build/
 *.key
 *.mobileprovision
 *.orig.*
-ios/
-android/
+
+# bare RN 原生工程需入库；仅忽略其构建缓存与本地路径配置
+.gradle/
+.kotlin/
+local.properties
 
 # ===== HarmonyOS =====
 .hvigor/
