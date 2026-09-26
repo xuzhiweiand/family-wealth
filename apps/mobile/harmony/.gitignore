@@ -13,3 +13,8 @@ entry/src/main/resources/rawfile/
 # 本地源码包（reanimated/worklets，需兄弟布局以满足 file:../worklets），从 npm 包解出
 .ohos-pkgs/
 
+# CMake 构建缓存（hvigor/cmake 生成，含失败缓存）
+.cxx/
+.cxx_stale/
+.cxx_failed_dotnet/
+
