@@ -21,6 +21,8 @@ import GetRandomValuesPackage from '@react-native-ohos/react-native-get-random-v
 import { AsyncStoragePackage } from '@react-native-ohos/async-storage/src/main/ets/AsyncStoragePackage';
 // 应用自带：原生 PBKDF2（见 entry/src/main/ets/turbo）
 import { CryptoPbkdf2Package } from '../turbo/CryptoPbkdf2Package';
+// 应用自带：库未提供 RNOHPackage，手动注册 DateTimePicker 组件
+import { DateTimePickerPackage } from '../packages/DateTimePickerPackage';
 
 /**
  * RN 容器页。
@@ -51,6 +53,7 @@ struct Index {
           new GetRandomValuesPackage(ctx),
           new AsyncStoragePackage(ctx),
           new CryptoPbkdf2Package(ctx),
+          new DateTimePickerPackage(ctx),
         ];
       },
     };

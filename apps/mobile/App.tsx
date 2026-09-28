@@ -21,6 +21,8 @@ import { config } from './tamagui.config';
 import { bootstrap } from './src/services/bootstrap';
 import { useAuthStore } from './src/stores/auth-store';
 import { useFamilyStore } from './src/stores/family-store';
+import { hasConsentedPrivacy } from './src/services/privacy-consent';
+import { PrivacyConsentDialog } from './src/components/PrivacyConsentDialog';
 import { navigationRef } from './src/lib/navigation';
 import type { RootStackParamList, MainTabParamList } from './src/lib/navigation';
 import { TabBar } from './src/components/TabBar';
@@ -65,11 +67,26 @@ function MainTabs() {
 export default function App() {
   const status = useAuthStore((s) => s.status);
   const [booted, setBooted] = useState(false);
+  // 隐私政策同意状态：null=检查中，false=未同意（弹窗），true=已同意
+  const [consented, setConsented] = useState<boolean | null>(null);
 
-  // 首次挂载 hydrate 当前会话（Keychain → UMK/session 恢复）
+  // 首次挂载：检查隐私政策同意状态 + hydrate 当前会话（Keychain → UMK/session 恢复）
   useEffect(() => {
-    useAuthStore.getState().hydrate().finally(() => setBooted(true));
+    void (async () => {
+      const ok = await hasConsentedPrivacy();
+      setConsented(ok);
+      if (ok) {
+        await useAuthStore.getState().hydrate();
+      }
+      setBooted(true);
+    })();
   }, []);
+
+  // 隐私政策同意后补跑 hydrate（此前被拦截）
+  const handleConsentAgree = () => {
+    setConsented(true);
+    void useAuthStore.getState().hydrate();
+  };
 
   // 登录态建立后加载当前家庭：总览/资产/趋势首次进入即拿到真实 family
   useEffect(() => {
@@ -82,7 +99,13 @@ export default function App() {
     <TamaguiProvider config={config}>
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" />
-        {booted ? (
+        {/* 合规：未同意隐私政策前，先弹窗，不渲染任何业务界面 */}
+        {consented === false ? (
+          <>
+            <View style={{ flex: 1, backgroundColor: '#F5F7FA' }} />
+            <PrivacyConsentDialog visible onAgree={handleConsentAgree} />
+          </>
+        ) : booted && consented ? (
           <NavigationContainer ref={navigationRef}>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               {status === 'authenticated' ? (
@@ -103,7 +126,7 @@ export default function App() {
             </Stack.Navigator>
           </NavigationContainer>
         ) : (
-          // hydrate 进行中：与原生启动屏同色的占位，避免白闪
+          // 检查中 / hydrate 进行中：与原生启动屏同色的占位，避免白闪
           <View style={{ flex: 1, backgroundColor: '#10B981' }} />
         )}
       </SafeAreaProvider>

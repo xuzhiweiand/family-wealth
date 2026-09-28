@@ -18,3 +18,11 @@ entry/src/main/resources/rawfile/
 .cxx_stale/
 .cxx_failed_dotnet/
 
+# 发布签名材料（密钥库/证书/Profile/CSR），严禁入库
+signing/
+signature/
+*.p12
+*.csr
+*.cer
+*.p7b
+

@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, ScrollView, Switch, TouchableOpacity, View,
+  Alert, Platform, ScrollView, Switch, TouchableOpacity, View,
 } from 'react-native';
 import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
@@ -27,6 +27,9 @@ import { OfflineBanner } from '../../components/OfflineBanner';
 import { exportAssetsCsv } from '../../services/export';
 
 type IconGlyph = React.ReactNode;
+
+/** 鸿蒙端导出依赖 expo-file-system/expo-sharing（去 Expo 后不可用），隐藏入口 */
+const isHarmony = (Platform.OS as string) === 'harmony';
 
 const LOCK: IconGlyph = (
   <>
@@ -96,7 +99,7 @@ export default function MeScreen() {
     [assets],
   );
 
-  const version = '0.1.8';
+  const version = '0.1.9';
 
   const handleExport = async () => {
     if (exporting) return;
@@ -203,12 +206,15 @@ export default function MeScreen() {
             toggleValue={notify}
             onToggle={setNotify}
           />
-          <Row
-            glyph={DOWNLOAD} glyphColor="#7C3AED" glyphBg="#EDE9FE"
-            label={exporting ? '正在导出…' : '导出报表'}
-            chevron
-            onPress={handleExport}
-          />
+          {/* 鸿蒙端隐藏导出：expo-file-system/expo-sharing 不可用（去 Expo 后） */}
+          {isHarmony ? null : (
+            <Row
+              glyph={DOWNLOAD} glyphColor="#7C3AED" glyphBg="#EDE9FE"
+              label={exporting ? '正在导出…' : '导出报表'}
+              chevron
+              onPress={handleExport}
+            />
+          )}
           <Row
             glyph={HELP} glyphColor="#0891B2" glyphBg="#CFFAFE"
             label="帮助与反馈"

@@ -10,9 +10,8 @@
  */
 
 import { useState } from 'react';
-import { ScrollView, Switch } from 'react-native';
+import { Platform, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
@@ -25,6 +24,7 @@ import { useAuthStore } from '../stores/auth-store';
 import { useKeyStore } from '../stores/key-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { getOcrEngine } from '../services/ocr';
+import { DatePickerField } from '../components/DatePickerField';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -56,6 +56,9 @@ export function formatDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** 鸿蒙端 ML Kit OCR 无原生实现，隐藏拍照识别入口（AppGallery 审核要求功能可用） */
+const isHarmony = (Platform.OS as string) === 'harmony';
+
 /** 本地时区的今天（零点） */
 export function todayDate(): Date {
   const n = new Date();
@@ -84,7 +87,6 @@ export default function NewAssetScreen() {
   const [nameEdited, setNameEdited] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [date, setDate] = useState<Date>(todayDate);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>('private');
   const [candidates, setCandidates] = useState<AmountCandidate[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -179,9 +181,31 @@ export default function NewAssetScreen() {
     // 内层仍用 tamagui 的 YStack 保持间距/主题一致
     <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
-        <Text fontSize="$5" fontWeight="700" color="$textPrimary">
-          录入资产
-        </Text>
+        {/* 顶部返回按钮：录入页 headerShown:false，不保存时也可返回 */}
+        <XStack alignItems="center" space="$sm">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+            activeOpacity={0.6}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: '#FFFFFF',
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text fontSize={18} color="$textPrimary" lineHeight={20}>
+              ←
+            </Text>
+          </TouchableOpacity>
+          <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+            录入资产
+          </Text>
+        </XStack>
 
         <YStack space="$xs">
           <Text fontSize="$2" color="$textSecondary">
@@ -252,51 +276,27 @@ export default function NewAssetScreen() {
           ) : null}
         </YStack>
 
-        <YStack space="$xs">
-          <Text fontSize="$2" color="$textSecondary">
-            记账日期
-          </Text>
+        <DatePickerField
+          value={date}
+          onChange={setDate}
+          hintText="默认今天，可修改为历史日期（补录）"
+        />
+
+        {/* 鸿蒙端隐藏 OCR 入口：@react-native-ml-kit/text-recognition 无鸿蒙原生实现（AppGallery 审核要求） */}
+        {!isHarmony ? (
           <Button
             size={48}
             fontSize={16}
-            justifyContent="flex-start"
-            paddingHorizontal={16}
             backgroundColor="$bgPrimary"
-            color="$textPrimary"
-            borderColor="$border"
+            color="$primary"
+            borderColor="$primary"
             borderWidth={1}
-            onPress={() => setShowDatePicker(true)}
+            disabled={ocrLoading}
+            onPress={() => void recognize()}
           >
-            {formatDate(date)}
+            {ocrLoading ? '识别中…' : '拍照识别金额'}
           </Button>
-          {showDatePicker ? (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="default"
-              onChange={(event, d) => {
-                setShowDatePicker(false);
-                if (d) setDate(d);
-              }}
-            />
-          ) : null}
-          <Text fontSize="$1" color="$textSecondary">
-            默认今天，可修改为历史日期（补录）
-          </Text>
-        </YStack>
-
-        <Button
-          size={48}
-          fontSize={16}
-          backgroundColor="$bgPrimary"
-          color="$primary"
-          borderColor="$primary"
-          borderWidth={1}
-          disabled={ocrLoading}
-          onPress={() => void recognize()}
-        >
-          {ocrLoading ? '识别中…' : '拍照识别金额'}
-        </Button>
+        ) : null}
 
         <XStack
           backgroundColor="$bgPrimary"

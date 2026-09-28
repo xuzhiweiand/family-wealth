@@ -11,7 +11,7 @@
  * - 单主密码模型：登录密码 == 加密主密码（同 InMemoryAuthClient，见 ADR-0006）
  */
 
-import { generateSalt, toBase64, createPasswordCheckEnvelopeWithUMK, deriveUMK } from '@family-wealth/crypto';
+import { generateSalt, toBase64, createPasswordCheckEnvelopeWithUMK, deriveUMK, deriveUMKFast } from '@family-wealth/crypto';
 import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
 
 /**
@@ -133,9 +133,10 @@ export class SupabaseAuthClient implements AuthClient {
     }
 
     // 生成 salt + 密码校验信封，写入 profiles（RLS 限制仅本人可写）
-    // 优化：先 deriveUMK 一次，再用 UMK 创建信封并缓存，避免双重 PBKDF2
+    // 0.1.8 修复：改用 deriveUMKFast（鸿蒙走原生 TurboModule 104ms；
+    // 原同步 deriveUMK 在鸿蒙 Hermes 无 JIT 下需 76s，冻结 UI 导致注册卡死）
     const salt = generateSalt();
-    const umk = deriveUMK(input.password, salt);
+    const umk = await deriveUMKFast(input.password, salt);
     const envelope = createPasswordCheckEnvelopeWithUMK(umk);
     const profile: ProfileRow = {
       id: data.user.id,

@@ -14,7 +14,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { SELECTABLE_ASSET_TYPES, type AssetType, type Visibility } from '@family-wealth/shared-types';
 import { formatCNY } from '@family-wealth/shared-utils';
@@ -25,6 +24,7 @@ import { useAuthStore } from '../stores/auth-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { getAssetNote } from '../services/export';
 import { todayDate, dateToNoonIso, formatDate } from './AssetNewScreen';
+import { DatePickerField } from '../components/DatePickerField';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -74,7 +74,6 @@ export default function EditAssetScreen() {
   // 记账日期：回填该资产最新快照的日期（无快照则当天）；修改后将写一条该日期的余额快照
   const [date, setDate] = useState<Date>(todayDate);
   const [initialDate, setInitialDate] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,38 +263,11 @@ export default function EditAssetScreen() {
           ) : null}
         </YStack>
 
-        <YStack space="$xs">
-          <Text fontSize="$2" color="$textSecondary">
-            记账日期
-          </Text>
-          <Button
-            size={48}
-            fontSize={16}
-            justifyContent="flex-start"
-            paddingHorizontal={16}
-            backgroundColor="$bgPrimary"
-            color="$textPrimary"
-            borderColor="$border"
-            borderWidth={1}
-            onPress={() => setShowDatePicker(true)}
-          >
-            {formatDate(date)}
-          </Button>
-          {showDatePicker ? (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="default"
-              onChange={(event, d) => {
-                setShowDatePicker(false);
-                if (d) setDate(d);
-              }}
-            />
-          ) : null}
-          <Text fontSize="$1" color="$textSecondary">
-            修改日期会记录一条该日余额快照（可补录历史）
-          </Text>
-        </YStack>
+        <DatePickerField
+          value={date}
+          onChange={setDate}
+          hintText="修改日期会记录一条该日余额快照（可补录历史）"
+        />
 
         <XStack
           backgroundColor="$bgPrimary"
