@@ -10,7 +10,7 @@ const KEY = 'family-wealth.privacy-consent.v1';
 
 /** 隐私政策公网地址（GitHub 托管，随仓库版本管理） */
 export const PRIVACY_POLICY_URL =
-  'https://github.com/xuzhiweiand/family-wealth/blob/chore/de-expo/docs/privacy-policy.md';
+  'https://github.com/xuzhiweiand/family-wealth/blob/main/docs/privacy-policy.md';
 
 export async function hasConsentedPrivacy(): Promise<boolean> {
   try {
