@@ -56,6 +56,12 @@ const CALENDAR: IconGlyph = (
     <Path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
   </>
 );
+const CHART: IconGlyph = (
+  <>
+    <Path d="M3 3v18h18" />
+    <Path d="M8 17V9M13 17V5M18 17v-7" />
+  </>
+);
 const DOWNLOAD: IconGlyph = (
   <>
     <Path d="M12 3v12" />
@@ -219,6 +225,12 @@ export default function MeScreen() {
             label="盘点提醒"
             chevron
             onPress={() => navigation.navigate('ReminderSettings')}
+          />
+          <Row
+            glyph={CHART} glyphColor="#2563EB" glyphBg="#DBEAFE"
+            label="月度/年度报表"
+            chevron
+            onPress={() => navigation.navigate('Report')}
           />
           <Row
             glyph={BELL} glyphColor="#DC2626" glyphBg="#FEE2E2"

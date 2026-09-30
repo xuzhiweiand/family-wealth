@@ -42,6 +42,7 @@ import AssetNewScreen from './src/screens/AssetNewScreen';
 import ReminderSettingsScreen from './src/screens/ReminderSettingsScreen';
 import BackupScreen from './src/screens/BackupScreen';
 import AssetGroupsScreen from './src/screens/AssetGroupsScreen';
+import ReportScreen from './src/screens/ReportScreen';
 import AssetTrashScreen from './src/screens/AssetTrashScreen';
 import AssetDetailScreen from './src/screens/AssetDetailScreen';
 import AssetEditScreen from './src/screens/AssetEditScreen';
@@ -158,6 +159,7 @@ export default function App() {
                   <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} />
                   <Stack.Screen name="Backup" component={BackupScreen} />
                   <Stack.Screen name="AssetGroups" component={AssetGroupsScreen} />
+                  <Stack.Screen name="Report" component={ReportScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />

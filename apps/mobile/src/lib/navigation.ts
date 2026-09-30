@@ -34,6 +34,7 @@ export type RootStackParamList = {
   ReminderSettings: undefined;
   Backup: undefined;
   AssetGroups: undefined;
+  Report: undefined;
 };
 
 export type AppNavigation = NativeStackNavigationProp<RootStackParamList & MainTabParamList>;
