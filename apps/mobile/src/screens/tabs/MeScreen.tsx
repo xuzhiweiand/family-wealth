@@ -13,13 +13,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Platform, ScrollView, Switch, TouchableOpacity, View,
+  Alert, ScrollView, Switch, TouchableOpacity, View,
 } from 'react-native';
 import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
-import { ROLE_LABELS } from '@family-wealth/family';
+import { ROLE_LABELS, filterVisibleAssets } from '@family-wealth/family';
 import { useAuthStore } from '../../stores/auth-store';
 import { useAssetStore } from '../../stores/asset-store';
 import { useFamilyStore, useMyFamilyRole } from '../../stores/family-store';
@@ -27,9 +27,6 @@ import { OfflineBanner } from '../../components/OfflineBanner';
 import { exportAssetsCsv } from '../../services/export';
 
 type IconGlyph = React.ReactNode;
-
-/** 鸿蒙端导出依赖 expo-file-system/expo-sharing（去 Expo 后不可用），隐藏入口 */
-const isHarmony = (Platform.OS as string) === 'harmony';
 
 const LOCK: IconGlyph = (
   <>
@@ -101,24 +98,33 @@ export default function MeScreen() {
     refresh();
   }, [refresh]);
 
-  const activeAssets = useMemo(
-    () => assets.filter((a) => a.deletedAt === null),
-    [assets],
+  // 导出遵循可见性口径（P0-3 验收 2）：与资产列表同一份 filterVisibleAssets，
+  // 他人的私有资产不会进入导出文件
+  const exportableAssets = useMemo(
+    () =>
+      filterVisibleAssets(
+        assets.filter((a) => a.deletedAt === null),
+        user?.id ?? '',
+        role,
+      ),
+    [assets, user?.id, role],
   );
 
   const version = '0.2.0';
 
   const handleExport = async () => {
     if (exporting) return;
-    if (activeAssets.length === 0) {
+    if (exportableAssets.length === 0) {
       Alert.alert('暂无数据', '还没有可导出的资产，先录入几笔吧');
       return;
     }
     setExporting(true);
     try {
-      const result = await exportAssetsCsv(activeAssets);
-      if (result.shared) return;
-      Alert.alert('已生成报表', `系统分享不可用，文件已保存到：\n${result.uri}`);
+      const result = await exportAssetsCsv(exportableAssets);
+      // shared：系统面板已表达；cancelled：用户主动取消，静默即可
+      if (result.status === 'saved') {
+        Alert.alert('导出成功', '报表已保存到你选择的位置');
+      }
     } catch (err) {
       Alert.alert('导出失败', (err as Error).message);
     } finally {
@@ -221,15 +227,14 @@ export default function MeScreen() {
             toggleValue={notify}
             onToggle={setNotify}
           />
-          {/* 鸿蒙端隐藏导出：expo-file-system/expo-sharing 不可用（去 Expo 后） */}
-          {isHarmony ? null : (
-            <Row
-              glyph={DOWNLOAD} glyphColor="#7C3AED" glyphBg="#EDE9FE"
-              label={exporting ? '正在导出…' : '导出报表'}
-              chevron
-              onPress={handleExport}
-            />
-          )}
+          {/* P0-3：全平台导出（Android 系统分享 / 鸿蒙系统另存为）；空数据置灰 */}
+          <Row
+            glyph={DOWNLOAD} glyphColor="#7C3AED" glyphBg="#EDE9FE"
+            label={exporting ? '正在导出…' : '导出报表'}
+            chevron
+            dimmed={exportableAssets.length === 0}
+            onPress={handleExport}
+          />
           <Row
             glyph={HELP} glyphColor="#0891B2" glyphBg="#CFFAFE"
             label="帮助与反馈"
@@ -290,11 +295,13 @@ interface RowProps {
   toggleValue?: boolean;
   onToggle?: (v: boolean) => void;
   isLast?: boolean;
+  /** 置灰（如空数据时的导出按钮）：标签/图标变灰，仍可点击以给出提示 */
+  dimmed?: boolean;
 }
 
 function Row({
   glyph, glyphColor, glyphBg, label, value, valueColor,
-  chevron, onPress, toggle, toggleValue, onToggle, isLast,
+  chevron, onPress, toggle, toggleValue, onToggle, isLast, dimmed,
 }: RowProps) {
   const content = (
     <XStack
@@ -302,14 +309,15 @@ function Row({
       borderBottomColor={isLast ? 'transparent' : '#F3F4F6'}
       borderBottomWidth={isLast ? 0 : 1}
     >
-      <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: glyphBg,
+      <View style={{ width: 32, height: 32, borderRadius: 10,
+        backgroundColor: dimmed ? '#F3F4F6' : glyphBg,
         alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-          stroke={glyphColor} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          stroke={dimmed ? '#9CA3AF' : glyphColor} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           {glyph}
         </Svg>
       </View>
-      <Text fontSize="$3" color="$textPrimary" flex={1}>{label}</Text>
+      <Text fontSize="$3" color={dimmed ? '$textTertiary' : '$textPrimary'} flex={1}>{label}</Text>
       {value !== undefined ? (
         <Text fontSize="$2" color={valueColor ?? '$textTertiary'}>{value}</Text>
       ) : null}

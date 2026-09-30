@@ -15,6 +15,7 @@
 #include "AsyncStoragePackage.h"
 #include "CryptoPbkdf2Package.h"
 #include "ReminderAgentPackage.h"
+#include "FileExportPackage.h"
 
 using namespace rnoh;
 
@@ -32,5 +33,6 @@ std::vector<std::shared_ptr<Package>> PackageProvider::getPackages(Package::Cont
         std::make_shared<AsyncStoragePackage>(ctx),
         std::make_shared<CryptoPbkdf2Package>(ctx),
         std::make_shared<ReminderAgentPackage>(ctx),
+        std::make_shared<FileExportPackage>(ctx),
     };
 }

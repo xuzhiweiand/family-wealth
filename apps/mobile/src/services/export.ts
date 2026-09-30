@@ -1,16 +1,19 @@
 /**
- * 数据导出（技术方案 §14 / 需求 P0）
+ * 数据导出（技术方案 §14 / 需求 P0-3）
  *
  * 当前实现：资产清单 CSV（UTF-8 + BOM，Excel 直接识别中文）。
- * 流程：本机拼 CSV → expo-file-system 落盘 → expo-sharing 调系统分享/存储。
- * 分享不可用（Web / 模拟器无分享组件）时返回文件路径，由调用方提示。
+ * 流程：本机拼 CSV → file-export.ts 统一通道（Android 系统分享 / 鸿蒙系统另存为）。
  *
  * 金额在 CSV 里用「元」（除以 100），对用户更直观；
  * 备注从 details.note 读取（P1，复用 details 口袋，无需类型迁移）。
+ *
+ * 可见性口径：调用方必须传入 filterVisibleAssets 过滤后的资产列表，
+ * 保证私有资产不进入他人视角的导出文件（验收标准 2）。
  */
 
 import type { Asset } from '@family-wealth/shared-types';
 import { ASSET_TYPE_LABELS } from '../lib/asset-meta';
+import { exportFile, type FileExportResult } from './file-export';
 
 function csvCell(raw: string): string {
   if (/[",\n\r]/.test(raw)) return `"${raw.replace(/"/g, '""')}"`;
@@ -37,14 +40,11 @@ export function buildAssetsCsv(assets: readonly Asset[]): string {
   return `﻿${[header, ...lines].map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
 }
 
-export interface ExportResult {
-  uri: string;
-  /** 是否已成功调起系统分享 */
-  shared: boolean;
-}
+export type ExportResult = FileExportResult;
 
 /**
- * 导出并调起分享。
+ * 导出资产 CSV。
+ * @param assets 必须是「当前用户可见」口径（filterVisibleAssets 过滤后）
  * @param exportedAt 用于文件命名（YYYY-MM-DD），默认今天
  */
 export async function exportAssetsCsv(
@@ -52,32 +52,5 @@ export async function exportAssetsCsv(
   exportedAt: string = new Date().toISOString().slice(0, 10),
 ): Promise<ExportResult> {
   const csv = buildAssetsCsv(assets);
-
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const FileSystem = require('expo-file-system') as {
-    documentDirectory: string;
-    writeAsStringAsync: (uri: string, content: string, options?: { encoding?: string }) => Promise<void>;
-    EncodingType: { UTF8: string };
-  };
-
-  const uri = `${FileSystem.documentDirectory}家庭资产报表-${exportedAt}.csv`;
-  await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Sharing = require('expo-sharing') as {
-      isAvailableAsync: () => Promise<boolean>;
-      shareAsync: (uri: string, options?: Record<string, unknown>) => Promise<void>;
-    };
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: 'text/csv',
-        dialogTitle: '导出家庭资产报表',
-      });
-      return { uri, shared: true };
-    }
-  } catch {
-    // 分享模块缺失或用户取消——落到文件路径提示
-  }
-  return { uri, shared: false };
+  return exportFile(`家庭资产报表-${exportedAt}.csv`, csv, 'text/csv');
 }

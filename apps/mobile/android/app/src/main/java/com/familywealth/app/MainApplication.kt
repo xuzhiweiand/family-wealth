@@ -20,6 +20,8 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              // P0-3：导出 CSV 的系统分享（FileProvider + ACTION_SEND）
+              add(FileExportPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"

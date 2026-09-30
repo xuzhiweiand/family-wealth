@@ -23,6 +23,8 @@ import { AsyncStoragePackage } from '@react-native-ohos/async-storage/src/main/e
 import { CryptoPbkdf2Package } from '../turbo/CryptoPbkdf2Package';
 // 应用自带：月末盘点提醒（见 entry/src/main/ets/turbo）
 import { ReminderAgentPackage } from '../turbo/ReminderAgentPackage';
+// 应用自带：文件导出「另存为」（见 entry/src/main/ets/turbo）
+import { FileExportPackage } from '../turbo/FileExportPackage';
 // 应用自带：库未提供 RNOHPackage，手动注册 DateTimePicker 组件
 import { DateTimePickerPackage } from '../packages/DateTimePickerPackage';
 
@@ -56,6 +58,7 @@ struct Index {
           new AsyncStoragePackage(ctx),
           new CryptoPbkdf2Package(ctx),
           new ReminderAgentPackage(ctx),
+          new FileExportPackage(ctx),
           new DateTimePickerPackage(ctx),
         ];
       },
