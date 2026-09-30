@@ -5,8 +5,10 @@
 // 侧 hasModule 查到实例，再要求 C++ delegate 返回 ArkTSTurboModule
 // 包装对象；缺 C++ 侧会直接 Fatal。本文件两者一并提供。
 //
-// 真正的提醒调度在 ArkTS 侧（reminderAgentManager）完成，此处只做
-// 方法元数据声明。方法名/参数个数必须与 ArkTS 类及 JS 调用一致。
+// 真正的提醒调度在 ArkTS 侧（Calendar Kit calendarManager，写入系统日历
+// 事件）完成，此处只做方法元数据声明。方法名/参数个数必须与 ArkTS 类及
+// JS 调用一致。注：类名沿用 ReminderAgent 仅为兼容 JS 侧模块名，早期
+// reminderAgentManager + PUBLISH_AGENT_REMINDER ACL 方案已废弃。
 //
 #pragma once
 

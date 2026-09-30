@@ -207,7 +207,7 @@ export default function MeScreen() {
             glyph={BACKUP} glyphColor="#D97706" glyphBg="#FEF3C7"
             label="本地备份"
             chevron
-            onPress={() => Alert.alert('本地备份', '加密备份到本机文件的能力将在下一版本提供')}
+            onPress={() => navigation.navigate('Backup')}
           />
         </Group>
 

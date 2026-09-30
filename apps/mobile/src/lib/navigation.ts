@@ -32,6 +32,7 @@ export type RootStackParamList = {
   AssetDetail: { id: string };
   AssetEdit: { id: string };
   ReminderSettings: undefined;
+  Backup: undefined;
 };
 
 export type AppNavigation = NativeStackNavigationProp<RootStackParamList & MainTabParamList>;

@@ -16,6 +16,7 @@
 #include "CryptoPbkdf2Package.h"
 #include "ReminderAgentPackage.h"
 #include "FileExportPackage.h"
+#include "FileImportPackage.h"
 
 using namespace rnoh;
 
@@ -34,5 +35,6 @@ std::vector<std::shared_ptr<Package>> PackageProvider::getPackages(Package::Cont
         std::make_shared<CryptoPbkdf2Package>(ctx),
         std::make_shared<ReminderAgentPackage>(ctx),
         std::make_shared<FileExportPackage>(ctx),
+        std::make_shared<FileImportPackage>(ctx),
     };
 }

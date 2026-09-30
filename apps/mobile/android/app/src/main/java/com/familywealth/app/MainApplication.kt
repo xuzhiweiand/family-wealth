@@ -22,6 +22,8 @@ class MainApplication : Application(), ReactApplication {
               // add(MyReactNativePackage())
               // P0-3：导出 CSV 的系统分享（FileProvider + ACTION_SEND）
               add(FileExportPackage())
+              // P0-2：备份恢复的文件选择（SAF ACTION_OPEN_DOCUMENT）
+              add(FileImportPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"

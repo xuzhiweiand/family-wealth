@@ -25,6 +25,7 @@ import { CryptoPbkdf2Package } from '../turbo/CryptoPbkdf2Package';
 import { ReminderAgentPackage } from '../turbo/ReminderAgentPackage';
 // 应用自带：文件导出「另存为」（见 entry/src/main/ets/turbo）
 import { FileExportPackage } from '../turbo/FileExportPackage';
+import { FileImportPackage } from '../turbo/FileImportPackage';
 // 应用自带：库未提供 RNOHPackage，手动注册 DateTimePicker 组件
 import { DateTimePickerPackage } from '../packages/DateTimePickerPackage';
 
@@ -59,6 +60,7 @@ struct Index {
           new CryptoPbkdf2Package(ctx),
           new ReminderAgentPackage(ctx),
           new FileExportPackage(ctx),
+          new FileImportPackage(ctx),
           new DateTimePickerPackage(ctx),
         ];
       },

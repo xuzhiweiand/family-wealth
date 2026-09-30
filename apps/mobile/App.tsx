@@ -40,6 +40,7 @@ import JoinScreen from './src/screens/JoinScreen';
 import OcrLabScreen from './src/screens/OcrLabScreen';
 import AssetNewScreen from './src/screens/AssetNewScreen';
 import ReminderSettingsScreen from './src/screens/ReminderSettingsScreen';
+import BackupScreen from './src/screens/BackupScreen';
 import AssetTrashScreen from './src/screens/AssetTrashScreen';
 import AssetDetailScreen from './src/screens/AssetDetailScreen';
 import AssetEditScreen from './src/screens/AssetEditScreen';
@@ -154,6 +155,7 @@ export default function App() {
                   <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
                   <Stack.Screen name="AssetEdit" component={AssetEditScreen} />
                   <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} />
+                  <Stack.Screen name="Backup" component={BackupScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />
