@@ -1,11 +1,15 @@
-# AppGallery Connect (AGC) 权限申请指引
+# 日历权限说明与上架材料指引
 
-## 更新说明（2026-09-30）
+## 更新说明（2026-09-30，二次确认）
 
-**方案已更新**：Calendar Kit 替代 ReminderAgent（无需 ACL 审批）
+**已确认无需提交任何 AGC 权限申请。**
 
-- 权限从 `PUBLISH_AGENT_REMINDER`（ACL 受限，需审批 3-7 天）
-- 改为 `READ_CALENDAR` + `WRITE_CALENDAR`（user_grant，用户弹窗授权即可）
+- 盘点提醒最终方案：Calendar Kit（`READ_CALENDAR` + `WRITE_CALENDAR`）
+- 两项均为 **user_grant** 权限：首次开启提醒时系统弹窗授权即可，
+  无 ACL、无 AGC 后台审批环节（早期 ReminderAgent + `PUBLISH_AGENT_REMINDER`
+  方案已废弃，请勿再走该申请流程）
+- 本文保留下来的价值：①权限用途说明模板（上架审核时可能被要求说明）；
+  ②真机验证清单；③隐私政策与截图材料清单（备案通过后的上架准备）
 
 ---
 
@@ -32,14 +36,10 @@
 3. 系统弹窗：「家资想要访问您的日历」
 4. 用户点击「允许」→ 立即生效
 
-### 方式二：AGC 能力声明（可选，用于上架审核说明）
+### 方式二：AGC 能力声明（不需要）
 
-如上架审核时要求说明日历权限用途：
-
-1. 登录 [AppGallery Connect](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html)
-2. 进入 **我的应用** → 选择 **家资**
-3. 左侧导航：**开发 > 能力接入 > 权限管理**
-4. 填写权限用途说明（见下方模板）
+~~AGC 能力接入声明~~：**已确认无需提交**。仅当上架审核时被要求说明日历权限用途，
+直接在审核回复中引用下方「权限用途说明模板」即可。
 
 ---
 
