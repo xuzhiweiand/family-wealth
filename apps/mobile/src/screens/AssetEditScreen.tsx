@@ -23,6 +23,8 @@ import { useAssetStore } from '../stores/asset-store';
 import { useAuthStore } from '../stores/auth-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { getAssetNote } from '../services/export';
+import { getAssetGroupId, withGroupId } from '../lib/asset-groups';
+import { useAssetGroupStore } from '../stores/asset-group-store';
 import { todayDate, dateToNoonIso, formatDate } from './AssetNewScreen';
 import { DatePickerField } from '../components/DatePickerField';
 
@@ -60,6 +62,13 @@ export default function EditAssetScreen() {
   const snapshots = useAssetStore((s) => s.snapshots);
   const updateAmount = useAssetStore((s) => s.updateAmount);
   const updateAssetMeta = useAssetStore((s) => s.updateAssetMeta);
+  const groups = useAssetGroupStore((s) => s.groups);
+  const groupsHydrated = useAssetGroupStore((s) => s.hydrated);
+  const hydrateGroups = useAssetGroupStore((s) => s.hydrate);
+
+  useEffect(() => {
+    if (!groupsHydrated) void hydrateGroups();
+  }, [groupsHydrated, hydrateGroups]);
 
   const asset = useMemo(() => assets.find((a) => a.id === id), [assets, id]);
 
@@ -67,6 +76,7 @@ export default function EditAssetScreen() {
   const [name, setName] = useState(asset?.name ?? '');
   const [type, setType] = useState<AssetType>(asset?.type ?? 'bank_deposit');
   const [visibility, setVisibility] = useState<Visibility>(asset?.visibility ?? 'family');
+  const [groupId, setGroupId] = useState<string | null>(asset ? getAssetGroupId(asset) : null);
   const [amountText, setAmountText] = useState(
     asset ? (asset.currentAmount / 100).toFixed(2) : '',
   );
@@ -100,6 +110,7 @@ export default function EditAssetScreen() {
     setVisibility(asset.visibility);
     setAmountText((asset.currentAmount / 100).toFixed(2));
     setNote(getAssetNote(asset));
+    setGroupId(getAssetGroupId(asset));
   }, [asset]);
 
   if (!asset) {
@@ -149,10 +160,11 @@ export default function EditAssetScreen() {
   const nameChanged = name.trim() !== asset.name;
   const typeChanged = type !== asset.type;
   const visibilityChanged = visibility !== asset.visibility;
+  const groupChanged = groupId !== getAssetGroupId(asset);
   const amountChanged = cents !== null && cents !== asset.currentAmount;
   const dateChanged = initialDate !== null && formatDate(date) !== initialDate;
   const noteChanged = note.trim() !== getAssetNote(asset);
-  const hasMetaChange = nameChanged || typeChanged || visibilityChanged || noteChanged;
+  const hasMetaChange = nameChanged || typeChanged || visibilityChanged || noteChanged || groupChanged;
   // 日期被修改时，即使金额没变也写一条该日余额快照（确认余额）
   const hasChange = hasMetaChange || amountChanged || dateChanged;
 
@@ -174,12 +186,13 @@ export default function EditAssetScreen() {
     setSaving(true);
     try {
       if (hasMetaChange) {
+        const detailsChanged = noteChanged || groupChanged;
         await updateAssetMeta(asset.id, {
           name: name.trim(),
           ...(typeChanged ? { type } : {}),
           ...(visibilityChanged ? { visibility } : {}),
-          ...(noteChanged
-            ? { details: { ...asset.details, note: note.trim() } }
+          ...(detailsChanged
+            ? { details: withGroupId({ ...asset.details, note: note.trim() }, groupId) }
             : {}),
         });
       }
@@ -293,6 +306,42 @@ export default function EditAssetScreen() {
             onValueChange={(v) => setVisibility(v ? 'family' : 'private')}
           />
         </XStack>
+
+        <YStack space="$xs">
+          <Text fontSize="$2" color="$textSecondary">
+            分组
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <XStack space="$xs">
+              <Button
+                size={36}
+                fontSize={14}
+                backgroundColor={groupId === null ? '$primary' : '$bgPrimary'}
+                color={groupId === null ? 'white' : '$textPrimary'}
+                onPress={() => setGroupId(null)}
+              >
+                未分组
+              </Button>
+              {groups.map((g) => (
+                <Button
+                  key={g.id}
+                  size={36}
+                  fontSize={14}
+                  backgroundColor={g.id === groupId ? '$primary' : '$bgPrimary'}
+                  color={g.id === groupId ? 'white' : '$textPrimary'}
+                  onPress={() => setGroupId(g.id)}
+                >
+                  {g.name}
+                </Button>
+              ))}
+            </XStack>
+          </ScrollView>
+          <Text fontSize="$1" color="$textTertiary">
+            {groups.length === 0
+              ? '还没有分组，可在资产列表切到「按分组」后点「管理分组」新建'
+              : '归属随资产同步；分组名称仅保存在本机'}
+          </Text>
+        </YStack>
 
         <YStack space="$xs">
           <Text fontSize="$2" color="$textSecondary">

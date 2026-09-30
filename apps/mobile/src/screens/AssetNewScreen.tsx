@@ -9,7 +9,7 @@
  * 供趋势图使用。
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,8 @@ import { useAssetStore } from '../stores/asset-store';
 import { useAuthStore } from '../stores/auth-store';
 import { useKeyStore } from '../stores/key-store';
 import { useMyFamilyRole } from '../stores/family-store';
+import { useAssetGroupStore } from '../stores/asset-group-store';
+import { withGroupId } from '../lib/asset-groups';
 import { getOcrEngine } from '../services/ocr';
 import { DatePickerField } from '../components/DatePickerField';
 import { ReminderOnboardingSheet } from '../components/ReminderOnboardingSheet';
@@ -82,6 +84,13 @@ export default function NewAssetScreen() {
   const addAsset = useAssetStore((s) => s.addAsset);
   const myRole = useMyFamilyRole();
   const canCreate = can(myRole, 'create_asset');
+  const groups = useAssetGroupStore((s) => s.groups);
+  const groupsHydrated = useAssetGroupStore((s) => s.hydrated);
+  const hydrateGroups = useAssetGroupStore((s) => s.hydrate);
+
+  useEffect(() => {
+    if (!groupsHydrated) void hydrateGroups();
+  }, [groupsHydrated, hydrateGroups]);
 
   const [type, setType] = useState<AssetType>('bank_deposit');
   // 名称默认值跟随类型名；用户手动输入过后不再自动覆盖
@@ -90,6 +99,7 @@ export default function NewAssetScreen() {
   const [amountText, setAmountText] = useState('');
   const [date, setDate] = useState<Date>(todayDate);
   const [visibility, setVisibility] = useState<Visibility>('private');
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<AmountCandidate[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -171,6 +181,7 @@ export default function NewAssetScreen() {
         amountInCents: cents,
         source: fromOcr ? 'ocr' : 'manual',
         visibility,
+        details: withGroupId({}, groupId),
         capturedAt,
       });
       // 首笔保存成功是最佳激活时刻：引导开启盘点提醒（仅一次）
@@ -331,6 +342,39 @@ export default function NewAssetScreen() {
             onValueChange={(v) => setVisibility(v ? 'family' : 'private')}
           />
         </XStack>
+
+        {groups.length > 0 ? (
+          <YStack space="$xs">
+            <Text fontSize="$2" color="$textSecondary">
+              分组
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <XStack space="$xs">
+                <Button
+                  size={36}
+                  fontSize={14}
+                  backgroundColor={groupId === null ? '$primary' : '$bgPrimary'}
+                  color={groupId === null ? 'white' : '$textPrimary'}
+                  onPress={() => setGroupId(null)}
+                >
+                  未分组
+                </Button>
+                {groups.map((g) => (
+                  <Button
+                    key={g.id}
+                    size={36}
+                    fontSize={14}
+                    backgroundColor={g.id === groupId ? '$primary' : '$bgPrimary'}
+                    color={g.id === groupId ? 'white' : '$textPrimary'}
+                    onPress={() => setGroupId(g.id)}
+                  >
+                    {g.name}
+                  </Button>
+                ))}
+              </XStack>
+            </ScrollView>
+          </YStack>
+        ) : null}
 
         {candidates.length > 0 ? (
           <YStack space="$xs">
