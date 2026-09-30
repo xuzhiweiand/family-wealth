@@ -52,6 +52,13 @@ const BELL: IconGlyph = (
     <Path d="M10 20a2 2 0 0 0 4 0" />
   </>
 );
+const CALENDAR: IconGlyph = (
+  <>
+    <Path d="M8 2v4M16 2v4" />
+    <Path d="M3 8h18" />
+    <Path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+  </>
+);
 const DOWNLOAD: IconGlyph = (
   <>
     <Path d="M12 3v12" />
@@ -99,7 +106,7 @@ export default function MeScreen() {
     [assets],
   );
 
-  const version = '0.1.9';
+  const version = '0.2.0';
 
   const handleExport = async () => {
     if (exporting) return;
@@ -126,6 +133,8 @@ export default function MeScreen() {
         text: '退出',
         style: 'destructive',
         onPress: async () => {
+          const { reminderService } = await import('../../services/reminder-service');
+          await reminderService.onLogout();
           await signOut();
         },
       },
@@ -199,6 +208,12 @@ export default function MeScreen() {
         {/* 功能 */}
         <SectionLabel>功能</SectionLabel>
         <Group>
+          <Row
+            glyph={CALENDAR} glyphColor="#059669" glyphBg="#D1FAE5"
+            label="盘点提醒"
+            chevron
+            onPress={() => navigation.navigate('ReminderSettings')}
+          />
           <Row
             glyph={BELL} glyphColor="#DC2626" glyphBg="#FEE2E2"
             label="异动提醒"

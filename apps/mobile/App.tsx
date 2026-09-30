@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Platform, StatusBar, View } from 'react-native';
+import { AppState, Platform, StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -25,6 +25,10 @@ import { hasConsentedPrivacy } from './src/services/privacy-consent';
 import { PrivacyConsentDialog } from './src/components/PrivacyConsentDialog';
 import { navigationRef } from './src/lib/navigation';
 import type { RootStackParamList, MainTabParamList } from './src/lib/navigation';
+import { reminderService } from './src/services/reminder-service';
+import { reminderBackend, initReminderNotifications } from './src/services/reminder-backend';
+import { consumePendingNavigation } from './src/lib/notification-action';
+import { useAssetStore } from './src/stores/asset-store';
 import { TabBar } from './src/components/TabBar';
 import HomeScreen from './src/screens/tabs/HomeScreen';
 import AssetsScreen from './src/screens/tabs/AssetsScreen';
@@ -35,11 +39,15 @@ import FamilyScreen from './src/screens/FamilyScreen';
 import JoinScreen from './src/screens/JoinScreen';
 import OcrLabScreen from './src/screens/OcrLabScreen';
 import AssetNewScreen from './src/screens/AssetNewScreen';
+import ReminderSettingsScreen from './src/screens/ReminderSettingsScreen';
 import AssetTrashScreen from './src/screens/AssetTrashScreen';
 import AssetDetailScreen from './src/screens/AssetDetailScreen';
 import AssetEditScreen from './src/screens/AssetEditScreen';
 
 bootstrap();
+
+// P0-1：按平台注入提醒后端（.android.ts / .harmony.ts 自动分流），并注册点击处理
+reminderService.backend = reminderBackend;
 
 // 鸿蒙平台 @react-native-ohos/react-native-screens 与 native-stack 组合
 // 存在白屏兼容问题（原生 RNSScreen 不渲染子树），退回到纯 JS 实现的
@@ -80,7 +88,16 @@ export default function App() {
       }
       setBooted(true);
     })();
+    const unbind = initReminderNotifications();
+    return () => unbind();
   }, []);
+
+  // 登录态建立后：消费可能挂起的通知点击（如冷启动时点击通知）
+  useEffect(() => {
+    if (status === 'authenticated') {
+      consumePendingNavigation();
+    }
+  }, [status]);
 
   // 隐私政策同意后补跑 hydrate（此前被拦截）
   const handleConsentAgree = () => {
@@ -88,11 +105,30 @@ export default function App() {
     void useAuthStore.getState().hydrate();
   };
 
-  // 登录态建立后加载当前家庭：总览/资产/趋势首次进入即拿到真实 family
+  // 登录态建立后加载当前家庭，并触发提醒计划对齐
   useEffect(() => {
     if (status === 'authenticated') {
       useFamilyStore.getState().refresh();
+      void reminderService.refresh(
+        useAssetStore.getState().assets,
+        useAssetStore.getState().snapshots,
+        useAuthStore.getState().user?.id ?? '',
+      );
     }
+  }, [status]);
+
+  // P0-1：App 回前台时刷新提醒计划（时区/完成度可能已变）
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active' && status === 'authenticated') {
+        void reminderService.onAppForeground(
+          useAssetStore.getState().assets,
+          useAssetStore.getState().snapshots,
+          useAuthStore.getState().user?.id ?? '',
+        );
+      }
+    });
+    return () => sub.remove();
   }, [status]);
 
   return (
@@ -117,6 +153,7 @@ export default function App() {
                   <Stack.Screen name="AssetTrash" component={AssetTrashScreen} />
                   <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
                   <Stack.Screen name="AssetEdit" component={AssetEditScreen} />
+                  <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />

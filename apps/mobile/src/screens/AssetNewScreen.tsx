@@ -25,6 +25,8 @@ import { useKeyStore } from '../stores/key-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { getOcrEngine } from '../services/ocr';
 import { DatePickerField } from '../components/DatePickerField';
+import { ReminderOnboardingSheet } from '../components/ReminderOnboardingSheet';
+import { hasShownReminderOnboarding } from '../services/reminder-settings';
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -93,6 +95,8 @@ export default function NewAssetScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromOcr, setFromOcr] = useState(false);
+  // P0-1 首次引导：首笔资产保存成功后提示开启盘点提醒（仅一次）
+  const [showReminderOnboarding, setShowReminderOnboarding] = useState(false);
 
   const cents = parseYuanToCents(amountText);
 
@@ -169,7 +173,12 @@ export default function NewAssetScreen() {
         visibility,
         capturedAt,
       });
-      navigation.goBack();
+      // 首笔保存成功是最佳激活时刻：引导开启盘点提醒（仅一次）
+      if (await hasShownReminderOnboarding()) {
+        navigation.goBack();
+      } else {
+        setShowReminderOnboarding(true);
+      }
     } catch (err) {
       setError((err as Error).message);
       setSaving(false);
@@ -374,6 +383,14 @@ export default function NewAssetScreen() {
           {saving ? '保存中…' : '保存'}
         </Button>
       </YStack>
+      {/* P0-1 首次引导：开启/跳过后均返回上一页 */}
+      <ReminderOnboardingSheet
+        visible={showReminderOnboarding}
+        onClose={() => {
+          setShowReminderOnboarding(false);
+          navigation.goBack();
+        }}
+      />
     </ScrollView>
   );
 }

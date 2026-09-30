@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "com.familywealth.app",
     "vendor": "familywealth",
-    "versionCode": 1000004,
-    "versionName": "0.1.9",
+    "versionCode": 1000005,
+    "versionName": "0.2.0",
     "icon": "$media:app_icon_fw",
     "label": "$string:app_name"
   }

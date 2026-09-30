@@ -3,6 +3,9 @@ node_modules/
 .pnpm-store/
 .pnpm-debug.log*
 
+# ===== Editor =====
+.obsidian/
+
 # ===== Build outputs =====
 dist/
 build/

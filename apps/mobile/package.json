@@ -1,6 +1,6 @@
 {
   "name": "@family-wealth/mobile",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -15,9 +15,9 @@
     "bundle:harmony:dev": "node scripts/prepare-harmony-hars.cjs && node scripts/prepare-harmony-stubs.cjs && node scripts/patch-rnoh-assert.cjs && react-native bundle --platform harmony --dev true --entry-file index.js --bundle-output harmony/entry/src/main/resources/rawfile/bundle/index.harmony.bundle --assets-dest harmony/entry/src/main/resources/rawfile/",
     "lint": "echo \"(W2 引入 eslint-config + lint 脚本)\" && exit 0",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"(W1 无单测，端到端测试见 Detox，见 .github/workflows/ci.yml)\" && exit 0",
-    "test:watch": "echo \"no watch mode yet\" && exit 0",
-    "test:coverage": "echo \"no coverage yet\" && exit 0"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@family-wealth/analytics": "workspace:*",
@@ -29,6 +29,7 @@
     "@family-wealth/shared-types": "workspace:*",
     "@family-wealth/shared-utils": "workspace:*",
     "@family-wealth/sync": "workspace:*",
+    "@notifee/react-native": "^9.1.8",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-ml-kit/text-recognition": "^2.0.0",
@@ -71,10 +72,13 @@
     "@react-native/babel-preset": "0.77.3",
     "@react-native/metro-config": "0.77.3",
     "@tamagui/babel-plugin": "^1.121.4",
+    "@types/jest": "^29.5.14",
     "@types/react": "~18.3.12",
     "@types/react-native": "~0.73.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",
     "dotenv": "^18.0.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "typescript": "~5.3.3"
   }
 }

@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "家资"
+    },
+    {
+      "name": "calendar_permission_reason",
+      "value": "用于在系统日历中创建盘点提醒事件"
     }
   ]
 }

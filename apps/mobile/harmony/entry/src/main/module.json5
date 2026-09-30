@@ -34,9 +34,26 @@
       }
     ],
     // RN 网络请求需要 INTERNET 权限；自托管 Supabase 走明文 http，需放行 cleartext
+    // P0-1 盘点提醒：日历权限（user_grant，用户弹窗授权）
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.READ_CALENDAR",
+        "reason": "$string:calendar_permission_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.WRITE_CALENDAR",
+        "reason": "$string:calendar_permission_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
       }
     ],
     "metadata": [
