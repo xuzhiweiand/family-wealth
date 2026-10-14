@@ -4,6 +4,7 @@ import {
   RNPackage,
   RNPackageContext,
   RNInstanceOptions,
+  RNOHCoreContext,
   ResourceJSBundleProvider,
 } from '@rnoh/react-native-openharmony';
 
@@ -39,6 +40,9 @@ import { DateTimePickerPackage } from '../packages/DateTimePickerPackage';
 @Component
 struct Index {
   @State private isReady: boolean = false;
+  // RNAbility 启动时把 RNOHCoreContext 注入 AppStorage，页面借此拿到
+  // dispatchBackPress（见官方脚手架 EntryIndex 模板）。
+  @StorageLink('RNOHCoreContext') private rnohCoreContext: RNOHCoreContext | undefined = undefined;
   private rnInstanceConfig: RNInstanceOptions | null = null;
   private jsBundleProvider: ResourceJSBundleProvider | null = null;
 
@@ -71,6 +75,18 @@ struct Index {
       ['familywealth']
     );
     this.isReady = true;
+  }
+
+  // 系统返回（左右边缘横滑手势 / 三键返回键）：先派发给 RN。
+  // React Navigation 在二级页面会消费该事件并 pop 回上一页；
+  // 只有导航栈为空（已在首页）时 RNOH 才走默认行为（回桌面）。
+  // 不拦截的话，任何页面横滑都会被系统直接退到桌面。
+  onBackPress(): boolean {
+    if (this.rnohCoreContext) {
+      this.rnohCoreContext.dispatchBackPress();
+      return true;
+    }
+    return false;
   }
 
   build() {

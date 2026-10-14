@@ -1,4 +1,4 @@
-"""Generate Android launcher PNGs from the 1024px brand icon.
+"""Generate launcher / splash PNGs from the 1024px brand icon.
 
 Why this exists: the dev sandbox cannot install Pillow (pip blocked) and the
 pnpm store has no `sharp`, so `expo prebuild` cannot resize the icon here.
@@ -10,9 +10,16 @@ This script is a zero-dependency replacement:
 Usage:
     python scripts/gen-icons.py
 
-Inputs:   assets/brand/jiazi-icon-v4.png   (1024x1024 source)
+Inputs:   assets/brand/jiazi-icon-v4.png   (1024x1024 source, Android launcher)
+          assets/icon.png                  (1024x1024 brand tile, Harmony splash)
 Outputs:  android/app/src/main/res/mipmap-<density>/ic_launcher.png
           android/app/src/main/res/mipmap-<density>/ic_launcher_round.png
+          harmony/.../resources/base/media/splash_icon.png
+
+splash_icon：HarmonyOS startWindowBackground 是品牌绿 #10B981，若启动图直接用
+带绿色底的品牌方块，方块绿与背景绿不一致，会看到一块突兀的方贴（旧图还带 AI
+水印）。这里把品牌图里的「白色圆盘 + 绿色标志」抠到透明底上，启动时图标自然
+浮在同色背景上，水印位于圆盘外一并被透明剔除。
 
 Note: `expo prebuild` writes .webp launcher icons. PNG and .webp with the same
 resource name collide in AAPT2 ("duplicate value for resource"), so after
@@ -25,6 +32,21 @@ import zlib
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(_HERE, "..", "assets", "brand", "jiazi-icon-v4.png"))
+SPLASH_SRC = os.path.normpath(os.path.join(_HERE, "..", "assets", "icon.png"))
+SPLASH_OUT = os.path.normpath(
+    os.path.join(
+        _HERE,
+        "..",
+        "harmony",
+        "entry",
+        "src",
+        "main",
+        "resources",
+        "base",
+        "media",
+        "splash_icon.png",
+    )
+)
 RES = os.path.normpath(os.path.join(_HERE, "..", "android", "app", "src", "main", "res"))
 
 DENSITIES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
@@ -185,8 +207,82 @@ def write_png(path, size, rgba):
         f.write(blob)
 
 
+# ------------------------------------------------- Harmony splash icon
+def extract_disc_on_transparent(rgba, w, h):
+    """Extract the white brand disc onto a transparent canvas.
+
+    品牌图 = 渐变绿底 + 居中白色圆盘 + 绿色标志。按近白像素包围盒自动识别圆盘
+    圆心与半径；圆内保留原色（白盘 + 标志），边缘约 3px 用纯白按覆盖率输出，
+    避免原图抗锯齿混入的旧绿色在 #10B981 背景上留下暗圈；圆外全透明
+    （角落水印也随之消失）。输出尺寸与输入一致。
+    """
+    xs, ys = [], []
+    for y in range(h):
+        for x in range(w):
+            i = (y * w + x) * 4
+            r, g, b = rgba[i], rgba[i + 1], rgba[i + 2]
+            if r > 245 and g > 245 and b > 245:
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        raise SystemExit("splash source has no white disc to extract")
+
+    cx = (min(xs) + max(xs)) / 2.0
+    cy = (min(ys) + max(ys)) / 2.0
+    radius = min(max(xs) - min(xs), max(ys) - min(ys)) / 2.0
+
+    out = bytearray(w * h * 4)
+    for oy in range(h):
+        for ox in range(w):
+            inside = 0
+            for sy in (0.25, 0.75):
+                for sx in (0.25, 0.75):
+                    dx = ox + sx - cx
+                    dy = oy + sy - cy
+                    if dx * dx + dy * dy <= radius * radius:
+                        inside += 1
+            i = (oy * w + ox) * 4
+            if inside == 4:
+                # 圆内深区直接沿用原图；距边缘 2px 内一律铺白，吃掉旧绿边
+                dx = ox + 0.5 - cx
+                dy = oy + 0.5 - cy
+                d = (dx * dx + dy * dy) ** 0.5
+                if d <= radius - 2.0:
+                    out[i] = rgba[i]
+                    out[i + 1] = rgba[i + 1]
+                    out[i + 2] = rgba[i + 2]
+                    out[i + 3] = 255
+                else:
+                    out[i] = out[i + 1] = out[i + 2] = 255
+                    out[i + 3] = 255
+            elif inside > 0:
+                out[i] = out[i + 1] = out[i + 2] = 255
+                out[i + 3] = 255 * inside // 4
+            # else: 全透明
+    return w, h, out
+
+
+def gen_splash():
+    w, h, nch, pixels = read_png(SPLASH_SRC)
+    print(f"splash source: {SPLASH_SRC} -> {w}x{h}, {nch} channels")
+    base_rgba = to_rgba(pixels, w, h, nch)
+    sw, sh, splash_rgba = extract_disc_on_transparent(base_rgba, w, h)
+    write_png(SPLASH_OUT, sw, splash_rgba)
+    print(f"  {os.path.relpath(SPLASH_OUT, _HERE)}: {sw}x{sh} (transparent bg)")
+
+
 # ---------------------------------------------------------------- main
 def main():
+    # Harmony splash always runs (only needs assets/icon.png).
+    gen_splash()
+
+    # Android launcher icons need the clean brand source, which is not always
+    # present in this repo; skip with a warning instead of crashing after the
+    # splash icon has already been generated.
+    if not os.path.exists(SRC):
+        print(f"[gen-icons] skip Android launcher icons (missing: {os.path.relpath(SRC, _HERE)})")
+        return
+
     w, h, nch, pixels = read_png(SRC)
     print(f"source: {SRC} -> {w}x{h}, {nch} channels")
     base_rgba = to_rgba(pixels, w, h, nch)

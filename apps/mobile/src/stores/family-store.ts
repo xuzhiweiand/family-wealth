@@ -35,6 +35,12 @@ interface FamilyState {
   activeInvite: ActiveInvite | null;
   /** 撤销成员后尚未轮换 → UI 必须显示强提示 */
   rotationPending: boolean;
+  /**
+   * 首次 refresh 是否已结束（含无家庭/失败）；false = 冷启动后家庭归属未定。
+   * 首页据此延长骨架屏：refresh 未完成前 family 必为 null，若直接渲染会
+   * 先闪现「创建或加入家庭」引导，1 秒后再跳成真实家庭页。
+   */
+  refreshed: boolean;
   loading: boolean;
   error: string | null;
   notice: string | null;
@@ -69,20 +75,24 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   invites: [],
   activeInvite: null,
   rotationPending: false,
+  refreshed: false,
   loading: false,
   error: null,
   notice: null,
 
   async refresh() {
     const user = useAuthStore.getState().user;
-    if (!user) return;
+    if (!user) {
+      set({ refreshed: true });
+      return;
+    }
 
     // ---------- 云端 ----------
     if (isCloudEnabled && familyGateway) {
       try {
         const family = await familyGateway.findFamilyOf(user.id);
         if (!family) {
-          set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false });
+          set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false, refreshed: true });
           return;
         }
         useKeyStore.getState().setFamilyId(family.id);
@@ -107,9 +117,10 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           familyGateway.listInvites(family.id),
         ]);
         const rotationPending = await familyGateway.hasPendingRotation(family.id);
-        set({ family, members, invites, rotationPending });
+        set({ family, members, invites, rotationPending, refreshed: true });
       } catch (err) {
-        set({ error: (err as Error).message });
+        // 失败同样结束首刷标记（页面走空态 + 错误提示），避免永久骨架
+        set({ error: (err as Error).message, refreshed: true });
       }
       return;
     }
@@ -117,7 +128,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     // ---------- InMemory ----------
     const family = familyService.findFamilyOf(user.id);
     if (!family) {
-      set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false });
+      set({ family: null, members: [], invites: [], activeInvite: null, rotationPending: false, refreshed: true });
       return;
     }
     // 回归用户：把当前家庭上下文绑到 key-store，资产录入页从那里读 familyId
@@ -127,6 +138,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       members: familyService.listMembers(family.id),
       invites: familyService.listInvites(family.id),
       rotationPending: familyService.hasPendingRotation(family.id),
+      refreshed: true,
     });
   },
 

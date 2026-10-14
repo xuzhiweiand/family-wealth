@@ -31,6 +31,12 @@ interface AssetState {
   snapshots: AssetSnapshot[];
   loading: boolean;
   error: string | null;
+  /**
+   * 已完成首次加载的家庭 id；null = 冷启动后从未加载过。
+   * 首页据此区分「首帧占位」与「后台刷新」：首次加载未完成前展示骨架屏，
+   * 避免先渲染 ¥0 空页面、数据到达后再整体跳变。
+   */
+  loadedFamilyId: string | null;
 
   load: (familyId: string) => Promise<void>;
   addAsset: (input: AddAssetInput) => Promise<Asset>;
@@ -49,19 +55,24 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   snapshots: [],
   loading: false,
   error: null,
+  loadedFamilyId: null,
 
   async load(familyId) {
-    set({ loading: true, error: null });
+    // 切到另一户家庭重新加载时（登录/恢复/同步后）先复位首帧标记，
+    // 让首页重新走骨架，避免短暂闪现上一户数据或 ¥0 空态
+    const resetFirstFrame = get().loadedFamilyId !== null && get().loadedFamilyId !== familyId;
+    set({ loading: true, error: null, ...(resetFirstFrame ? { loadedFamilyId: null } : {}) });
     try {
       const [assets, snapshots] = await Promise.all([
         assetRepository.list({ familyId }),
         snapshotRepository.list({ familyId }),
       ]);
-      set({ assets, snapshots, loading: false });
+      set({ assets, snapshots, loading: false, loadedFamilyId: familyId });
       // 云端：后台同步（推未决变更 + 拉远端），不阻塞当前渲染
       void syncNow(familyId);
     } catch (err) {
-      set({ loading: false, error: (err as Error).message });
+      // 首帧即使失败也结束骨架（页面空态 + 错误信息），避免永久占位
+      set({ loading: false, error: (err as Error).message, loadedFamilyId: familyId });
     }
   },
 

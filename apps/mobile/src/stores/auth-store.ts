@@ -131,6 +131,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await getAuthClient().signOut();
     await clearAll();
     useKeyStore.getState().clear();
+    // 清空家庭上下文并复位首刷标记：下个账号登录时首页重新走骨架，
+    // 不会凭 refreshed=true 直接渲染上一账号的家庭数据
+    useFamilyStore.setState({
+      family: null,
+      members: [],
+      invites: [],
+      activeInvite: null,
+      rotationPending: false,
+      refreshed: false,
+    });
     set({ status: 'idle', user: null, session: null, error: null });
   },
 

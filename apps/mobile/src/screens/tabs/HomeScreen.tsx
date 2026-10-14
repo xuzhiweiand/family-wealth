@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import type { DimensionValue } from 'react-native';
 import { useAppNavigation } from '../../lib/navigation';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,10 +71,12 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const umk = useKeyStore((s) => s.umk);
   const sharedFamily = useFamilyStore((s) => s.family);
+  const familyRefreshed = useFamilyStore((s) => s.refreshed);
 
   const assets = useAssetStore((s) => s.assets);
   const snapshots = useAssetStore((s) => s.snapshots);
   const loading = useAssetStore((s) => s.loading);
+  const loadedFamilyId = useAssetStore((s) => s.loadedFamilyId);
   const load = useAssetStore((s) => s.load);
 
   // 真实家庭 id；无 env / 无家庭时用 demo-family 兜底，保证 UI 可跑
@@ -132,6 +135,14 @@ export default function HomeScreen() {
 
   const monthUp = monthStats.delta >= 0;
   const hasFamily = sharedFamily !== null;
+
+  // 首次加载未完成：渲染与正式页面同构的骨架，避免先看到 ¥0 空页面、
+  // 数据到达后净资产/图表/列表再整体跳变。后续后台刷新仍走正常渲染。
+  // familyRefreshed 未就绪前 family 必为 null（familyId 落 demo 兜底且资产
+  // 已加载完），若不拦截会先闪现「创建或加入家庭」引导，再跳成真实家庭页。
+  if (!familyRefreshed || loadedFamilyId !== familyId) {
+    return <HomeSkeleton width={cardWidth} topInset={insets.top} />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
@@ -319,6 +330,99 @@ export default function HomeScreen() {
       </ScrollView>
     </View>
   );
+}
+
+/**
+ * 首屏骨架：区块位置 / 尺寸与正式首页一致，数据到达后原地替换，无布局跳动。
+ * 净资产卡直接复用同一渐变卡，进一步缩小与正式态的视觉差。
+ */
+function HomeSkeleton({ width, topInset }: { width: number; topInset: number }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+      <View style={{ height: topInset, backgroundColor: '#F9FAFB' }} />
+      <OfflineBanner />
+      <View style={{ padding: PAGE_PAD }}>
+        {/* 顶部问候 */}
+        <XStack justifyContent="space-between" alignItems="center" marginBottom="$md">
+          <YStack space="$sm">
+            <SkeletonBlock width={56} height={12} />
+            <SkeletonBlock width={128} height={22} />
+          </YStack>
+          <SkeletonBlock width={44} height={44} radius={22} />
+        </XStack>
+
+        {/* 渐变净资产卡 */}
+        <GradientCard width={width} height={212} radius={24}>
+          <YStack flex={1} padding="$lg" justifyContent="space-between">
+            <SkeletonBlock width={72} height={14} color="rgba(255,255,255,0.55)" />
+            <YStack space="$sm">
+              <SkeletonBlock width={180} height={38} color="rgba(255,255,255,0.85)" />
+              <SkeletonBlock width={132} height={20} radius={999} color="rgba(255,255,255,0.28)" />
+            </YStack>
+            <XStack space="$sm">
+              {[0, 1].map((i) => (
+                <View key={i} style={styles.subBox}>
+                  <SkeletonBlock width={48} height={11} color="rgba(255,255,255,0.6)" />
+                  <View style={{ height: 6 }} />
+                  <SkeletonBlock width={64} height={15} color="rgba(255,255,255,0.75)" />
+                </View>
+              ))}
+            </XStack>
+          </YStack>
+        </GradientCard>
+
+        {/* 快捷操作 */}
+        <XStack justifyContent="space-between" marginVertical="$lg">
+          {[0, 1, 2].map((i) => (
+            <YStack key={i} alignItems="center" width={64} space="$xs">
+              <SkeletonBlock width={52} height={52} radius={16} />
+              <SkeletonBlock width={28} height={10} />
+            </YStack>
+          ))}
+        </XStack>
+
+        {/* 近一年趋势 */}
+        <SkeletonBlock width={120} height={18} />
+        <View style={{ height: 8 }} />
+        <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
+          borderColor="$border" borderWidth={1} marginBottom="$md">
+          <SkeletonBlock width="100%" height={140} radius={8} color="#F3F4F6" />
+        </YStack>
+
+        {/* 资产分布 */}
+        <SkeletonBlock width={80} height={18} />
+        <View style={{ height: 8 }} />
+        <YStack padding="$md" backgroundColor="white" borderRadius="$lg" borderColor="$border" borderWidth={1}>
+          <XStack space="$md" alignItems="center">
+            <SkeletonBlock width={120} height={120} radius={60} color="#F3F4F6" />
+            <YStack flex={1} space="$md">
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonBlock key={i} width="92%" height={12} color="#F3F4F6" />
+              ))}
+            </YStack>
+          </XStack>
+        </YStack>
+
+        {/* 最近变化 */}
+        <View style={{ height: 20 }} />
+        <SkeletonBlock width={96} height={18} />
+        <View style={{ height: 8 }} />
+        {[0, 1].map((i) => (
+          <YStack key={i} padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
+            borderColor="$border" borderWidth={1} space="$sm">
+            <SkeletonBlock width="45%" height={14} color="#F3F4F6" />
+            <SkeletonBlock width="30%" height={10} color="#F3F4F6" />
+          </YStack>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function SkeletonBlock({ width, height, radius = 6, color = '#E5E7EB' }: {
+  width: DimensionValue; height: number; radius?: number; color?: string;
+}) {
+  return <View style={{ width, height, borderRadius: radius, backgroundColor: color }} />;
 }
 
 function CircleDef() {
