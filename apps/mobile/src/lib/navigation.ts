@@ -28,6 +28,7 @@ export type RootStackParamList = {
   Join: undefined;
   OcrLab: undefined;
   AssetNew: undefined;
+  UpdateCenter: undefined;
   AssetTrash: undefined;
   AssetDetail: { id: string };
   AssetEdit: { id: string };

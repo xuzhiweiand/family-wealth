@@ -39,6 +39,7 @@ import FamilyScreen from './src/screens/FamilyScreen';
 import JoinScreen from './src/screens/JoinScreen';
 import OcrLabScreen from './src/screens/OcrLabScreen';
 import AssetNewScreen from './src/screens/AssetNewScreen';
+import UpdateCenterScreen from './src/screens/UpdateCenterScreen';
 import ReminderSettingsScreen from './src/screens/ReminderSettingsScreen';
 import BackupScreen from './src/screens/BackupScreen';
 import AssetGroupsScreen from './src/screens/AssetGroupsScreen';
@@ -153,6 +154,7 @@ export default function App() {
                   <Stack.Screen name="Family" component={FamilyScreen} />
                   <Stack.Screen name="Join" component={JoinScreen} />
                   <Stack.Screen name="AssetNew" component={AssetNewScreen} />
+                  <Stack.Screen name="UpdateCenter" component={UpdateCenterScreen} />
                   <Stack.Screen name="AssetTrash" component={AssetTrashScreen} />
                   <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
                   <Stack.Screen name="AssetEdit" component={AssetEditScreen} />

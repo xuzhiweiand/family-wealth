@@ -27,11 +27,21 @@ import { GradientCard } from '../../components/GradientCard';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import {
   buildCategorySlices,
+  buildDisplayMonthTotals,
+  buildMonthGrowthLabels,
   buildMonthTotals,
   buildRecentChanges,
+  monthKeyOf,
 } from '../../lib/asset-meta';
+import { MonthGrowthAxis } from '../../components/MonthGrowthAxis';
 
 const TREND_WINDOW_DAYS = 365;
+/**
+ * 月趋势窗口：与趋势页共用断点，直板机 6 个月、折叠机展开 12 个月。
+ */
+const MONTH_WINDOW_BREAKPOINT = 600;
+const HALF_YEAR_MONTHS_NARROW = 6;
+const HALF_YEAR_MONTHS_WIDE = 12;
 const PAGE_PAD = 20;
 
 /** A 股习惯：涨红跌绿 */
@@ -67,6 +77,8 @@ export default function HomeScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - PAGE_PAD * 2;
   const insets = useSafeAreaInsets();
+  // 月趋势窗口：直板机 6 个月、折叠机展开 12 个月，与趋势页同一断点
+  const monthWindow = screenWidth >= MONTH_WINDOW_BREAKPOINT ? HALF_YEAR_MONTHS_WIDE : HALF_YEAR_MONTHS_NARROW;
 
   const user = useAuthStore((s) => s.user);
   const umk = useKeyStore((s) => s.umk);
@@ -106,20 +118,27 @@ export default function HomeScreen() {
     return bucketizeMonth(daily);
   }, [snapshots, visibleAssets, familyId]);
 
-  // 卡片三值：月度台账口径 —— 只统计当月有快照的资产（每笔取当月最新一条），
-  // 往月的历史录入不再被加总进当月卡片
-  const monthTotals = useMemo(
-    () => buildMonthTotals(visibleAssets, snapshots),
+  // 月趋势：窗口内最后 6/12 个月；增长标签相对完整序列的前一个月计算
+  const halfYearSeries = useMemo(() => series.slice(-monthWindow), [series, monthWindow]);
+  const halfYearGrowth = useMemo(
+    () => buildMonthGrowthLabels(series, monthWindow),
+    [series, monthWindow],
+  );
+
+  // 卡片三值：月度台账口径 —— 只统计当月有快照的资产（每笔取当月最新一条）；
+  // 0.3.0：当月无任何快照时回退到最近一次有数据的月份，并给出「数据截至」提示
+  const displayTotals = useMemo(
+    () => buildDisplayMonthTotals(visibleAssets, snapshots),
     [visibleAssets, snapshots],
   );
+  const monthTotals = displayTotals;
   const lastMonthTotals = useMemo(() => {
-    const prev = new Date();
-    prev.setDate(1);
-    prev.setMonth(prev.getMonth() - 1);
-    return buildMonthTotals(visibleAssets, snapshots, prev);
-  }, [visibleAssets, snapshots]);
+    const [y, m] = displayTotals.month.split('-').map(Number) as [number, number];
+    return buildMonthTotals(visibleAssets, snapshots, new Date(y, m - 2, 15));
+  }, [visibleAssets, snapshots, displayTotals.month]);
 
   const netWorth = monthTotals.netWorth;
+  const currentMonth = monthKeyOf(new Date());
 
   // 本月变化：当月合计相对上月合计
   const monthStats = useMemo(
@@ -184,10 +203,19 @@ export default function HomeScreen() {
           </YStack>
         ) : null}
 
-        {/* 渐变净资产卡 */}
-        <GradientCard width={cardWidth} height={212} radius={24}>
+        {/* 渐变净资产卡：当月无数据时回退最近一次有数据的月份并提示 */}
+        <GradientCard width={cardWidth} height={displayTotals.fallback ? 258 : 212} radius={24}>
           <YStack flex={1} padding="$lg" justifyContent="space-between">
-            <Text fontSize="$2" color="white" opacity={0.9}>家庭净资产</Text>
+            <XStack alignItems="center" space="$sm">
+              <Text fontSize="$2" color="white" opacity={0.9}>家庭净资产</Text>
+              {displayTotals.fallback ? (
+                <View style={styles.monthPill}>
+                  <Text fontSize="$1" color="white" fontWeight="600">
+                    数据截至 {displayTotals.month}
+                  </Text>
+                </View>
+              ) : null}
+            </XStack>
             <View>
               <XStack alignItems="baseline">
                 <Text fontSize="$3" color="white" opacity={0.9}>¥</Text>
@@ -198,7 +226,7 @@ export default function HomeScreen() {
               <XStack space="$sm" alignItems="center" marginTop="$xs">
                 <View style={styles.monthPill}>
                   <Text fontSize="$1" color="white" fontWeight="600">
-                    {monthUp ? '▲' : '▼'} {Math.abs(monthStats.pct).toFixed(2)}% 本月
+                    {monthUp ? '▲' : '▼'} {Math.abs(monthStats.pct).toFixed(2)}% 较上月
                   </Text>
                 </View>
                 <Text fontSize="$2" color="white" opacity={0.9}>
@@ -206,6 +234,13 @@ export default function HomeScreen() {
                 </Text>
               </XStack>
             </View>
+            {displayTotals.fallback ? (
+              <View style={styles.hintBar}>
+                <Text fontSize="$1" color="white" opacity={0.95}>
+                  {currentMonth} 尚未记录，当前展示最近一次（{displayTotals.month}）数据
+                </Text>
+              </View>
+            ) : null}
             <XStack space="$sm">
               <View style={styles.subBox}>
                 <Text fontSize="$1" color="white" opacity={0.8}>总资产</Text>
@@ -223,10 +258,13 @@ export default function HomeScreen() {
           </YStack>
         </GradientCard>
 
-        {/* 快捷操作 */}
+        {/* 快捷操作：更新（改余额）+ 录入（新增资产/类别）独立入口 */}
         <XStack justifyContent="space-between" marginVertical="$lg">
-          <QuickAction label="录入" bg="#D1FAE5" color="#059669"
-            icon={<Path d="M12 5v14M5 12h14" />}
+          <QuickAction label="更新" bg="#D1FAE5" color="#059669"
+            icon={<><Path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" /><Path d="M20 4.5V10h-5.5" /></>}
+            onPress={() => navigation.navigate('UpdateCenter')} />
+          <QuickAction label="录入" bg="#E0F2FE" color="#0284C7"
+            icon={<><Path d="M12 5v14M5 12h14" /></>}
             onPress={() => navigation.navigate('AssetNew')} />
           <QuickAction label="趋势" bg="#EDE9FE" color="#7C3AED"
             icon={<><Path d="M3 3v18h18" /><Path d="M8 17v-5M13 17V8M18 17v-3" /></>}
@@ -236,14 +274,15 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('Family')} />
         </XStack>
 
-        {/* 近一年趋势（月粒度） */}
+        {/* 月趋势（6/12 个月窗口，随屏宽自适应） */}
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
-          <Text fontSize="$4" fontWeight="700" color="$textPrimary">近一年趋势</Text>
+          <Text fontSize="$4" fontWeight="700" color="$textPrimary">近 {monthWindow} 个月趋势</Text>
           <Text fontSize="$2" color="$primary" onPress={() => navigation.navigate('Trends')}>全屏 ›</Text>
         </XStack>
         <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
           borderColor="$border" borderWidth={1} marginBottom="$md">
-          <TrendChart data={series} height={140} lines={['netWorth']} />
+          <TrendChart data={halfYearSeries} height={140} lines={['netWorth']} showXLabels={false} />
+          <MonthGrowthAxis items={halfYearGrowth} />
         </YStack>
 
         {/* 资产分布 */}
@@ -373,7 +412,7 @@ function HomeSkeleton({ width, topInset }: { width: number; topInset: number }) 
 
         {/* 快捷操作 */}
         <XStack justifyContent="space-between" marginVertical="$lg">
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <YStack key={i} alignItems="center" width={64} space="$xs">
               <SkeletonBlock width={52} height={52} radius={16} />
               <SkeletonBlock width={28} height={10} />
@@ -381,7 +420,7 @@ function HomeSkeleton({ width, topInset }: { width: number; topInset: number }) 
           ))}
         </XStack>
 
-        {/* 近一年趋势 */}
+        {/* 近半年趋势 */}
         <SkeletonBlock width={120} height={18} />
         <View style={{ height: 8 }} />
         <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
@@ -464,6 +503,12 @@ const styles = {
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 16,
     padding: 12,
+  },
+  hintBar: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   pillPrimary: {
     backgroundColor: '#059669',

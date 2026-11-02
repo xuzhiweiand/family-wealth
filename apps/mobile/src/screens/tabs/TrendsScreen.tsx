@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
 import { buildTrendSeries } from '@family-wealth/analytics';
@@ -22,10 +22,23 @@ import { useAuthStore } from '../../stores/auth-store';
 import { useAssetStore } from '../../stores/asset-store';
 import { useFamilyStore } from '../../stores/family-store';
 import { TrendChart, TREND_LINE_COLORS, type TrendLineKey } from '../../components/TrendChart';
+import { MonthGrowthAxis } from '../../components/MonthGrowthAxis';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import {
-  buildCategorySlices, findPeak, latestSnapshotAmountMap,
+  buildCategorySlices, buildMonthGrowthLabels, buildMonthlyAssetDetails,
+  findPeak, latestSnapshotAmountMap,
 } from '../../lib/asset-meta';
+
+/** 增长标签配色（原型口径）：绿涨红跌 */
+const GROWTH_UP = '#059669';
+const GROWTH_DOWN = '#DC2626';
+/**
+ * 月视图窗口：直板机只放得下 6 个月，折叠机展开（屏宽 ≥ 600pt）展示 12 个月。
+ * 图表、增长标签、资产详情统一按这个窗口，避免各区域口径不一致。
+ */
+const MONTH_WINDOW_BREAKPOINT = 600;
+const MONTH_WINDOW_NARROW = 6;
+const MONTH_WINDOW_WIDE = 12;
 
 type RangeKey = 'D' | 'W' | 'M' | 'Y';
 
@@ -112,6 +125,10 @@ export default function TrendsScreen() {
     [assets, user?.id],
   );
 
+  const { width: screenWidth } = useWindowDimensions();
+  // 月视图窗口按屏宽自适应：直板机 6 个月，折叠机展开 12 个月
+  const monthWindow = screenWidth >= MONTH_WINDOW_BREAKPOINT ? MONTH_WINDOW_WIDE : MONTH_WINDOW_NARROW;
+
   const preset = RANGE_PRESETS[range];
 
   // 取整窗口每日序列再分桶
@@ -123,13 +140,41 @@ export default function TrendsScreen() {
     return bucketize(daily, preset.bucket);
   }, [snapshots, visibleAssets, preset.days, preset.bucket, familyId]);
 
-  const latest = series[series.length - 1];
-  const first = series[0];
+  // 月视图：窗口按屏宽取 6 / 12 个月；增长标签相对完整序列的前一个月计算
+  const displaySeries = useMemo(
+    () => (preset.bucket === 'month' ? series.slice(-monthWindow) : series),
+    [series, preset.bucket, monthWindow],
+  );
+  const monthGrowth = useMemo(
+    () => (preset.bucket === 'month' ? buildMonthGrowthLabels(series, monthWindow) : []),
+    [series, preset.bucket, monthWindow],
+  );
+
+  const latest = displaySeries[displaySeries.length - 1];
+  const first = displaySeries[0];
   const periodDelta = latest && first ? latest.netWorth - first.netWorth : 0;
   const periodPct = latest && first ? pctChange(latest.netWorth, first.netWorth) : 0;
   const periodUp = periodDelta >= 0;
 
-  const peak = useMemo(() => findPeak(series), [series]);
+  const peak = useMemo(() => findPeak(displaySeries), [displaySeries]);
+
+  // 月视图图例：上涨/下跌月数与年涨幅（相对展示窗口第一个月）
+  const yearLegend = useMemo(() => {
+    if (preset.bucket !== 'month' || displaySeries.length < 2) return null;
+    const up = monthGrowth.filter((g) => g.delta !== null && g.delta > 0).length;
+    const down = monthGrowth.filter((g) => g.delta !== null && g.delta < 0).length;
+    const head = displaySeries[0]!;
+    const tail = displaySeries[displaySeries.length - 1]!;
+    return { up, down, pct: pctChange(tail.netWorth, head.netWorth) };
+  }, [preset.bucket, displaySeries, monthGrowth]);
+
+  // 资产详情：窗口内逐月各资产数据（月度台账口径），最新月份默认展开
+  const assetDetails = useMemo(
+    () => buildMonthlyAssetDetails(visibleAssets, snapshots, new Date(), monthWindow),
+    [visibleAssets, snapshots, monthWindow],
+  );
+  const [detailToggle, setDetailToggle] = useState<Record<string, boolean>>({});
+  const detailOpen = (month: string, index: number) => detailToggle[month] ?? index === 0;
 
   // 分类对比：用最新快照金额替代 currentAmount（快照口径 = 最新录入日期的数据）
   const cat = useMemo(() => {
@@ -212,14 +257,39 @@ export default function TrendsScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+            {preset.bucket === 'month' ? (
+              <Text fontSize="$1" color="$textTertiary" marginLeft="auto">
+                近 {monthWindow} 个月
+              </Text>
+            ) : null}
           </XStack>
-          {loading && series.length === 0 ? null : (
+          {loading && displaySeries.length === 0 ? null : (
             <TrendChart
-              data={series}
+              data={displaySeries}
               height={220}
               lines={activeLines}
+              showXLabels={preset.bucket !== 'month'}
             />
           )}
+          {/* 月视图：每月增长值与涨幅 */}
+          {preset.bucket === 'month' && monthGrowth.length > 0 ? (
+            <>
+              <MonthGrowthAxis items={monthGrowth} labelFormat="ym" pctDigits={1} />
+              {yearLegend !== null ? (
+                <XStack justifyContent="center" space="$md" marginTop="$xs">
+                  <Text fontSize="$1" color={GROWTH_UP}>● 上涨月份 {yearLegend.up} 个</Text>
+                  <Text fontSize="$1" color={GROWTH_DOWN}>● 下跌月份 {yearLegend.down} 个</Text>
+                  <Text fontSize="$1" color="$textSecondary">
+                    {monthWindow === 12 ? '年涨幅' : '区间涨幅'}{' '}
+                    <Text fontSize="$1" fontWeight="700"
+                      color={yearLegend.pct >= 0 ? GROWTH_UP : GROWTH_DOWN}>
+                      {yearLegend.pct >= 0 ? '+' : ''}{yearLegend.pct.toFixed(2)}%
+                    </Text>
+                  </Text>
+                </XStack>
+              ) : null}
+            </>
+          ) : null}
         </YStack>
 
         {/* 分类对比 */}
@@ -264,6 +334,82 @@ export default function TrendsScreen() {
               </View>
             </YStack>
           ) : null}
+        </YStack>
+
+        {/* 资产详情：窗口内逐月各资产数据（可展开） */}
+        <XStack justifyContent="space-between" alignItems="center" marginTop="$lg" marginBottom="$sm">
+          <Text fontSize="$4" fontWeight="700" color="$textPrimary">资产详情</Text>
+          <Text fontSize="$1" color="$textTertiary">近 {monthWindow} 个月 · 逐月展开</Text>
+        </XStack>
+        <YStack paddingHorizontal="$md" backgroundColor="white" borderRadius="$lg"
+          borderColor="$border" borderWidth={1}>
+          {assetDetails.length === 0 ? (
+            <Text fontSize="$2" color="$textTertiary" paddingVertical="$md">暂无资产数据</Text>
+          ) : (
+            assetDetails.map((m, idx) => {
+              const open = detailOpen(m.month, idx);
+              const mDeltaColor = m.delta === null ? '$textTertiary' : m.delta >= 0 ? GROWTH_UP : GROWTH_DOWN;
+              return (
+                <YStack key={m.month} borderBottomWidth={idx === assetDetails.length - 1 ? 0 : 1}
+                  borderBottomColor="#F9FAFB">
+                  <TouchableOpacity
+                    onPress={() => setDetailToggle((t) => ({ ...t, [m.month]: !open }))}
+                    style={{ paddingVertical: 12 }}
+                  >
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <XStack space="$sm" alignItems="center" flex={1}>
+                        <Text fontSize="$3" fontWeight="600" color="$textPrimary">{m.month}</Text>
+                        {m.delta !== null ? (
+                          <Text fontSize="$1" fontWeight="600" color={mDeltaColor}>
+                            {m.delta >= 0 ? '+' : ''}{formatCNYCompact(m.delta)}
+                            {m.pct !== null
+                              ? `（${m.delta >= 0 ? '+' : ''}${m.pct.toFixed(2)}%）`
+                              : ''}
+                          </Text>
+                        ) : null}
+                      </XStack>
+                      <XStack space="$sm" alignItems="center">
+                        <Text fontSize="$3" fontWeight="700" color="$textPrimary">
+                          {formatCNYCompact(m.netWorth)}
+                        </Text>
+                        <Text fontSize="$2" color="$textTertiary"
+                          style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}>
+                          ›
+                        </Text>
+                      </XStack>
+                    </XStack>
+                  </TouchableOpacity>
+                  {open ? (
+                    <YStack paddingBottom="$sm">
+                      <XStack paddingBottom="$xs">
+                        <Text flex={1} fontSize="$1" color="$textTertiary">资产</Text>
+                        <Text width={96} textAlign="right" fontSize="$1" color="$textTertiary">金额</Text>
+                        <Text width={96} textAlign="right" fontSize="$1" color="$textTertiary">较上月</Text>
+                      </XStack>
+                      {m.rows.map((r) => (
+                        <XStack key={r.asset.id} paddingVertical="$xs"
+                          borderTopWidth={1} borderTopColor="#F9FAFB">
+                          <Text flex={1} fontSize="$2" color="$textSecondary" numberOfLines={1}>
+                            {r.asset.name}
+                          </Text>
+                          <Text width={96} textAlign="right" fontSize="$2" fontWeight="600"
+                            color={r.amount < 0 ? '#EF4444' : '$textPrimary'}>
+                            {r.amount < 0 ? '-' : ''}{formatCNYCompact(Math.abs(r.amount))}
+                          </Text>
+                          <Text width={96} textAlign="right" fontSize="$2" fontWeight="600"
+                            color={r.delta === null ? '$textTertiary' : r.delta >= 0 ? GROWTH_UP : GROWTH_DOWN}>
+                            {r.delta === null
+                              ? '—'
+                              : `${r.delta >= 0 ? '+' : '-'}${formatCNYCompact(Math.abs(r.delta))}`}
+                          </Text>
+                        </XStack>
+                      ))}
+                    </YStack>
+                  ) : null}
+                </YStack>
+              );
+            })
+          )}
         </YStack>
       </ScrollView>
     </View>

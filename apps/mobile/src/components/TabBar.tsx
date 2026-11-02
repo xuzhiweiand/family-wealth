@@ -9,9 +9,16 @@
  * 间的隐式类型依赖），只声明用到的最小结构。
  */
 
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, StyleSheet, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const TAB_LABELS: Record<string, string> = {
+  Home: '总览',
+  Assets: '资产',
+  Trends: '趋势',
+  Me: '我的',
+};
 
 type IconProps = { focused: boolean };
 
@@ -116,7 +123,9 @@ export function TabBar({ state, navigation }: TabBarProps) {
     return (
       <TouchableOpacity key={route.key} style={styles.tab} onPress={onPress} activeOpacity={0.7}>
         <Icon focused={focused} />
-        <View style={[styles.labelDot, { backgroundColor: focused ? ACTIVE_COLOR : 'transparent' }]} />
+        <Text style={[styles.label, focused ? styles.labelActive : null]}>
+          {TAB_LABELS[route.name] ?? route.name}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -129,13 +138,16 @@ export function TabBar({ state, navigation }: TabBarProps) {
           <TouchableOpacity
             style={styles.fab}
             activeOpacity={0.85}
-            onPress={() => nav.navigate('AssetNew')}
+            onPress={() => nav.navigate('UpdateCenter')}
+            accessibilityLabel="更新数据"
           >
-            <Svg width={28} height={28} viewBox="0 0 24 24" fill="none"
-              stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round">
-              <Path d="M12 5v14M5 12h14" />
+            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none"
+              stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
+              <Path d="M20 4.5V10h-5.5" />
             </Svg>
           </TouchableOpacity>
+          <Text style={styles.fabLabel}>更新</Text>
         </View>
         {right.map((r, i) => renderTab(r, i + 2))}
       </View>
@@ -178,10 +190,19 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
-  labelDot: {
+  label: {
     marginTop: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    fontSize: 10,
+    color: INACTIVE_COLOR,
+  },
+  labelActive: {
+    color: ACTIVE_COLOR,
+    fontWeight: '700',
+  },
+  fabLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
   },
 });

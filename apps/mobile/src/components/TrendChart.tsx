@@ -28,6 +28,15 @@ const GUTTER_BOTTOM = 18; // 底部日期刻度区
 const AXIS_COLOR = '#9CA3AF';
 const GRID_COLOR = '#F3F4F6';
 
+/** 图表整体宽度（与 TrendChart 内部口径一致），供外部对齐增长标签用 */
+export function trendChartWidth(screenWidth: number): number {
+  return Math.max(1, screenWidth - 32 - PADDING_TOP * 2);
+}
+
+/** 绘图区左右留白（增长标签按此对齐数据点 x 坐标） */
+export const TREND_GUTTER_LEFT = GUTTER_LEFT;
+export const TREND_GUTTER_RIGHT = GUTTER_RIGHT;
+
 export interface TrendChartProps {
   data: readonly TrendPoint[];
   height?: number;
@@ -35,6 +44,8 @@ export interface TrendChartProps {
   lines?: readonly TrendLineKey[];
   /** 是否高亮最后一个点 */
   showLastDot?: boolean;
+  /** 是否绘制底部日期刻度（外部渲染增长标签轴时可关闭，避免月份重复） */
+  showXLabels?: boolean;
 }
 
 /** 把数值序列映射成 SVG path（min→底部，max→顶部） */
@@ -96,9 +107,10 @@ export function TrendChart({
   height = 160,
   lines = ['netWorth'],
   showLastDot = true,
+  showXLabels = true,
 }: TrendChartProps) {
   const { width: screenWidth } = useWindowDimensions();
-  const width = Math.max(1, screenWidth - 32 - PADDING_TOP * 2);
+  const width = trendChartWidth(screenWidth);
   const plotWidth = Math.max(1, width - GUTTER_LEFT - GUTTER_RIGHT);
   const plotHeight = Math.max(1, height - PADDING_TOP - GUTTER_BOTTOM);
 
@@ -199,7 +211,7 @@ export function TrendChart({
       </G>
 
       {/* X 轴日期刻度：按月/粒度均匀标注，首末贴边 */}
-      {labelIndices.map((i) => {
+      {(showXLabels ? labelIndices : []).map((i) => {
         const anchor: 'start' | 'middle' | 'end' =
           pointCount === 1 ? 'middle' : i === 0 ? 'start' : i === pointCount - 1 ? 'end' : 'middle';
         return (
