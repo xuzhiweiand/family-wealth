@@ -11,7 +11,7 @@
 
 import { setAuthClient, InMemoryAuthClient, SupabaseAuthClient, type SupabaseLike } from '@family-wealth/api';
 import { InMemoryAssetRepository, InMemorySnapshotRepository } from '@family-wealth/db';
-import { supabase } from './supabase';
+import { supabase, supabaseConfig } from './supabase';
 import { getCachedLogin, saveCachedLogin } from './login-cache';
 
 let isBootstrapped = false;
@@ -27,7 +27,7 @@ export function bootstrap() {
       new SupabaseAuthClient(supabase as unknown as SupabaseLike, {
         get: (email) => getCachedLogin(email),
         set: (email, profile) => saveCachedLogin(email, profile),
-      }),
+      }, supabaseConfig),
     );
   } else {
     // 开发兜底：无 env 配置时用内存 mock，便于 UI 联调

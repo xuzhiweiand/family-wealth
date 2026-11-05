@@ -56,7 +56,12 @@
         }
       }
     ],
+    // 华为账号登录（Account Kit）：AGC Client ID，需与服务端 huawei-auth 函数的 HUAWEI_CLIENT_ID 一致
     "metadata": [
+      {
+        "name": "client_id",
+        "value": "6917617381661737633"
+      },
       {
         "name": "ohos.asset.networkSecurityConfig",
         "resource": "$profile:network_config"

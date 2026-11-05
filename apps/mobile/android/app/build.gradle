@@ -53,8 +53,8 @@ android {
         applicationId "com.familywealth.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "0.3.1"
+        versionCode 13
+        versionName "0.5.0"
     }
     signingConfigs {
         debug {

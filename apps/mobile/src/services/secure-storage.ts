@@ -16,6 +16,7 @@ const SALT_SERVICE = 'family-wealth.salt';
 const SESSION_SERVICE = 'family-wealth.session';
 const UMK_SERVICE = 'family-wealth.umk';
 const USER_SERVICE = 'family-wealth.user';
+const PHONE_SERVICE = 'family-wealth.phone';
 
 /** 持久化服务端 salt（用于离线重派生 UMK） */
 export async function saveSalt(salt: string): Promise<void> {
@@ -96,7 +97,25 @@ export async function clearUser(): Promise<void> {
   await Keychain.resetGenericPassword({ service: USER_SERVICE });
 }
 
+// ---------- 手机号（本机记录，服务端绑定由 Supabase Phone OTP 完成） ----------
+
+export async function savePhone(phone: string): Promise<void> {
+  await Keychain.setGenericPassword('phone', phone, { service: PHONE_SERVICE });
+}
+
+export async function getPhone(): Promise<string | null> {
+  const result = await Keychain.getGenericPassword({ service: PHONE_SERVICE });
+  if (result === false) return null;
+  return result.password;
+}
+
+export async function clearPhone(): Promise<void> {
+  await Keychain.resetGenericPassword({ service: PHONE_SERVICE });
+}
+
 /** 一键清空所有持久化凭据 */
 export async function clearAll(): Promise<void> {
-  await Promise.all([clearSalt(), clearSession(), clearUmk(), clearUser()]);
+  await Promise.all([
+    clearSalt(), clearSession(), clearUmk(), clearUser(), clearPhone(),
+  ]);
 }

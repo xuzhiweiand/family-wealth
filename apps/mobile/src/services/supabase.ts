@@ -16,5 +16,11 @@ const supabaseAnonKey = process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
 
 export const isCloudEnabled = Boolean(supabaseUrl && supabaseAnonKey);
 
+/** 供 Edge Function 调用方复用（如 huawei-auth） */
+export const supabaseConfig = {
+  url: supabaseUrl ?? '',
+  anonKey: supabaseAnonKey ?? '',
+};
+
 export const supabase: SupabaseClient | null =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;

@@ -47,6 +47,8 @@ import ReportScreen from './src/screens/ReportScreen';
 import AssetTrashScreen from './src/screens/AssetTrashScreen';
 import AssetDetailScreen from './src/screens/AssetDetailScreen';
 import AssetEditScreen from './src/screens/AssetEditScreen';
+import HelpFeedbackScreen from './src/screens/HelpFeedbackScreen';
+import HuaweiKeySetupScreen from './src/screens/HuaweiKeySetupScreen';
 
 bootstrap();
 
@@ -162,7 +164,10 @@ export default function App() {
                   <Stack.Screen name="Backup" component={BackupScreen} />
                   <Stack.Screen name="AssetGroups" component={AssetGroupsScreen} />
                   <Stack.Screen name="Report" component={ReportScreen} />
+                  <Stack.Screen name="HelpFeedback" component={HelpFeedbackScreen} />
                 </>
+              ) : status === 'pending-huawei' ? (
+                <Stack.Screen name="HuaweiKeySetup" component={HuaweiKeySetupScreen} />
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />
               )}

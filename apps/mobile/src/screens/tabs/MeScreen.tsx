@@ -24,7 +24,10 @@ import { useAuthStore } from '../../stores/auth-store';
 import { useAssetStore } from '../../stores/asset-store';
 import { useFamilyStore, useMyFamilyRole } from '../../stores/family-store';
 import { OfflineBanner } from '../../components/OfflineBanner';
+import { PhoneBindingSheet } from '../../components/PhoneBindingSheet';
 import { exportAssetsCsv } from '../../services/export';
+import { getPhone } from '../../services/secure-storage';
+import { maskPhone } from '../../services/phone';
 
 type IconGlyph = React.ReactNode;
 
@@ -82,6 +85,20 @@ const HOME: IconGlyph = (
     <Path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
   </>
 );
+const PHONE: IconGlyph = (
+  <>
+    <Path d="M7 2h10a2.5 2.5 0 0 1 2.5 2.5v15A2.5 2.5 0 0 1 17 22H7a2.5 2.5 0 0 1-2.5-2.5v-15A2.5 2.5 0 0 1 7 2Z" />
+    <Path d="M11 18.5h2" />
+  </>
+);
+const TRASH: IconGlyph = (
+  <>
+    <Path d="M4 7h16" />
+    <Path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    <Path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+    <Path d="M10 11v6M14 11v6" />
+  </>
+);
 
 export default function MeScreen() {
   const navigation = useAppNavigation();
@@ -89,6 +106,7 @@ export default function MeScreen() {
 
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const assets = useAssetStore((s) => s.assets);
 
   const family = useFamilyStore((s) => s.family);
@@ -99,9 +117,12 @@ export default function MeScreen() {
   const [biometric, setBiometric] = useState(false);
   const [notify, setNotify] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [phoneSheet, setPhoneSheet] = useState(false);
 
   useEffect(() => {
     refresh();
+    void getPhone().then(setPhone);
   }, [refresh]);
 
   // 导出遵循可见性口径（P0-3 验收 2）：与资产列表同一份 filterVisibleAssets，
@@ -116,7 +137,7 @@ export default function MeScreen() {
     [assets, user?.id, role],
   );
 
-  const version = '0.3.1';
+  const version = '0.5.0';
 
   const handleExport = async () => {
     if (exporting) return;
@@ -153,6 +174,39 @@ export default function MeScreen() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '注销账号',
+      '注销后将永久删除该账号及其云端数据（家庭、成员、同步记录），且无法恢复。\n\n若你用华为账号登录后想改为绑定已有邮箱账号，注销后重新用华为账号登录，在过渡页选择「绑定已有邮箱账号」即可。',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '继续注销',
+          style: 'destructive',
+          onPress: () => confirmDeleteAccount(),
+        },
+      ],
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert('确认注销', '此操作不可撤销，确定要注销当前账号吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '确认注销',
+        style: 'destructive',
+        onPress: async () => {
+          const { reminderService } = await import('../../services/reminder-service');
+          await reminderService.onLogout();
+          const ok = await deleteAccount();
+          if (!ok) {
+            Alert.alert('注销失败', useAuthStore.getState().error ?? '请稍后重试');
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <View style={{ height: insets.top, backgroundColor: '#F9FAFB' }} />
@@ -178,8 +232,37 @@ export default function MeScreen() {
             <Text fontSize="$2" color="$textTertiary" marginTop={2}>
               {user?.email ?? '—'}
             </Text>
+            <View style={{
+              alignSelf: 'flex-start', marginTop: 6, paddingHorizontal: 8, paddingVertical: 2,
+              borderRadius: 999, backgroundColor: phone ? '#ECFDF5' : '#FFFBEB',
+            }}>
+              <Text fontSize={10} color={phone ? '#047857' : '#B45309'}>
+                {phone ? `已绑定 ${maskPhone(phone)}` : '未绑定手机号'}
+              </Text>
+            </View>
           </YStack>
         </XStack>
+
+        {/* 账号 */}
+        <SectionLabel>账号</SectionLabel>
+        <Group>
+          <Row
+            glyph={PHONE} glyphColor="#059669" glyphBg="#D1FAE5"
+            label="手机号"
+            value={phone ? maskPhone(phone) : '去绑定'}
+            {...(phone ? {} : { valueColor: '#059669' })}
+            chevron
+            onPress={() => setPhoneSheet(true)}
+          />
+          <Row
+            glyph={TRASH} glyphColor="#DC2626" glyphBg="#FEE2E2"
+            label="注销账号"
+            danger
+            chevron
+            isLast
+            onPress={handleDeleteAccount}
+          />
+        </Group>
 
         {/* 当前家庭 */}
         <Group>
@@ -252,7 +335,7 @@ export default function MeScreen() {
             label="帮助与反馈"
             chevron
             isLast
-            onPress={() => Alert.alert('帮助与反馈', '可通过邮箱或家庭群联系我们')}
+            onPress={() => navigation.navigate('HelpFeedback')}
           />
         </Group>
 
@@ -272,6 +355,13 @@ export default function MeScreen() {
           <Text fontSize="$3" fontWeight="600" color="#DC2626">退出登录</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <PhoneBindingSheet
+        visible={phoneSheet}
+        currentPhone={phone}
+        onClose={() => setPhoneSheet(false)}
+        onSaved={setPhone}
+      />
     </View>
   );
 }
@@ -309,11 +399,13 @@ interface RowProps {
   isLast?: boolean;
   /** 置灰（如空数据时的导出按钮）：标签/图标变灰，仍可点击以给出提示 */
   dimmed?: boolean;
+  /** 危险操作：标签显示为红色 */
+  danger?: boolean;
 }
 
 function Row({
   glyph, glyphColor, glyphBg, label, value, valueColor,
-  chevron, onPress, toggle, toggleValue, onToggle, isLast, dimmed,
+  chevron, onPress, toggle, toggleValue, onToggle, isLast, dimmed, danger,
 }: RowProps) {
   const content = (
     <XStack
@@ -329,7 +421,13 @@ function Row({
           {glyph}
         </Svg>
       </View>
-      <Text fontSize="$3" color={dimmed ? '$textTertiary' : '$textPrimary'} flex={1}>{label}</Text>
+      <Text
+        fontSize="$3"
+        color={danger ? '#DC2626' : dimmed ? '$textTertiary' : '$textPrimary'}
+        flex={1}
+      >
+        {label}
+      </Text>
       {value !== undefined ? (
         <Text fontSize="$2" color={valueColor ?? '$textTertiary'}>{value}</Text>
       ) : null}

@@ -1,0 +1,16 @@
+# 自托管 Supabase 的 edge-functions 额外环境变量
+# 由 deploy/server 升级脚本写入 /opt/supabase/docker/docker-compose.override.yml
+services:
+  functions:
+    environment:
+      # 华为账号登录（Account Kit）
+      HUAWEI_CLIENT_ID: ${HUAWEI_CLIENT_ID:-}
+      HUAWEI_CLIENT_SECRET: ${HUAWEI_CLIENT_SECRET:-}
+      HUAWEI_REDIRECT_URI: ${HUAWEI_REDIRECT_URI:-}
+      # 用户反馈邮件通知（submit-feedback）
+      # 用独立的 FEEDBACK_SMTP_* 前缀，避免覆盖 GoTrue 全局 SMTP_* 配置
+      FEEDBACK_SMTP_HOST: ${FEEDBACK_SMTP_HOST:-smtp.163.com}
+      FEEDBACK_SMTP_PORT: ${FEEDBACK_SMTP_PORT:-465}
+      FEEDBACK_SMTP_USER: ${FEEDBACK_SMTP_USER:-}
+      FEEDBACK_SMTP_PASS: ${FEEDBACK_SMTP_PASS:-}
+      FEEDBACK_TO: ${FEEDBACK_TO:-xuzhiweiand@163.com}

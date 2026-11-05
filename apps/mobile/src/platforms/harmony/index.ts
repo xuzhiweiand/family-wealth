@@ -91,7 +91,7 @@ export const isIOS = Platform.OS === 'ios';
 export const HarmonyConfig = {
   useNativeOCR: true,
   useNativeKeychain: true,
-  version: '0.3.1',
+  version: '0.5.0',
 };
 
 export {

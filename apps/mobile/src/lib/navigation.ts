@@ -36,6 +36,8 @@ export type RootStackParamList = {
   Backup: undefined;
   AssetGroups: undefined;
   Report: undefined;
+  HelpFeedback: undefined;
+  HuaweiKeySetup: undefined;
 };
 
 export type AppNavigation = NativeStackNavigationProp<RootStackParamList & MainTabParamList>;

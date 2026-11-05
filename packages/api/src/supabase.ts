@@ -12,7 +12,20 @@
  */
 
 import { generateSalt, toBase64, createPasswordCheckEnvelopeWithUMK, deriveUMK, deriveUMKFast } from '@family-wealth/crypto';
-import type { AuthClient, AuthResult, Session, SignInInput, SignUpInput, User } from './types';
+import type {
+  AuthClient,
+  AuthResult,
+  HuaweiBindEmailInput,
+  HuaweiSignInInput,
+  HuaweiSignInResult,
+  PhoneBindingResult,
+  PhoneCodeResult,
+  SaveEncryptionProfileInput,
+  Session,
+  SignInInput,
+  SignUpInput,
+  User,
+} from './types';
 
 /**
  * 本模块**不 import @supabase/supabase-js 的类型**，只声明真正用到的那一小摊表面。
@@ -74,6 +87,21 @@ export interface SupabaseAuthPort {
   getUser(): Promise<{ data: { user: SupabaseUser | null }; error: AuthErrorLike | null }>;
   getSession(): Promise<{ data: { session: SupabaseSession | null }; error: AuthErrorLike | null }>;
   refreshSession(): Promise<{ data: { session: SupabaseSession | null }; error: AuthErrorLike | null }>;
+  /** 华为登录拿到服务端签发的 token 后，写回 SDK 内部会话 */
+  setSession(tokens: { access_token: string; refresh_token: string }): Promise<{
+    data: { session: SupabaseSession | null };
+    error: AuthErrorLike | null;
+  }>;
+  /** 手机号绑定：向新号码发送验证码 */
+  updateUser(attributes: { phone: string }): Promise<{
+    data: { user: SupabaseUser | null };
+    error: AuthErrorLike | null;
+  }>;
+  /** 手机号绑定：校验验证码 */
+  verifyOtp(params: { phone: string; token: string; type: 'phone_change' }): Promise<{
+    data: { user: SupabaseUser | null; session: SupabaseSession | null };
+    error: AuthErrorLike | null;
+  }>;
   onAuthStateChange(listener: (event: string, session: SupabaseSession | null) => void): {
     data: { subscription: { unsubscribe: () => void } };
   };
@@ -99,6 +127,25 @@ interface ProfileRow {
   password_check_envelope: string;
 }
 
+/** 华为登录 Edge Function 地址（Supabase URL + anon key） */
+export interface HuaweiAuthEndpoint {
+  url: string;
+  anonKey: string;
+}
+
+/** huawei-auth Edge Function 返回体 */
+interface HuaweiAuthResponse {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  userId?: string;
+  email?: string;
+  displayName?: string;
+  isNewUser?: boolean;
+  profile?: { salt: string; passwordCheckEnvelope: string } | null;
+  error?: string;
+}
+
 export class SupabaseAuthClient implements AuthClient {
   /** 内存缓存 profile，避免每次 getCurrentUser 都查库 */
   private profileCache = new Map<string, ProfileRow>();
@@ -119,6 +166,7 @@ export class SupabaseAuthClient implements AuthClient {
   constructor(
     private readonly supabase: SupabaseLike,
     private readonly loginCache: LoginProfileCachePort | null = null,
+    private readonly huaweiAuth: HuaweiAuthEndpoint | null = null,
   ) {}
 
   async signUp(input: SignUpInput): Promise<AuthResult<{ user: User; session: Session }>> {
@@ -225,6 +273,209 @@ export class SupabaseAuthClient implements AuthClient {
     // 3) 立即返回登录态：PBKDF2 由宿主端在主页首帧渲染后再执行，
     //    不阻塞进入主页（见 apps/mobile auth-store signIn）
     return { ok: true, data: { user, session: this.toSession(data.session) } };
+  }
+
+  async signInWithHuawei(input: HuaweiSignInInput): Promise<AuthResult<HuaweiSignInResult>> {
+    return this.callHuaweiAuth({
+      authorizationCode: input.authorizationCode,
+      state: input.state,
+      ...(input.deviceId ? { deviceId: input.deviceId } : {}),
+    });
+  }
+
+  async bindHuaweiToEmailAccount(input: HuaweiBindEmailInput): Promise<AuthResult<HuaweiSignInResult>> {
+    return this.callHuaweiAuth({
+      action: 'bind',
+      authorizationCode: input.authorizationCode,
+      state: input.state,
+      email: input.email,
+      password: input.password,
+      ...(input.deviceId ? { deviceId: input.deviceId } : {}),
+    });
+  }
+
+  /** 调 huawei-auth Edge Function 并把签发的会话写回 Supabase SDK */
+  private async callHuaweiAuth(payload: Record<string, string>): Promise<AuthResult<HuaweiSignInResult>> {
+    if (!this.huaweiAuth) {
+      return { ok: false, error: { code: 'UNKNOWN', message: '当前版本未配置华为账号登录服务' } };
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.huaweiAuth.url}/functions/v1/huawei-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: this.huaweiAuth.anonKey,
+          Authorization: `Bearer ${this.huaweiAuth.anonKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      return { ok: false, error: { code: 'NETWORK', message: '网络异常，请稍后重试' } };
+    }
+
+    // 网关在函数未部署 / 未启动时返回 HTML 或纯文本，先按文本读取再尝试解析，
+    // 避免把「服务不可用」笼统报成「服务返回异常」
+    const rawText = await response.text().catch(() => '');
+    let body: HuaweiAuthResponse | null = null;
+    if (rawText) {
+      try {
+        body = JSON.parse(rawText) as HuaweiAuthResponse;
+      } catch {
+        body = null;
+      }
+    }
+
+    if (!body) {
+      const unavailable = response.status === 404 || response.status === 502 || response.status === 503;
+      return {
+        ok: false,
+        error: {
+          code: 'NETWORK',
+          message: unavailable
+            ? `华为账号登录服务未启用（HTTP ${response.status}），请在服务端部署并启动 huawei-auth 函数`
+            : `华为账号登录服务返回异常（HTTP ${response.status}）`,
+        },
+      };
+    }
+
+    if (!response.ok || body.error || !body.accessToken || !body.userId) {
+      const unavailable = response.status === 404 || response.status === 502 || response.status === 503;
+      return {
+        ok: false,
+        error: {
+          code: response.status >= 500 ? 'NETWORK' : 'UNKNOWN',
+          message: unavailable
+            ? `华为账号登录服务未启用（HTTP ${response.status}），请在服务端部署并启动 huawei-auth 函数`
+            : body.error ?? '华为账号登录失败，请稍后重试',
+        },
+      };
+    }
+
+    // 把服务端签发的会话写回 Supabase SDK，后续 API 调用自动携带 Authorization
+    const { error } = await this.supabase.auth.setSession({
+      access_token: body.accessToken,
+      refresh_token: body.refreshToken ?? '',
+    });
+    if (error) {
+      return { ok: false, error: { code: 'UNKNOWN', message: `会话建立失败: ${error.message}` } };
+    }
+
+    return {
+      ok: true,
+      data: {
+        account: {
+          userId: body.userId,
+          email: body.email ?? '',
+          displayName: body.displayName ?? '华为用户',
+          isNewUser: Boolean(body.isNewUser),
+          profile: body.profile ?? null,
+        },
+        session: {
+          userId: body.userId,
+          email: body.email ?? '',
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken ?? '',
+          expiresAt: body.expiresAt ?? 0,
+        },
+      },
+    };
+  }
+
+  async saveEncryptionProfile(input: SaveEncryptionProfileInput): Promise<AuthResult<User>> {
+    const profile: ProfileRow = {
+      id: input.userId,
+      email: input.email.toLowerCase(),
+      display_name: input.displayName,
+      salt: input.salt,
+      password_check_envelope: input.passwordCheckEnvelope,
+    };
+    const { error } = await this.supabase.from('profiles').upsert(profile);
+    if (error) {
+      return { ok: false, error: { code: 'UNKNOWN', message: `档案写入失败: ${error.message}` } };
+    }
+    this.profileCache.set(input.userId, profile);
+    return {
+      ok: true,
+      data: {
+        id: input.userId,
+        email: profile.email,
+        displayName: input.displayName,
+        salt: input.salt,
+        passwordCheckEnvelope: input.passwordCheckEnvelope,
+      },
+    };
+  }
+
+  async sendPhoneBindingCode(phone: string): Promise<AuthResult<PhoneCodeResult>> {
+    const { error } = await this.supabase.auth.updateUser({ phone });
+    if (error) {
+      if (/sms|provider|phone provider/i.test(error.message)) {
+        return { ok: false, error: { code: 'UNKNOWN', message: '短信服务暂未配置，无法发送验证码' } };
+      }
+      return this.mapAuthError(error);
+    }
+    return { ok: true, data: {} };
+  }
+
+  async confirmPhoneBinding(phone: string, code: string): Promise<AuthResult<PhoneBindingResult>> {
+    const { error } = await this.supabase.auth.verifyOtp({
+      phone,
+      token: code,
+      type: 'phone_change',
+    });
+    if (error) return this.mapAuthError(error);
+    return { ok: true, data: { phone } };
+  }
+
+  async deleteAccount(): Promise<AuthResult<null>> {
+    if (!this.huaweiAuth) {
+      return { ok: false, error: { code: 'UNKNOWN', message: '当前版本未配置账号注销服务' } };
+    }
+    const { data: { session } } = await this.supabase.auth.getSession();
+    if (!session) {
+      return { ok: false, error: { code: 'UNKNOWN', message: '会话已失效，请重新登录' } };
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.huaweiAuth.url}/functions/v1/huawei-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: this.huaweiAuth.anonKey,
+          Authorization: `Bearer ${this.huaweiAuth.anonKey}`,
+        },
+        body: JSON.stringify({ action: 'delete-account', accessToken: session.access_token }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'NETWORK', message: '网络异常，请稍后重试' } };
+    }
+
+    const raw = await response.text().catch(() => '');
+    let body: { ok?: boolean; error?: string } | null = null;
+    if (raw) {
+      try {
+        body = JSON.parse(raw) as { ok?: boolean; error?: string };
+      } catch {
+        body = null;
+      }
+    }
+    if (!response.ok || body?.error) {
+      return {
+        ok: false,
+        error: {
+          code: response.status >= 500 ? 'NETWORK' : 'UNKNOWN',
+          message: body?.error ?? `注销失败（HTTP ${response.status}）`,
+        },
+      };
+    }
+
+    // 服务端账号已删除，本地 SDK 会话不再有效
+    await this.supabase.auth.signOut();
+    this.profileCache.clear();
+    return { ok: true, data: null };
   }
 
   async signOut(): Promise<void> {

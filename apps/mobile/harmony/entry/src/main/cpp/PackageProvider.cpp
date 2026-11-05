@@ -17,6 +17,7 @@
 #include "ReminderAgentPackage.h"
 #include "FileExportPackage.h"
 #include "FileImportPackage.h"
+#include "HuaweiAccountPackage.h"
 
 using namespace rnoh;
 
@@ -36,5 +37,6 @@ std::vector<std::shared_ptr<Package>> PackageProvider::getPackages(Package::Cont
         std::make_shared<ReminderAgentPackage>(ctx),
         std::make_shared<FileExportPackage>(ctx),
         std::make_shared<FileImportPackage>(ctx),
+        std::make_shared<HuaweiAccountPackage>(ctx),
     };
 }
