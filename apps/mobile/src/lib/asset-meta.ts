@@ -7,6 +7,7 @@
  */
 
 import type { Asset, AssetSnapshot, AssetType, TrendPoint } from '@family-wealth/shared-types';
+import { ASSET_TYPE_PALETTE } from '../theme';
 
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: '现金',
@@ -22,20 +23,8 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   debt: '债务',
 };
 
-/** 环形图 / 条形对比用色（与原型同系） */
-export const ASSET_TYPE_COLORS: Record<AssetType, string> = {
-  cash: '#F59E0B',
-  bank_deposit: '#3B82F6',
-  stock: '#8B5CF6',
-  fund: '#EC4899',
-  wealth_management: '#06B6D4',
-  real_estate: '#F97316',
-  vehicle: '#84CC16',
-  crypto: '#EAB308',
-  precious_metal: '#D4AF37',
-  receivable: '#14B8A6',
-  debt: '#EF4444',
-};
+/** 环形图 / 条形对比用色（v0.6.0 深沉珠宝色，与墨绿鎏金同系） */
+export const ASSET_TYPE_COLORS: Record<AssetType, string> = ASSET_TYPE_PALETTE;
 
 export interface CategorySlice {
   type: AssetType;

@@ -1,13 +1,14 @@
 import { createTamagui, createTheme } from 'tamagui';
+import { COLORS, RADIUS } from './src/theme';
 
 /**
  * Tamagui 设计令牌
  *
- * 设计原则：
- * - 主色采用翡翠绿（#10B981），金融行业惯例（增长、安全）
- * - 债务色 #EF4444（红）
- * - 中性色基于 Tailwind gray scale
- * - 圆角 4 档（卡片、按钮、输入框、徽章）
+ * 设计原则（v0.6.0「私行墨绿 × 鎏金」）：
+ * - 主色墨绿 #0B3D2E，点缀香槟金 #C6A15B
+ * - 债务色朱砂 #B4453C
+ * - 中性色为暖调纸感（米白 / 暖灰线），不再使用冷灰
+ * - 圆角 4 档（10 / 16 / 22 / 28）
  *
  * 注意：
  * 1. media 使用纯字面量断点对象，不要 import
@@ -25,18 +26,19 @@ import { createTamagui, createTheme } from 'tamagui';
 
 const tokens = {
   color: {
-    primary: '#10B981',
-    primaryDark: '#059669',
-    debt: '#EF4444',
-    warning: '#F59E0B',
-    bgPrimary: '#FFFFFF',
-    bgSecondary: '#F9FAFB',
-    bgTertiary: '#F3F4F6',
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
-    textTertiary: '#9CA3AF',
-    border: '#E5E7EB',
-    borderStrong: '#D1D5DB',
+    primary: COLORS.ink,
+    primaryDark: COLORS.inkSoft,
+    debt: COLORS.danger,
+    warning: COLORS.warning,
+    bgPrimary: COLORS.surface,
+    bgSecondary: COLORS.paper,
+    bgTertiary: COLORS.divider,
+    textPrimary: COLORS.text,
+    textSecondary: COLORS.sub,
+    textTertiary: COLORS.faint,
+    border: COLORS.hairline,
+    borderStrong: COLORS.hairlineStrong,
+    gold: COLORS.gold,
   },
   size: {
     true: 12, // 默认尺寸（等价于 md）
@@ -49,10 +51,10 @@ const tokens = {
     xxxl: 32,
   },
   radius: {
-    sm: 6,
-    md: 12,
-    lg: 16,
-    xl: 24,
+    sm: RADIUS.sm,
+    md: RADIUS.md,
+    lg: RADIUS.lg,
+    xl: RADIUS.xl,
   },
   // zIndex 为 Tamagui 必备 token 类别，且键需与 size 有交集（dev 期强校验）
   zIndex: {

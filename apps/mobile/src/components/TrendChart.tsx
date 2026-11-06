@@ -7,6 +7,7 @@
  * 0.1.3：补齐横纵坐标 —— 左侧金额刻度 + 底部日期刻度 + 水平网格线。
  */
 
+import { COLORS } from '../theme';
 import { useWindowDimensions } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { Text, YStack } from 'tamagui';
@@ -16,17 +17,17 @@ import type { TrendPoint } from '@family-wealth/shared-types';
 export type TrendLineKey = 'netWorth' | 'totalAssets' | 'totalLiabilities';
 
 export const TREND_LINE_COLORS: Record<TrendLineKey, string> = {
-  netWorth: '#10B981', // 净资产（主线，emerald）
-  totalAssets: '#F59E0B', // 总资产（橙）
-  totalLiabilities: '#DC2626', // 总负债（红）
+  netWorth: COLORS.ink, // 净资产（主线，emerald）
+  totalAssets: COLORS.warning, // 总资产（橙）
+  totalLiabilities: COLORS.danger, // 总负债（红）
 };
 
 const PADDING_TOP = 8;
 const GUTTER_LEFT = 48; // 左侧金额刻度区
 const GUTTER_RIGHT = 6;
 const GUTTER_BOTTOM = 18; // 底部日期刻度区
-const AXIS_COLOR = '#9CA3AF';
-const GRID_COLOR = '#F3F4F6';
+const AXIS_COLOR = COLORS.faint;
+const GRID_COLOR = COLORS.divider;
 
 /** 图表整体宽度（与 TrendChart 内部口径一致），供外部对齐增长标签用 */
 export function trendChartWidth(screenWidth: number): number {

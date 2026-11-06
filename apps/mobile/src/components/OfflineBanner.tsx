@@ -5,6 +5,7 @@
  * 本地优先架构下录入/查看不受影响，云端同步延后。
  */
 
+import { COLORS } from '../theme';
 import { XStack, Text } from 'tamagui';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
@@ -18,16 +19,16 @@ export function OfflineBanner({ hidden = false }: OfflineBannerProps) {
   if (hidden || isConnected) return null;
   return (
     <XStack
-      backgroundColor="#FEF3C7"
-      borderBottomColor="#FDE68A"
+      backgroundColor={COLORS.warningWash}
+      borderBottomColor={COLORS.goldLight}
       borderBottomWidth={1}
       paddingVertical="$xs"
       paddingHorizontal="$md"
       alignItems="center"
       space="$xs"
     >
-      <Text fontSize="$1" color="#92400E">●</Text>
-      <Text fontSize="$1" color="#92400E" fontWeight="600">
+      <Text fontSize="$1" color={COLORS.goldDeep}>●</Text>
+      <Text fontSize="$1" color={COLORS.goldDeep} fontWeight="600">
         离线模式 · 变更将在联网后同步
       </Text>
     </XStack>

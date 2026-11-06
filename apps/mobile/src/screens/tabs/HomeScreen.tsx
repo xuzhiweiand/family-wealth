@@ -1,75 +1,171 @@
 /**
- * 总览仪表盘
+ * 首页（总览）
+ *
+ * 对照 v0.6.0 高保真单页「v0.6.0-home.html」复刻：
+ *   问候 → 家庭净资产 hero（含迷你走势 + 总资产/总负债/资产负债率三列）
+ *   → 月度小结条 → 资产构成（按类型分组明细）→ 隐私说明。
  *
  * 所有聚合都在本机完成（服务端只见密文，ADR-0006）：
- * 快照 → packages/analytics 聚合成趋势序列 → 本页计算净资产 / 本月变化 /
- * 资产分布 / 最近变化并渲染。视觉对齐高保真原型。
+ * 快照 → packages/analytics 聚合成月度序列 → 本页计算净资产 / 本月变化 /
+ * 资产负债率 / 资产分组。
  */
 
-import { useEffect, useMemo } from 'react';
+import { COLORS, GOLD_DECOR, GOLD_ON_INK } from '../../theme';
+import { MONEY_TEXT, SERIF_CN_TEXT } from '../../typography';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type { DimensionValue } from 'react-native';
 import { useAppNavigation } from '../../lib/navigation';
-import Svg, { Path } from 'react-native-svg';
+import Svg, {
+  Circle, Defs, LinearGradient, Path, Rect, Stop,
+} from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
 import { buildTrendSeries } from '@family-wealth/analytics';
-import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
+import { formatCNY, pctChange } from '@family-wealth/shared-utils';
 import { filterVisibleAssets } from '@family-wealth/family';
-import type { TrendPoint } from '@family-wealth/shared-types';
+import type { Asset, AssetType, TrendPoint } from '@family-wealth/shared-types';
 import { useAuthStore } from '../../stores/auth-store';
-import { useKeyStore } from '../../stores/key-store';
 import { useAssetStore } from '../../stores/asset-store';
 import { useFamilyStore } from '../../stores/family-store';
-import { TrendChart } from '../../components/TrendChart';
-import { DonutChart } from '../../components/DonutChart';
 import { GradientCard } from '../../components/GradientCard';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import {
-  buildCategorySlices,
+  ASSET_TYPE_LABELS,
   buildDisplayMonthTotals,
-  buildMonthGrowthLabels,
   buildMonthTotals,
-  buildRecentChanges,
   monthKeyOf,
 } from '../../lib/asset-meta';
-import { MonthGrowthAxis } from '../../components/MonthGrowthAxis';
 
 const TREND_WINDOW_DAYS = 365;
-/**
- * 月趋势窗口：与趋势页共用断点，直板机 6 个月、折叠机展开 12 个月。
- */
-const MONTH_WINDOW_BREAKPOINT = 600;
-const HALF_YEAR_MONTHS_NARROW = 6;
-const HALF_YEAR_MONTHS_WIDE = 12;
 const PAGE_PAD = 20;
+const HERO_HEIGHT = 264;
 
-/** A 股习惯：涨红跌绿 */
-const UP_COLOR = '#DC2626';
-const DOWN_COLOR = '#16A34A';
+/** 资产构成分组展示顺序：现金 → 投资 → 不动产/实物 → 债权 → 负债 */
+const GROUP_ORDER: AssetType[] = [
+  'cash', 'bank_deposit', 'fund', 'stock', 'wealth_management',
+  'precious_metal', 'crypto', 'real_estate', 'vehicle', 'receivable', 'debt',
+];
+
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 function fromDaysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 }
 
-/**
- * 每日序列 → 按月序列（每月取桶内最后一点）。
- * 日序列已做前向填充，窗口内每个月都会有值，所以得到连续 12 个月的轴。
- * date 规范为桶 key 'YYYY-MM'，横坐标只显示月份。
- */
+/** 每日序列 → 按月序列（每月取桶内最后一点）。 */
 function bucketizeMonth(series: readonly TrendPoint[]): TrendPoint[] {
   const map = new Map<string, TrendPoint>();
   for (const p of series) map.set(p.date.slice(0, 7), p);
   return [...map.entries()].map(([month, p]) => ({ ...p, date: month }));
 }
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 6) return '凌晨好';
-  if (h < 11) return '早上好';
-  if (h < 13) return '中午好';
-  if (h < 18) return '下午好';
-  return '晚上好';
+/** 中文月份：'2026-10' → '十月' */
+function monthCN(key: string): string {
+  const m = Number(key.slice(5, 7));
+  return ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'][m - 1] ?? key;
+}
+
+/** 金额（分）→ '3,356,200' */
+function amountText(cents: number): string {
+  return formatCNY(cents, { fraction: false }).replace('¥', '');
+}
+
+/** 资产副标题：优先取 details 里的描述字段，否则展示更新日期 */
+function assetSubtitle(a: Asset): string {
+  const d = a.details ?? {};
+  for (const key of ['bankName', 'accountTail', 'term', 'rate', 'address', 'area', 'note', 'desc']) {
+    const v = d[key];
+    if (typeof v === 'string' && v.trim() !== '') return v;
+    if (typeof v === 'number') return String(v);
+  }
+  const date = a.updatedAt.slice(5, 10);
+  return `更新于 ${date}`;
+}
+
+/** 迷你折线：把月度净资产序列映射到 300×44 视口 */
+function sparkPaths(points: readonly TrendPoint[]): { line: string; area: string } {
+  const values = points.map((p) => p.netWorth);
+  if (values.length === 0) return { line: '', area: '' };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const step = values.length > 1 ? 300 / (values.length - 1) : 0;
+  const coords = values.map((v, i) => {
+    const x = 2 + i * step;
+    const y = 38 - ((v - min) / span) * 30;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const line = `M${coords.join(' L')}`;
+  const firstX = 2;
+  const lastX = 2 + (values.length - 1) * step;
+  const area = `${line} L${lastX.toFixed(1)},44 L${firstX.toFixed(1)},44 Z`;
+  return { line, area };
+}
+
+function iconFor(type: AssetType): React.ReactNode {
+  switch (type) {
+    case 'cash':
+    case 'bank_deposit':
+      return (
+        <>
+          <Rect width={20} height={12} x={2} y={6} rx={2} />
+          <Path d="M6 12h.01M18 12h.01" />
+        </>
+      );
+    case 'fund':
+    case 'stock':
+    case 'wealth_management':
+    case 'crypto':
+      return (
+        <>
+          <Path d="M3 3v16a2 2 0 0 0 2 2h16" />
+          <Path d="m19 9-5 5-4-4-3 3" />
+        </>
+      );
+    case 'precious_metal':
+      return (
+        <>
+          <Circle cx={12} cy={12} r={8} />
+          <Path d="M12 8v8M9.5 9.7h4a1.6 1.6 0 0 1 0 3.2h-3a1.6 1.6 0 0 0 0 3.2h4" />
+        </>
+      );
+    case 'real_estate':
+      return (
+        <>
+          <Path d="m3 11 9-8 9 8" />
+          <Path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
+        </>
+      );
+    case 'vehicle':
+      return (
+        <>
+          <Path d="M5 17h14l-1.5-6.5a2 2 0 0 0-2-1.5h-7a2 2 0 0 0-2 1.5L5 17Z" />
+          <Path d="M7 17v2M17 17v2" />
+        </>
+      );
+    case 'receivable':
+      return (
+        <>
+          <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </>
+      );
+    default:
+      return (
+        <>
+          <Rect width={20} height={14} x={2} y={5} rx={2} />
+          <Path d="M2 10h20" />
+        </>
+      );
+  }
+}
+
+function chipTone(type: AssetType): { bg: string; color: string } {
+  if (type === 'debt') return { bg: COLORS.dangerWash, color: COLORS.danger };
+  if (['fund', 'stock', 'wealth_management', 'precious_metal', 'crypto'].includes(type)) {
+    return { bg: COLORS.warningWash, color: COLORS.goldDeep };
+  }
+  return { bg: COLORS.inkWash, color: COLORS.ink };
 }
 
 export default function HomeScreen() {
@@ -77,11 +173,8 @@ export default function HomeScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - PAGE_PAD * 2;
   const insets = useSafeAreaInsets();
-  // 月趋势窗口：直板机 6 个月、折叠机展开 12 个月，与趋势页同一断点
-  const monthWindow = screenWidth >= MONTH_WINDOW_BREAKPOINT ? HALF_YEAR_MONTHS_WIDE : HALF_YEAR_MONTHS_NARROW;
 
   const user = useAuthStore((s) => s.user);
-  const umk = useKeyStore((s) => s.umk);
   const sharedFamily = useFamilyStore((s) => s.family);
   const familyRefreshed = useFamilyStore((s) => s.refreshed);
 
@@ -91,8 +184,8 @@ export default function HomeScreen() {
   const loadedFamilyId = useAssetStore((s) => s.loadedFamilyId);
   const load = useAssetStore((s) => s.load);
 
-  // 真实家庭 id；无 env / 无家庭时用 demo-family 兜底，保证 UI 可跑
   const familyId = sharedFamily?.id ?? 'demo-family';
+  const [hideAmounts, setHideAmounts] = useState(false);
 
   useEffect(() => {
     void load(familyId);
@@ -109,7 +202,7 @@ export default function HomeScreen() {
     [assets, user?.id],
   );
 
-  // 近一年：先取每日三线序列（carry-forward），再按自然月归并
+  // 近一年每日序列 → 月度序列
   const series = useMemo(() => {
     const daily = buildTrendSeries(snapshots, visibleAssets, {
       from: fromDaysAgo(TREND_WINDOW_DAYS),
@@ -118,15 +211,7 @@ export default function HomeScreen() {
     return bucketizeMonth(daily);
   }, [snapshots, visibleAssets, familyId]);
 
-  // 月趋势：窗口内最后 6/12 个月；增长标签相对完整序列的前一个月计算
-  const halfYearSeries = useMemo(() => series.slice(-monthWindow), [series, monthWindow]);
-  const halfYearGrowth = useMemo(
-    () => buildMonthGrowthLabels(series, monthWindow),
-    [series, monthWindow],
-  );
-
-  // 卡片三值：月度台账口径 —— 只统计当月有快照的资产（每笔取当月最新一条）；
-  // 0.3.0：当月无任何快照时回退到最近一次有数据的月份，并给出「数据截至」提示
+  // 卡片三值：月度台账口径
   const displayTotals = useMemo(
     () => buildDisplayMonthTotals(visibleAssets, snapshots),
     [visibleAssets, snapshots],
@@ -137,10 +222,20 @@ export default function HomeScreen() {
     return buildMonthTotals(visibleAssets, snapshots, new Date(y, m - 2, 15));
   }, [visibleAssets, snapshots, displayTotals.month]);
 
+  // 上一份已归档月报：上月相对上上月的变化
+  const monthBeforeTotals = useMemo(() => {
+    const [y, m] = displayTotals.month.split('-').map(Number) as [number, number];
+    return buildMonthTotals(visibleAssets, snapshots, new Date(y, m - 3, 15));
+  }, [visibleAssets, snapshots, displayTotals.month]);
+  const archivedMonth = useMemo(() => {
+    const [y, m] = displayTotals.month.split('-').map(Number) as [number, number];
+    return monthKeyOf(new Date(y, m - 2, 15));
+  }, [displayTotals.month]);
+  const archivedDelta = lastMonthTotals.netWorth - monthBeforeTotals.netWorth;
+
   const netWorth = monthTotals.netWorth;
   const currentMonth = monthKeyOf(new Date());
 
-  // 本月变化：当月合计相对上月合计
   const monthStats = useMemo(
     () => ({
       delta: monthTotals.netWorth - lastMonthTotals.netWorth,
@@ -149,369 +244,406 @@ export default function HomeScreen() {
     [monthTotals, lastMonthTotals],
   );
 
-  const cat = useMemo(() => buildCategorySlices(visibleAssets), [visibleAssets]);
-  const recent = useMemo(() => buildRecentChanges(visibleAssets, snapshots), [visibleAssets, snapshots]);
+  const debtRatio = monthTotals.totalAssets > 0
+    ? (monthTotals.totalLiabilities / monthTotals.totalAssets) * 100
+    : 0;
 
-  const monthUp = monthStats.delta >= 0;
+  const spark = useMemo(() => series.slice(-6), [series]);
+  const sparkPath = useMemo(() => sparkPaths(spark), [spark]);
+
+  // 资产构成：按类型分组（负债排在最后）
+  const groups = useMemo(() => {
+    const byType = new Map<AssetType, Asset[]>();
+    for (const a of visibleAssets) {
+      const list = byType.get(a.type);
+      if (list) list.push(a);
+      else byType.set(a.type, [a]);
+    }
+    return GROUP_ORDER
+      .filter((t) => byType.has(t))
+      .map((type) => {
+        const list = (byType.get(type) ?? []).slice().sort((a, b) => Math.abs(b.currentAmount) - Math.abs(a.currentAmount));
+        const total = list.reduce((sum, a) => sum + (t3(type) ? -Math.abs(a.currentAmount) : a.currentAmount), 0);
+        return { type, label: ASSET_TYPE_LABELS[type], list, total };
+      });
+  }, [visibleAssets]);
+
+  const updatedAtText = useMemo(() => {
+    let latest = '';
+    for (const a of visibleAssets) if (a.updatedAt > latest) latest = a.updatedAt;
+    if (latest === '') return '—';
+    return latest.slice(5, 16).replace('T', ' ');
+  }, [visibleAssets]);
+
   const hasFamily = sharedFamily !== null;
+  const monthUp = monthStats.delta >= 0;
 
-  // 首次加载未完成：渲染与正式页面同构的骨架，避免先看到 ¥0 空页面、
-  // 数据到达后净资产/图表/列表再整体跳变。后续后台刷新仍走正常渲染。
-  // familyRefreshed 未就绪前 family 必为 null（familyId 落 demo 兜底且资产
-  // 已加载完），若不拦截会先闪现「创建或加入家庭」引导，再跳成真实家庭页。
   if (!familyRefreshed || loadedFamilyId !== familyId) {
     return <HomeSkeleton width={cardWidth} topInset={insets.top} />;
   }
 
+  const now = new Date();
+  const dateLine = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日 · ${WEEKDAYS[now.getDay()]}`;
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ height: insets.top, backgroundColor: '#F9FAFB' }} />
+    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
+      <View style={{ height: insets.top, backgroundColor: COLORS.paper }} />
       <OfflineBanner />
       <ScrollView
-        contentContainerStyle={{ padding: PAGE_PAD, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
         {/* 顶部问候 */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$md">
+        <XStack paddingHorizontal={24} paddingTop={8} paddingBottom={16}
+          alignItems="center" justifyContent="space-between">
           <YStack>
-            <Text fontSize="$2" color="$textSecondary">{greeting()}，</Text>
-            <Text fontSize="$5" fontWeight="700" color="$textPrimary">
-              {hasFamily ? sharedFamily.name : user?.displayName ?? '我的家庭'}
+            <Text fontSize={11} color={COLORS.faint} letterSpacing={2}>{dateLine}</Text>
+            <Text fontSize={21} color={COLORS.text} letterSpacing={0.8} marginTop={4} style={SERIF_CN_TEXT}>
+              {hasFamily ? `${user?.displayName ?? '家人'}，见字如面` : '见字如面'}
             </Text>
           </YStack>
           <View style={{
-            width: 44, height: 44, borderRadius: 22,
-            backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center',
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: 'rgba(11,61,46,0.08)',
+            borderWidth: 1, borderColor: 'rgba(11,61,46,0.14)',
+            alignItems: 'center', justifyContent: 'center',
           }}>
-            <Text fontSize="$4" fontWeight="700" color="white">
+            <Text fontSize={14} color={COLORS.ink} style={SERIF_CN_TEXT}>
               {(user?.displayName ?? '我').slice(0, 1)}
             </Text>
           </View>
         </XStack>
 
-        {/* 无家庭引导 */}
+        {/* 无家庭引导（仅在未加入家庭时出现） */}
         {!hasFamily ? (
-          <YStack space="$sm" marginBottom="$md" padding="$md"
-            backgroundColor="#ECFDF5" borderRadius="$lg" borderColor="#A7F3D0" borderWidth={1}>
-            <Text fontSize="$3" fontWeight="700" color="#065F46">先创建或加入一个家庭</Text>
-            <Text fontSize="$2" color="#047857">家庭是数据隔离与共享的边界，之后即可录入资产。</Text>
-            <XStack space="$sm" marginTop="$xs">
-              <TouchableOpacity style={styles.pillPrimary} onPress={() => navigation.navigate('Family')}>
-                <Text fontSize="$2" color="white" fontWeight="600">创建 / 加入家庭</Text>
-              </TouchableOpacity>
-            </XStack>
+          <YStack marginHorizontal={PAGE_PAD} marginBottom={16} padding={16}
+            backgroundColor={COLORS.surface} borderRadius={20}
+            borderColor={COLORS.hairlineSoft} borderWidth={1} space={6}>
+            <Text fontSize={13} fontWeight="600" color={COLORS.text}>先创建或加入一个家庭</Text>
+            <Text fontSize={11} color={COLORS.sub}>家庭是数据隔离与共享的边界，之后即可录入资产。</Text>
+            <TouchableOpacity style={styles.pillPrimary} onPress={() => navigation.navigate('Family')}>
+              <Text fontSize={11} color={COLORS.surface} fontWeight="600">创建 / 加入家庭</Text>
+            </TouchableOpacity>
           </YStack>
         ) : null}
 
-        {/* 渐变净资产卡：当月无数据时回退最近一次有数据的月份并提示 */}
-        <GradientCard width={cardWidth} height={displayTotals.fallback ? 258 : 212} radius={24}>
-          <YStack flex={1} padding="$lg" justifyContent="space-between">
-            <XStack alignItems="center" space="$sm">
-              <Text fontSize="$2" color="white" opacity={0.9}>家庭净资产</Text>
-              {displayTotals.fallback ? (
-                <View style={styles.monthPill}>
-                  <Text fontSize="$1" color="white" fontWeight="600">
-                    数据截至 {displayTotals.month}
-                  </Text>
-                </View>
-              ) : null}
-            </XStack>
-            <View>
-              <XStack alignItems="baseline">
-                <Text fontSize="$3" color="white" opacity={0.9}>¥</Text>
-                <Text fontSize={34} fontWeight="700" color="white" letterSpacing={-0.5}>
-                  {(netWorth / 100).toLocaleString('zh-CN', { maximumFractionDigits: 0 })}
-                </Text>
-              </XStack>
-              <XStack space="$sm" alignItems="center" marginTop="$xs">
-                <View style={styles.monthPill}>
-                  <Text fontSize="$1" color="white" fontWeight="600">
-                    {monthUp ? '▲' : '▼'} {Math.abs(monthStats.pct).toFixed(2)}% 较上月
-                  </Text>
-                </View>
-                <Text fontSize="$2" color="white" opacity={0.9}>
-                  {monthUp ? '+' : ''}{formatCNYCompact(monthStats.delta)}
-                </Text>
-              </XStack>
-            </View>
-            {displayTotals.fallback ? (
-              <View style={styles.hintBar}>
-                <Text fontSize="$1" color="white" opacity={0.95}>
-                  {currentMonth} 尚未记录，当前展示最近一次（{displayTotals.month}）数据
-                </Text>
-              </View>
-            ) : null}
-            <XStack space="$sm">
-              <View style={styles.subBox}>
-                <Text fontSize="$1" color="white" opacity={0.8}>总资产</Text>
-                <Text fontSize="$3" color="white" fontWeight="600">
-                  {formatCNYCompact(monthTotals.totalAssets)}
-                </Text>
-              </View>
-              <View style={styles.subBox}>
-                <Text fontSize="$1" color="white" opacity={0.8}>总负债</Text>
-                <Text fontSize="$3" color="white" fontWeight="600">
-                  {formatCNYCompact(monthTotals.totalLiabilities)}
-                </Text>
-              </View>
-            </XStack>
-          </YStack>
-        </GradientCard>
-
-        {/* 快捷操作：更新（改余额）+ 录入（新增资产/类别）独立入口 */}
-        <XStack justifyContent="space-between" marginVertical="$lg">
-          <QuickAction label="更新" bg="#D1FAE5" color="#059669"
-            icon={<><Path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" /><Path d="M20 4.5V10h-5.5" /></>}
-            onPress={() => navigation.navigate('UpdateCenter')} />
-          <QuickAction label="录入" bg="#E0F2FE" color="#0284C7"
-            icon={<><Path d="M12 5v14M5 12h14" /></>}
-            onPress={() => navigation.navigate('AssetNew')} />
-          <QuickAction label="趋势" bg="#EDE9FE" color="#7C3AED"
-            icon={<><Path d="M3 3v18h18" /><Path d="M8 17v-5M13 17V8M18 17v-3" /></>}
-            onPress={() => navigation.navigate('Trends')} />
-          <QuickAction label="家庭" bg="#FEF3C7" color="#D97706"
-            icon={<><Path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" /><CircleDef /><Path d="M21 21v-2a4 4 0 0 0-3-3.9" /><Path d="M16 3.1a4 4 0 0 1 0 7.8" /></>}
-            onPress={() => navigation.navigate('Family')} />
-        </XStack>
-
-        {/* 月趋势（6/12 个月窗口，随屏宽自适应） */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
-          <Text fontSize="$4" fontWeight="700" color="$textPrimary">近 {monthWindow} 个月趋势</Text>
-          <Text fontSize="$2" color="$primary" onPress={() => navigation.navigate('Trends')}>全屏 ›</Text>
-        </XStack>
-        <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
-          borderColor="$border" borderWidth={1} marginBottom="$md">
-          <TrendChart data={halfYearSeries} height={140} lines={['netWorth']} showXLabels={false} />
-          <MonthGrowthAxis items={halfYearGrowth} />
-        </YStack>
-
-        {/* 资产分布 */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$sm">
-          <Text fontSize="$4" fontWeight="700" color="$textPrimary">资产分布</Text>
-          <Text fontSize="$2" color="$primary" onPress={() => navigation.navigate('Trends')}>详情 ›</Text>
-        </XStack>
-        <YStack padding="$md" backgroundColor="white" borderRadius="$lg"
-          borderColor="$border" borderWidth={1}>
-          <XStack space="$md" alignItems="center">
-            <DonutChart
-              slices={cat.slices}
-              centerTop={`${cat.slices.length} 类`}
-              centerBottom="资产"
-            />
-            <YStack flex={1} space="$xs">
-              {cat.slices.slice(0, 4).map((s) => (
-                <XStack key={s.type} justifyContent="space-between">
-                  <XStack space="$xs" alignItems="center">
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.color }} />
-                    <Text fontSize="$2" color="$textSecondary">{s.label}</Text>
-                  </XStack>
-                  <Text fontSize="$2" fontWeight="600" color="$textPrimary">{s.pct.toFixed(1)}%</Text>
-                </XStack>
-              ))}
-              {cat.debtAmount > 0 ? (
-                <XStack justifyContent="space-between">
-                  <XStack space="$xs" alignItems="center">
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
-                    <Text fontSize="$2" color="$textSecondary">债务</Text>
-                  </XStack>
-                  <Text fontSize="$2" fontWeight="600" color="#EF4444">-{cat.debtShare.toFixed(1)}%</Text>
-                </XStack>
-              ) : null}
-            </YStack>
-          </XStack>
-        </YStack>
-
-        {/* 最近变化 */}
-        <XStack justifyContent="space-between" alignItems="center" marginTop="$lg" marginBottom="$sm">
-          <Text fontSize="$4" fontWeight="700" color="$textPrimary">最近变化</Text>
-          <Text fontSize="$1" color="$textTertiary">过去 7 天</Text>
-        </XStack>
-        {recent.length === 0 ? (
-          <YStack padding="$md" backgroundColor="white" borderRadius="$lg"
-            borderColor="$border" borderWidth={1}>
-            <Text fontSize="$2" color="$textSecondary">
-              {loading ? '加载中…' : '近 7 天暂无变化，更新资产金额后会出现在这里'}
-            </Text>
-          </YStack>
-        ) : (
-          recent.map((rc) => {
-            const up = rc.delta >= 0;
-            return (
-              <TouchableOpacity key={rc.asset.id} activeOpacity={0.7}
-                onPress={() => navigation.navigate('AssetDetail', { id: rc.asset.id })}>
-                <XStack padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
-                  borderColor="$border" borderWidth={1} alignItems="center" space="$md">
-                  <YStack flex={1}>
-                    <Text fontSize="$3" fontWeight="600" color="$textPrimary">{rc.asset.name}</Text>
-                    <Text fontSize="$1" color="$textTertiary">
-                      {rc.at.slice(0, 10)} · {rc.source === 'ocr' ? '拍照识别' : '手动更新'}
+        {/* 净资产 hero */}
+        <View style={{ paddingHorizontal: PAGE_PAD }}>
+          <GradientCard width={cardWidth} height={HERO_HEIGHT} radius={26}>
+            <YStack flex={1} paddingHorizontal={24} paddingTop={24} paddingBottom={20}>
+              <XStack alignItems="flex-start" justifyContent="space-between">
+                <YStack>
+                  <XStack alignItems="center" space={8}>
+                    <Text fontSize={10.5} color="rgba(233,220,192,0.55)" letterSpacing={3}>
+                      家庭净资产（元）
                     </Text>
-                  </YStack>
-                  <YStack alignItems="flex-end">
-                    <Text fontSize="$3" fontWeight="600" color="$textPrimary">
-                      {formatCNY(rc.asset.currentAmount)}
-                    </Text>
-                    {rc.previousAmount !== null ? (
-                      <Text fontSize="$1" color={up ? UP_COLOR : DOWN_COLOR} fontWeight="600">
-                        {up ? '+' : ''}{formatCNYCompact(rc.delta)}
-                      </Text>
+                    {displayTotals.fallback ? (
+                      <View style={styles.monthPill}>
+                        <Text fontSize={9} color={COLORS.goldLight}>数据截至 {displayTotals.month}</Text>
+                      </View>
                     ) : null}
-                  </YStack>
-                </XStack>
-              </TouchableOpacity>
-            );
-          })
-        )}
+                  </XStack>
+                  <XStack alignItems="flex-end" space={8} marginTop={10}>
+                    <Text fontSize={34} lineHeight={38} fontWeight="600" color="#F7F3E8" style={MONEY_TEXT}>
+                      {hideAmounts ? '¥ · · · · · ·' : `¥ ${amountText(netWorth)}`}
+                    </Text>
+                    <TouchableOpacity onPress={() => setHideAmounts((v) => !v)} activeOpacity={0.7}
+                      style={{ paddingBottom: 6 }} accessibilityLabel={hideAmounts ? '显示金额' : '隐藏金额'}>
+                      <Svg width={19} height={19} viewBox="0 0 24 24" fill="none"
+                        stroke="rgba(233,220,192,0.62)" strokeWidth={1.8}
+                        strokeLinecap="round" strokeLinejoin="round">
+                        {hideAmounts ? (
+                          <>
+                            <Path d="M9.9 4.24A9.5 9.5 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" />
+                            <Path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61" />
+                            <Path d="m2 2 20 20M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                          </>
+                        ) : (
+                          <>
+                            <Path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                            <Circle cx={12} cy={12} r={3} />
+                          </>
+                        )}
+                      </Svg>
+                    </TouchableOpacity>
+                  </XStack>
+                </YStack>
+              </XStack>
 
-        <Text fontSize="$1" color="$textTertiary" marginTop="$md">
-          UMK：{umk === null ? '未派生' : '已派生 ✓'} · 数据仅存本机，同步时以密文上行
-        </Text>
+              {/* 本月变化 */}
+              <XStack alignItems="center" space={8} marginTop={14}>
+                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+                  stroke={COLORS.gold} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="m22 7-8.5 8.5L8.5 10.5 2 17" />
+                  <Path d="M16 7h6v6" />
+                </Svg>
+                <Text fontSize={12} color={COLORS.goldLight} style={MONEY_TEXT}>
+                  本月 {monthUp ? '+' : '-'}{amountText(Math.abs(monthStats.delta))}
+                </Text>
+                <View style={styles.pctPill}>
+                  <Text fontSize={10} color={COLORS.goldLight} style={MONEY_TEXT}>
+                    {monthUp ? '+' : ''}{monthStats.pct.toFixed(2)}%
+                  </Text>
+                </View>
+              </XStack>
+
+              {/* 迷你走势 */}
+              {sparkPath.line === '' ? null : (
+                <Svg width="100%" height={44} viewBox="0 0 304 44" style={{ marginTop: 14 }}>
+                  <Defs>
+                    <LinearGradient id="homeSparkFill" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0" stopColor={COLORS.goldLight} stopOpacity={0.22} />
+                      <Stop offset="1" stopColor={COLORS.goldLight} stopOpacity={0} />
+                    </LinearGradient>
+                  </Defs>
+                  <Path d={sparkPath.area} fill="url(#homeSparkFill)" />
+                  <Path d={sparkPath.line} fill="none" stroke={COLORS.gold} strokeWidth={1.6}
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+              )}
+
+              <View style={styles.hairlineGold} />
+
+              {/* 三列：总资产 / 总负债 / 资产负债率 */}
+              <XStack marginTop={12}>
+                <YStack flex={1} alignItems="center">
+                  <Text fontSize={9.5} color="rgba(233,220,192,0.45)" letterSpacing={2}>总资产</Text>
+                  <Text fontSize={15.5} color="#F2EEE2" marginTop={4} style={MONEY_TEXT}>
+                    {hideAmounts ? '· · ·' : amountText(monthTotals.totalAssets)}
+                  </Text>
+                </YStack>
+                <YStack flex={1} alignItems="center" style={styles.heroColDivider}>
+                  <Text fontSize={9.5} color="rgba(233,220,192,0.45)" letterSpacing={2}>总负债</Text>
+                  <Text fontSize={15.5} color="rgba(242,238,226,0.72)" marginTop={4} style={MONEY_TEXT}>
+                    {hideAmounts ? '· · ·' : `-${amountText(monthTotals.totalLiabilities)}`}
+                  </Text>
+                </YStack>
+                <YStack flex={1} alignItems="center" style={styles.heroColDivider}>
+                  <Text fontSize={9.5} color="rgba(233,220,192,0.45)" letterSpacing={2}>资产负债率</Text>
+                  <Text fontSize={15.5} color={COLORS.goldLight} marginTop={4} style={MONEY_TEXT}>
+                    {debtRatio.toFixed(1)}%
+                  </Text>
+                </YStack>
+              </XStack>
+            </YStack>
+          </GradientCard>
+        </View>
+
+        {/* 月度小结条 */}
+        <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Report')}
+            style={styles.monthBar}>
+            <View style={[styles.iconChip, { backgroundColor: COLORS.warningWash }]}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+                stroke={COLORS.goldDeep} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <Rect width={18} height={18} x={3} y={4} rx={2} />
+                <Path d="M16 2v4M8 2v4M3 10h18" />
+              </Svg>
+            </View>
+            <Text flex={1} fontSize={12} lineHeight={18} color={COLORS.sub}>
+              {monthCN(archivedMonth)}报表已归档，结余{' '}
+              <Text fontSize={12} fontWeight="600" color={archivedDelta >= 0 ? COLORS.ink : COLORS.danger} style={MONEY_TEXT}>
+                {archivedDelta >= 0 ? '+' : '-'}{amountText(Math.abs(archivedDelta))}
+              </Text>
+            </Text>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+              stroke={COLORS.faint} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="m9 18 6-6-6-6" />
+            </Svg>
+          </TouchableOpacity>
+        </View>
+
+        {/* 资产构成 */}
+        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <XStack alignItems="baseline" justifyContent="space-between" marginBottom={8}>
+            <Text fontSize={17} color={COLORS.text} letterSpacing={0.6} style={SERIF_CN_TEXT}>资产构成</Text>
+            <Text fontSize={10.5} color={COLORS.faint}>更新于 {updatedAtText}</Text>
+          </XStack>
+
+          <View style={styles.card}>
+            <View style={{ paddingHorizontal: 16 }}>
+              {groups.length === 0 ? (
+                <Text fontSize={12} color={COLORS.faint} paddingVertical={20}>
+                  {loading ? '加载中…' : '还没有资产，去「更新」页录入第一笔'}
+                </Text>
+              ) : (
+                groups.map((g) => (
+                  <View key={g.type}>
+                    <Text fontSize={10} color={COLORS.faint} letterSpacing={2} paddingTop={14}>
+                      {g.label} · <Text fontSize={10} color={COLORS.faint} style={MONEY_TEXT}>
+                        {hideAmounts ? '· · ·' : `${t3(g.type) ? '-' : ''}${amountText(Math.abs(g.total))}`}
+                      </Text>
+                    </Text>
+                    {g.list.map((a, idx) => {
+                      const tone = chipTone(g.type);
+                      const debt = g.type === 'debt';
+                      const isLast = idx === g.list.length - 1;
+                      return (
+                        <TouchableOpacity key={a.id} activeOpacity={0.65}
+                          onPress={() => navigation.navigate('AssetDetail', { id: a.id })}>
+                          <XStack alignItems="center" space={12} paddingVertical={13}
+                            borderBottomWidth={isLast ? 0 : 1} borderBottomColor={COLORS.divider}>
+                            <View style={[styles.iconChip, { backgroundColor: tone.bg }]}>
+                              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+                                stroke={tone.color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                                {iconFor(g.type)}
+                              </Svg>
+                            </View>
+                            <YStack flex={1}>
+                              <Text fontSize={13.5} fontWeight="500" color={COLORS.text} numberOfLines={1}>
+                                {a.name}
+                              </Text>
+                              <Text fontSize={10} color={COLORS.faint} marginTop={2} numberOfLines={1}>
+                                {assetSubtitle(a)}
+                              </Text>
+                            </YStack>
+                            <Text fontSize={14} fontWeight="600" color={debt ? COLORS.danger : COLORS.text}
+                              style={MONEY_TEXT}>
+                              {hideAmounts ? '· · ·' : `${debt ? '-' : ''}${amountText(Math.abs(a.currentAmount))}`}
+                            </Text>
+                          </XStack>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          <Text textAlign="center" fontSize={10} color={COLORS.faint} marginTop={16} marginBottom={8}>
+            数据本机加密存储 · 仅你可解密查看
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
 }
 
-/**
- * 首屏骨架：区块位置 / 尺寸与正式首页一致，数据到达后原地替换，无布局跳动。
- * 净资产卡直接复用同一渐变卡，进一步缩小与正式态的视觉差。
- */
+/** 负债类型判断（避免额外依赖，语义与 shared-utils isLiability 一致） */
+function t3(type: AssetType): boolean {
+  return type === 'debt';
+}
+
 function HomeSkeleton({ width, topInset }: { width: number; topInset: number }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ height: topInset, backgroundColor: '#F9FAFB' }} />
+    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
+      <View style={{ height: topInset, backgroundColor: COLORS.paper }} />
       <OfflineBanner />
-      <View style={{ padding: PAGE_PAD }}>
-        {/* 顶部问候 */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$md">
-          <YStack space="$sm">
-            <SkeletonBlock width={56} height={12} />
-            <SkeletonBlock width={128} height={22} />
+      <View style={{ paddingHorizontal: PAGE_PAD }}>
+        <XStack justifyContent="space-between" alignItems="center" paddingTop={8} paddingBottom={16}>
+          <YStack space={8}>
+            <SkeletonBlock width={120} height={11} />
+            <SkeletonBlock width={150} height={22} />
           </YStack>
-          <SkeletonBlock width={44} height={44} radius={22} />
+          <SkeletonBlock width={40} height={40} radius={20} />
         </XStack>
 
-        {/* 渐变净资产卡 */}
-        <GradientCard width={width} height={212} radius={24}>
-          <YStack flex={1} padding="$lg" justifyContent="space-between">
-            <SkeletonBlock width={72} height={14} color="rgba(255,255,255,0.55)" />
-            <YStack space="$sm">
-              <SkeletonBlock width={180} height={38} color="rgba(255,255,255,0.85)" />
-              <SkeletonBlock width={132} height={20} radius={999} color="rgba(255,255,255,0.28)" />
+        <GradientCard width={width} height={HERO_HEIGHT} radius={26}>
+          <YStack flex={1} paddingHorizontal={24} paddingTop={24} paddingBottom={20} justifyContent="space-between">
+            <SkeletonBlock width={110} height={12} color="rgba(255,255,255,0.45)" />
+            <YStack space={10}>
+              <SkeletonBlock width={210} height={36} color="rgba(255,255,255,0.85)" />
+              <SkeletonBlock width={150} height={18} radius={999} color="rgba(255,255,255,0.26)" />
             </YStack>
-            <XStack space="$sm">
-              {[0, 1].map((i) => (
-                <View key={i} style={styles.subBox}>
-                  <SkeletonBlock width={48} height={11} color="rgba(255,255,255,0.6)" />
-                  <View style={{ height: 6 }} />
-                  <SkeletonBlock width={64} height={15} color="rgba(255,255,255,0.75)" />
-                </View>
+            <SkeletonBlock width="100%" height={44} radius={8} color="rgba(255,255,255,0.12)" />
+            <XStack space={12} justifyContent="space-between">
+              {[0, 1, 2].map((i) => (
+                <YStack key={i} flex={1} alignItems="center" space={6}>
+                  <SkeletonBlock width={52} height={9} color="rgba(255,255,255,0.4)" />
+                  <SkeletonBlock width={72} height={15} color="rgba(255,255,255,0.7)" />
+                </YStack>
               ))}
             </XStack>
           </YStack>
         </GradientCard>
 
-        {/* 快捷操作 */}
-        <XStack justifyContent="space-between" marginVertical="$lg">
-          {[0, 1, 2, 3].map((i) => (
-            <YStack key={i} alignItems="center" width={64} space="$xs">
-              <SkeletonBlock width={52} height={52} radius={16} />
-              <SkeletonBlock width={28} height={10} />
-            </YStack>
+        <View style={{ height: 16 }} />
+        <YStack padding={14} backgroundColor={COLORS.surface} borderRadius={20}
+          borderColor={COLORS.hairlineSoft} borderWidth={1} flexDirection="row" alignItems="center" space={12}>
+          <SkeletonBlock width={34} height={34} radius={11} color={COLORS.warningWash} />
+          <SkeletonBlock width="70%" height={12} />
+        </YStack>
+
+        <View style={{ height: 24 }} />
+        <SkeletonBlock width={84} height={17} />
+        <View style={{ height: 8 }} />
+        <YStack paddingHorizontal={16} paddingVertical={12} backgroundColor={COLORS.surface} borderRadius={20}
+          borderColor={COLORS.hairlineSoft} borderWidth={1} space={16}>
+          {[0, 1, 2].map((i) => (
+            <XStack key={i} space={12} alignItems="center">
+              <SkeletonBlock width={34} height={34} radius={11} />
+              <YStack flex={1} space={6}>
+                <SkeletonBlock width="55%" height={12} />
+                <SkeletonBlock width="35%" height={9} />
+              </YStack>
+              <SkeletonBlock width={70} height={13} />
+            </XStack>
           ))}
-        </XStack>
-
-        {/* 近半年趋势 */}
-        <SkeletonBlock width={120} height={18} />
-        <View style={{ height: 8 }} />
-        <YStack padding="$sm" backgroundColor="white" borderRadius="$lg"
-          borderColor="$border" borderWidth={1} marginBottom="$md">
-          <SkeletonBlock width="100%" height={140} radius={8} color="#F3F4F6" />
         </YStack>
-
-        {/* 资产分布 */}
-        <SkeletonBlock width={80} height={18} />
-        <View style={{ height: 8 }} />
-        <YStack padding="$md" backgroundColor="white" borderRadius="$lg" borderColor="$border" borderWidth={1}>
-          <XStack space="$md" alignItems="center">
-            <SkeletonBlock width={120} height={120} radius={60} color="#F3F4F6" />
-            <YStack flex={1} space="$md">
-              {[0, 1, 2, 3].map((i) => (
-                <SkeletonBlock key={i} width="92%" height={12} color="#F3F4F6" />
-              ))}
-            </YStack>
-          </XStack>
-        </YStack>
-
-        {/* 最近变化 */}
-        <View style={{ height: 20 }} />
-        <SkeletonBlock width={96} height={18} />
-        <View style={{ height: 8 }} />
-        {[0, 1].map((i) => (
-          <YStack key={i} padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
-            borderColor="$border" borderWidth={1} space="$sm">
-            <SkeletonBlock width="45%" height={14} color="#F3F4F6" />
-            <SkeletonBlock width="30%" height={10} color="#F3F4F6" />
-          </YStack>
-        ))}
       </View>
     </View>
   );
 }
 
-function SkeletonBlock({ width, height, radius = 6, color = '#E5E7EB' }: {
+function SkeletonBlock({ width, height, radius = 6, color = COLORS.hairline }: {
   width: DimensionValue; height: number; radius?: number; color?: string;
 }) {
   return <View style={{ width, height, borderRadius: radius, backgroundColor: color }} />;
 }
 
-function CircleDef() {
-  return <Path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />;
-}
-
-function QuickAction({
-  label, bg, color, icon, onPress,
-}: {
-  label: string;
-  bg: string;
-  color: string;
-  icon: React.ReactNode;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={{ alignItems: 'center', width: 64 }}>
-      <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: bg,
-        alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"
-          stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          {icon}
-        </Svg>
-      </View>
-      <Text fontSize="$1" color="$textSecondary" marginTop="$xs">{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = {
   monthPill: {
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: GOLD_DECOR,
+    borderWidth: 1,
+    borderColor: GOLD_ON_INK,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  subBox: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    padding: 12,
+  pctPill: {
+    backgroundColor: 'rgba(198,161,91,0.18)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  hintBar: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  hairlineGold: {
+    height: 1,
+    marginTop: 16,
+    marginBottom: 4,
+    backgroundColor: 'rgba(198,161,91,0.30)',
+  },
+  heroColDivider: {
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(233,220,192,0.14)',
+  },
+  iconChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.hairlineSoft,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.hairlineSoft,
+    borderRadius: 20,
   },
   pillPrimary: {
-    backgroundColor: '#059669',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.inkSoft,
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,

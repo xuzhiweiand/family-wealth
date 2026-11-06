@@ -8,6 +8,8 @@
  * - 恢复不改变任何云端密钥体系，恢复出的数据会随正常同步上行到其他设备。
  */
 
+import { COLORS } from '../theme';
+import { FONT } from '../typography';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -178,7 +180,7 @@ export default function BackupScreen() {
             disabled={backing}
           >
             {backing ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={COLORS.surface} />
             ) : (
               <Text style={styles.primaryBtnText}>立即备份</Text>
             )}
@@ -210,7 +212,7 @@ export default function BackupScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="登录密码"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={COLORS.faint}
                 secureTextEntry
                 autoCapitalize="none"
               />
@@ -220,7 +222,7 @@ export default function BackupScreen() {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={COLORS.surface} />
                 ) : (
                   <Text style={styles.primaryBtnText}>解密并预览</Text>
                 )}
@@ -251,7 +253,7 @@ export default function BackupScreen() {
                   disabled={busy}
                 >
                   {busy ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={COLORS.surface} />
                   ) : (
                     <Text style={styles.primaryBtnText}>确认恢复</Text>
                   )}
@@ -269,7 +271,7 @@ export default function BackupScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F9FAFB' },
+  root: { flex: 1, backgroundColor: COLORS.paper },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,55 +280,55 @@ const styles = StyleSheet.create({
     height: 52,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 32, color: '#111827', marginTop: -4 },
-  title: { fontSize: 17, fontWeight: '600', color: '#111827' },
+  backText: { fontSize: 32, color: COLORS.text, marginTop: -4 },
+  title: { fontSize: 17, fontWeight: '700', color: COLORS.text, fontFamily: FONT.serifCn, letterSpacing: 1 },
   body: { padding: 20, paddingBottom: 40 },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.hairline,
     padding: 16,
     marginBottom: 20,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  desc: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 6 },
-  lastBackup: { fontSize: 13, color: '#374151', marginTop: 4, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
+  desc: { fontSize: 13, color: COLORS.sub, lineHeight: 20, marginBottom: 6 },
+  lastBackup: { fontSize: 13, color: COLORS.text, marginTop: 4, marginBottom: 12 },
   primaryBtn: {
     height: 52,
     borderRadius: 12,
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.ink,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
+  primaryBtnText: { color: COLORS.surface, fontSize: 18, fontWeight: '600' },
   btnDisabled: { opacity: 0.6 },
   secondaryBtn: {
     height: 52,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: COLORS.ink,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
-  secondaryBtnText: { color: '#059669', fontSize: 16, fontWeight: '600' },
+  secondaryBtnText: { color: COLORS.inkSoft, fontSize: 16, fontWeight: '600' },
   stepBox: { marginTop: 16 },
-  stepLabel: { fontSize: 13, color: '#374151', marginBottom: 8 },
+  stepLabel: { fontSize: 13, color: COLORS.text, marginBottom: 8 },
   input: {
     height: 48,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: COLORS.hairlineStrong,
     borderRadius: 12,
     paddingHorizontal: 14,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    color: COLORS.text,
+    backgroundColor: COLORS.surface,
     marginBottom: 4,
   },
-  previewLine: { fontSize: 14, color: '#111827', lineHeight: 22 },
-  upToDate: { fontSize: 14, color: '#059669', marginTop: 12, textAlign: 'center' },
+  previewLine: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
+  upToDate: { fontSize: 14, color: COLORS.inkSoft, marginTop: 12, textAlign: 'center' },
   cancelBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  cancelBtnText: { fontSize: 14, color: '#6B7280' },
+  cancelBtnText: { fontSize: 14, color: COLORS.sub },
 });

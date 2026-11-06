@@ -7,6 +7,7 @@
  *   因此鸿蒙端在固定高度容器内联展示，并提供「完成」按钮收起。
  */
 
+import { COLORS } from '../theme';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 import { Button, Text, XStack, YStack } from 'tamagui';
@@ -55,9 +56,9 @@ export function DatePickerField({ value, onChange, hintText }: Props) {
           <View
             style={{
               height: 248,
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.surface,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
+              borderColor: COLORS.hairline,
               borderRadius: 12,
               overflow: 'hidden',
             }}
@@ -77,7 +78,7 @@ export function DatePickerField({ value, onChange, hintText }: Props) {
               paddingHorizontal={12}
               paddingVertical={6}
               borderTopWidth={1}
-              borderTopColor="#F3F4F6"
+              borderTopColor={COLORS.divider}
             >
               <Button
                 size={36}

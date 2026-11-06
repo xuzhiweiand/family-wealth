@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 资产列表
  *
  * 两种视图（P0-4 起）：
@@ -11,6 +11,8 @@
  * 点击进入资产详情；右上图标进回收站。
  */
 
+import { COLORS } from '../../theme';
+import { FONT, MONEY_TEXT, SERIF_CN_TEXT } from '../../typography';
 import { useEffect, useMemo, useState } from 'react';
 import {
   SectionList, TextInput, TouchableOpacity, View,
@@ -48,9 +50,9 @@ interface AssetSection {
 /** 债务展示口径：加负号、标红；其余正常显示 */
 function displayAmount(asset: Asset): { text: string; color: string } {
   if (asset.type === 'debt') {
-    return { text: `-${formatCNY(Math.abs(asset.currentAmount))}`, color: '#DC2626' };
+    return { text: `-${formatCNY(Math.abs(asset.currentAmount))}`, color: COLORS.danger };
   }
-  return { text: formatCNY(asset.currentAmount), color: '#111827' };
+  return { text: formatCNY(asset.currentAmount), color: COLORS.text };
 }
 
 export default function AssetsScreen() {
@@ -160,8 +162,8 @@ export default function AssetsScreen() {
   }, [visibleAssets, query, chip, viewMode, groups, collapsed]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ height: insets.top, backgroundColor: '#F9FAFB' }} />
+    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
+      <View style={{ height: insets.top, backgroundColor: COLORS.paper }} />
       <OfflineBanner />
       <SectionList
         sections={sections}
@@ -173,8 +175,10 @@ export default function AssetsScreen() {
           <YStack space="$md" marginBottom="$md">
             <XStack justifyContent="space-between" alignItems="center">
               <YStack>
-                <Text fontSize="$6" fontWeight="700" color="$textPrimary">我的资产</Text>
-                <Text fontSize="$2" color="$textTertiary">
+                <Text fontSize="$6" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
+                  我的资产
+                </Text>
+                <Text fontSize="$2" color={COLORS.faint}>
                   共 {visibleAssets.length} 项 · {viewMode === 'type' ? '按类型分组' : '按自定义分组'}
                 </Text>
               </YStack>
@@ -184,7 +188,7 @@ export default function AssetsScreen() {
                 hitSlop={8}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
-                  stroke="#6B7280" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  stroke={COLORS.sub} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M3 6h18" />
                   <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -195,14 +199,14 @@ export default function AssetsScreen() {
 
             {/* 视图切换：类型 / 分组 */}
             <XStack space="$xs" alignItems="center">
-              <XStack backgroundColor="white" borderColor="$border" borderWidth={1}
+              <XStack backgroundColor={COLORS.surface} borderColor="$border" borderWidth={1}
                 borderRadius={999} padding={3} gap={3}>
                 <TouchableOpacity
                   style={[styles.modeTab, viewMode === 'type' && styles.modeTabActive]}
                   onPress={() => setViewMode('type')}
                 >
                   <Text fontSize="$1" fontWeight={viewMode === 'type' ? '700' : '500'}
-                    color={viewMode === 'type' ? 'white' : '$textSecondary'}>
+                    color={viewMode === 'type' ? COLORS.surface : '$textSecondary'}>
                     按类型
                   </Text>
                 </TouchableOpacity>
@@ -211,7 +215,7 @@ export default function AssetsScreen() {
                   onPress={() => setViewMode('group')}
                 >
                   <Text fontSize="$1" fontWeight={viewMode === 'group' ? '700' : '500'}
-                    color={viewMode === 'group' ? 'white' : '$textSecondary'}>
+                    color={viewMode === 'group' ? COLORS.surface : '$textSecondary'}>
                     按分组
                   </Text>
                 </TouchableOpacity>
@@ -226,14 +230,14 @@ export default function AssetsScreen() {
             {/* 搜索框 */}
             <View style={styles.searchWrap}>
               <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-                stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                stroke={COLORS.faint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <CirclePath />
                 <Path d="m21 21-4.3-4.3" />
               </Svg>
               <TextInput
                 style={styles.searchInput}
                 placeholder="搜索资产名称"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={COLORS.faint}
                 value={query}
                 onChangeText={setQuery}
                 returnKeyType="search"
@@ -280,15 +284,15 @@ export default function AssetsScreen() {
                   <View style={{ width: 10, height: 10, borderRadius: 5,
                     backgroundColor: ASSET_TYPE_COLORS[section.type as AssetType] }} />
                 )}
-                <Text fontSize="$3" fontWeight="700" color="$textPrimary">
+                <Text fontSize="$3" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={0.4}>
                   {section.name}
                 </Text>
                 <Text fontSize="$2" color="$textTertiary">· {section.count}</Text>
               </XStack>
               <XStack space="$sm" alignItems="center">
                 {viewMode === 'type' ? (
-                  <Text fontSize="$2" fontWeight="600"
-                    color={isDebtSection ? '#DC2626' : '$textSecondary'}>
+                  <Text fontSize="$2" fontWeight="600" style={MONEY_TEXT}
+                    color={isDebtSection ? COLORS.danger : COLORS.sub}>
                     {isDebtSection ? '-' : ''}{formatCNY(section.total)}
                   </Text>
                 ) : (
@@ -297,7 +301,7 @@ export default function AssetsScreen() {
                       {formatCNY(section.total)}
                     </Text>
                     {section.debtTotal > 0 ? (
-                      <Text fontSize="$2" fontWeight="600" color="#DC2626">
+                      <Text fontSize="$2" fontWeight="600" color={COLORS.danger}>
                         负债 -{formatCNY(section.debtTotal)}
                       </Text>
                     ) : null}
@@ -322,7 +326,7 @@ export default function AssetsScreen() {
               activeOpacity={0.7}
               onPress={() => navigation.navigate('AssetDetail', { id: item.id })}
             >
-              <XStack padding="$md" marginBottom="$sm" backgroundColor="white" borderRadius="$lg"
+              <XStack padding="$md" marginBottom="$sm" backgroundColor={COLORS.surface} borderRadius="$lg"
                 borderColor="$border" borderWidth={1} alignItems="center" space="$md">
                 <View style={{ width: 10, height: 10, borderRadius: 5,
                   backgroundColor: ASSET_TYPE_COLORS[item.type] }} />
@@ -331,7 +335,7 @@ export default function AssetsScreen() {
                     <Text fontSize="$3" fontWeight="600" color="$textPrimary">{item.name}</Text>
                     {item.visibility === 'private' ? (
                       <View style={styles.privateTag}>
-                        <Text fontSize={10} color="#6B7280">私密</Text>
+                        <Text fontSize={10} color={COLORS.sub}>私密</Text>
                       </View>
                     ) : null}
                   </XStack>
@@ -339,7 +343,7 @@ export default function AssetsScreen() {
                     {capturedDates.get(item.id) ?? item.createdAt.slice(0, 10)} 录入
                   </Text>
                 </YStack>
-                <Text fontSize="$3" fontWeight="600" color={d.color}>{d.text}</Text>
+                <Text fontSize="$3" fontWeight="600" color={d.color} style={MONEY_TEXT}>{d.text}</Text>
               </XStack>
             </TouchableOpacity>
           );
@@ -374,14 +378,14 @@ function Chip({
     <TouchableOpacity
       onPress={onPress}
       style={[styles.chip, active
-        ? { backgroundColor: '#10B981', borderColor: '#10B981' }
+        ? { backgroundColor: COLORS.ink, borderColor: COLORS.ink }
         : null]}
     >
       {color && !active ? (
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
       ) : null}
       <Text fontSize="$1" fontWeight={active ? '700' : '500'}
-        color={active ? 'white' : '$textSecondary'}>
+        color={active ? COLORS.surface : '$textSecondary'}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -390,31 +394,31 @@ function Chip({
 
 const styles = {
   trashBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: 'white',
-    borderColor: '#E5E7EB', borderWidth: 1,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.surface,
+    borderColor: COLORS.hairline, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'white', borderRadius: 14,
-    borderColor: '#E5E7EB', borderWidth: 1,
+    backgroundColor: COLORS.surface, borderRadius: 14,
+    borderColor: COLORS.hairline, borderWidth: 1,
     paddingHorizontal: 14, height: 48,
   },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: '#111827' },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: COLORS.text },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 999, backgroundColor: 'white',
-    borderColor: '#E5E7EB', borderWidth: 1,
+    borderRadius: 999, backgroundColor: COLORS.surface,
+    borderColor: COLORS.hairline, borderWidth: 1,
   },
   privateTag: {
-    backgroundColor: '#F3F4F6', borderRadius: 6,
+    backgroundColor: COLORS.divider, borderRadius: 6,
     paddingHorizontal: 6, paddingVertical: 2,
   },
   modeTab: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
   },
   modeTabActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.ink,
   },
 } as const;

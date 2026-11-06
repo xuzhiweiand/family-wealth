@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 回收站：列出软删资产（deletedAt !== null），支持恢复 / 永久删除
  *
  * 软删机制（数据模型 §C7）保证误删可恢复，runbook §四 承诺了"设置 > 数据 > 回收站"
@@ -8,6 +8,8 @@
  * 所以本页面只做"恢复"，不做"永久删除"。
  */
 
+import { COLORS } from '../theme';
+import { FONT, MONEY_TEXT, SERIF_CN_TEXT } from '../typography';
 import { useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,10 +57,10 @@ export default function TrashScreen() {
 
   // 进页提示：超过 90 天的软删数据按 runbook 不再自助恢复（这里只展示，不强制）
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
+    <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
       <YStack space="$md">
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$6" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$6" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             回收站
           </Text>
           <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
@@ -97,7 +99,7 @@ export default function TrashScreen() {
                   </Text>
                   {asset.visibility === 'private' ? (
                     <Text fontSize="$1" color="$primary">
-                      🔒 {VISIBILITY_LABELS.private}
+                      {VISIBILITY_LABELS.private}
                     </Text>
                   ) : null}
                 </XStack>
@@ -107,10 +109,11 @@ export default function TrashScreen() {
                 </Text>
               </YStack>
               <YStack alignItems="flex-end" space="$xs">
-                <Text fontSize="$3" color="$textSecondary">
+                <Text fontSize="$3" color={COLORS.text} style={MONEY_TEXT}>
                   {formatCNY(asset.currentAmount)}
                 </Text>
-                <Button size={36} fontSize={14} onPress={() => void restoreAsset(asset.id)}>
+                <Button size={36} fontSize={14} backgroundColor={COLORS.ink} color={COLORS.surface}
+                  borderRadius={10} onPress={() => void restoreAsset(asset.id)}>
                   恢复
                 </Button>
               </YStack>

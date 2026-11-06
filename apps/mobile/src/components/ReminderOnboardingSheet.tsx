@@ -7,6 +7,8 @@
  * - 用户选择后写入 AsyncStorage，不再出现。
  */
 
+import { COLORS } from '../theme';
+import { FONT } from '../typography';
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
@@ -52,7 +54,7 @@ export function ReminderOnboardingSheet({ visible, onClose }: Props) {
         <View style={styles.sheet}>
           {/* 图标 */}
           <View style={styles.iconWrap}>
-            <Text style={styles.icon}>📅</Text>
+            <Text style={styles.icon}>月</Text>
           </View>
 
           <Text style={styles.title}>开启月末盘点提醒？</Text>
@@ -77,11 +79,11 @@ export function ReminderOnboardingSheet({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(7, 42, 31, 0.48)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 24,
@@ -92,23 +94,25 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: COLORS.inkWash,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
     marginBottom: 16,
   },
-  icon: { fontSize: 28 },
+  icon: { fontSize: 26, fontFamily: FONT.serifCn, color: COLORS.goldDeep, fontWeight: '700' },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
+    fontFamily: FONT.serifCn,
+    letterSpacing: 0.8,
+    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   desc: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.sub,
     lineHeight: 20,
     textAlign: 'center',
     marginBottom: 24,
@@ -116,18 +120,18 @@ const styles = StyleSheet.create({
   primaryBtn: {
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.ink,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
-  primaryText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  primaryText: { fontSize: 16, fontWeight: '600', color: COLORS.surface },
   secondaryBtn: {
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.divider,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  secondaryText: { fontSize: 16, color: '#374151' },
+  secondaryText: { fontSize: 16, color: COLORS.text },
 });

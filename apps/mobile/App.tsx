@@ -71,8 +71,9 @@ function MainTabs() {
       tabBar={(props) => <TabBar {...props} />}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Assets" component={AssetsScreen} />
       <Tab.Screen name="Trends" component={TrendsScreen} />
+      <Tab.Screen name="Update" component={UpdateCenterScreen} />
+      <Tab.Screen name="Report" component={ReportScreen} />
       <Tab.Screen name="Me" component={MeScreen} />
     </Tab.Navigator>
   );
@@ -149,13 +150,14 @@ export default function App() {
           </>
         ) : booted && consented ? (
           <NavigationContainer ref={navigationRef}>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Navigator screenOptions={{ headerShown: false, gestureEnabled: false }}>
               {status === 'authenticated' ? (
                 <>
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Screen name="Family" component={FamilyScreen} />
                   <Stack.Screen name="Join" component={JoinScreen} />
                   <Stack.Screen name="AssetNew" component={AssetNewScreen} />
+                  <Stack.Screen name="Assets" component={AssetsScreen} />
                   <Stack.Screen name="UpdateCenter" component={UpdateCenterScreen} />
                   <Stack.Screen name="AssetTrash" component={AssetTrashScreen} />
                   <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
@@ -176,8 +178,8 @@ export default function App() {
             </Stack.Navigator>
           </NavigationContainer>
         ) : (
-          // 检查中 / hydrate 进行中：与原生启动屏同色的占位，避免白闪
-          <View style={{ flex: 1, backgroundColor: '#10B981' }} />
+          // 检查中 / hydrate 进行中：与启动屏同色的纸感底，避免色差跳变
+          <View style={{ flex: 1, backgroundColor: '#F7F5EF' }} />
         )}
       </SafeAreaProvider>
     </TamaguiProvider>

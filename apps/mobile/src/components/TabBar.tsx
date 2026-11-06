@@ -1,75 +1,87 @@
 /**
  * 自定义底部 Tab 栏
  *
- * 对照高保真原型：总览 · 资产 · [＋] · 趋势 · 我的。
- * 中间的绿色圆形「＋」不是一个 Tab，点击直接跳到资产录入页；
- * 其余四个按 @react-navigation/bottom-tabs 的标准 tabPress 语义切换。
+ * 对照 v0.6.0 高保真稿：首页 / 趋势 / 更新 / 报表 / 我的，5 等分，无中央 FAB。
+ * 选中项墨绿 + 金色 4px 圆点，未选中 faint；容器暖白 + 发丝上边线。
  *
  * 这里不直接依赖 @react-navigation/bottom-tabs 的类型（避免 workspace
  * 间的隐式类型依赖），只声明用到的最小结构。
  */
 
+import { COLORS } from '../theme';
 import { TouchableOpacity, View, StyleSheet, Text } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TAB_LABELS: Record<string, string> = {
-  Home: '总览',
-  Assets: '资产',
+  Home: '首页',
   Trends: '趋势',
+  Update: '更新',
+  Report: '报表',
   Me: '我的',
 };
 
 type IconProps = { focused: boolean };
 
+const strokeOf = (focused: boolean) => (focused ? COLORS.ink : COLORS.faint);
+
 function HomeIcon({ focused }: IconProps) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"
-      stroke={focused ? ACTIVE_COLOR : INACTIVE_COLOR} strokeWidth={focused ? 2.4 : 2}
-      strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1Z" />
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
+      stroke={strokeOf(focused)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="m3 11 9-8 9 8" />
+      <Path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
     </Svg>
   );
 }
 
-function LayersIcon({ focused }: IconProps) {
+function TrendIcon({ focused }: IconProps) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"
-      stroke={focused ? ACTIVE_COLOR : INACTIVE_COLOR} strokeWidth={focused ? 2.4 : 2}
-      strokeLinecap="round" strokeLinejoin="round">
-      <Path d="m12 2 9 5-9 5-9-5 9-5Z" />
-      <Path d="m3 12 9 5 9-5" />
-      <Path d="m3 17 9 5 9-5" />
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
+      stroke={strokeOf(focused)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M3 3v16a2 2 0 0 0 2 2h16" />
+      <Path d="m19 9-5 5-4-4-3 3" />
     </Svg>
   );
 }
 
-function ChartIcon({ focused }: IconProps) {
+function UpdateIcon({ focused }: IconProps) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"
-      stroke={focused ? ACTIVE_COLOR : INACTIVE_COLOR} strokeWidth={focused ? 2.4 : 2}
-      strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M3 3v18h18" />
-      <Path d="M8 17v-5" />
-      <Path d="M13 17V8" />
-      <Path d="M18 17v-3" />
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
+      stroke={strokeOf(focused)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 20h9" />
+      <Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </Svg>
+  );
+}
+
+function ReportIcon({ focused }: IconProps) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
+      stroke={strokeOf(focused)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Rect width={16} height={20} x={4} y={2} rx={2} />
+      <Path d="M8 7h8M8 11h8M8 15h5" />
     </Svg>
   );
 }
 
 function UserIcon({ focused }: IconProps) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"
-      stroke={focused ? ACTIVE_COLOR : INACTIVE_COLOR} strokeWidth={focused ? 2.4 : 2}
-      strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-      <Path d="M4 21a8 8 0 0 1 16 0" />
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"
+      stroke={strokeOf(focused)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={8} r={4} />
+      <Path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
     </Svg>
   );
 }
 
-const ACTIVE_COLOR = '#10B981';
-const INACTIVE_COLOR = '#9CA3AF';
+const ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
+  Home: HomeIcon,
+  Trends: TrendIcon,
+  Update: UpdateIcon,
+  Report: ReportIcon,
+  Me: UserIcon,
+};
 
 interface TabRoute {
   key: string;
@@ -88,11 +100,6 @@ interface TabBarProps {
     index: number;
     routes: TabRoute[];
   };
-  /**
-   * expo-router 传入完整 BottomTab navigation，结构随 @react-navigation
-   * 版本变化（且 exactOptionalPropertyTypes 下无法静态对齐）。边界用 unknown，
-   * 组件内部收窄到实际用到的 navigate / emit。
-   */
   navigation: unknown;
 }
 
@@ -100,16 +107,9 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const nav = navigation as MinimalNavigation;
 
-  // 左两个 + 右两个，中间留给 FAB
-  const left = state.routes.slice(0, 2);
-  const right = state.routes.slice(2, 4);
-
-  const renderTab = (route: TabRoute, absoluteIndex: number) => {
-    const focused = state.index === absoluteIndex;
-    const Icon = absoluteIndex === 0 ? HomeIcon
-      : absoluteIndex === 1 ? LayersIcon
-      : absoluteIndex === 2 ? ChartIcon
-      : UserIcon;
+  const renderTab = (route: TabRoute, index: number) => {
+    const focused = state.index === index;
+    const Icon = ICONS[route.name] ?? HomeIcon;
 
     const onPress = () => {
       const event = nav.emit({
@@ -126,6 +126,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         <Text style={[styles.label, focused ? styles.labelActive : null]}>
           {TAB_LABELS[route.name] ?? route.name}
         </Text>
+        <View style={[styles.dot, focused ? styles.dotActive : null]} />
       </TouchableOpacity>
     );
   };
@@ -133,23 +134,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.row}>
-        {left.map((r, i) => renderTab(r, i))}
-        <View style={styles.fabSlot}>
-          <TouchableOpacity
-            style={styles.fab}
-            activeOpacity={0.85}
-            onPress={() => nav.navigate('UpdateCenter')}
-            accessibilityLabel="更新数据"
-          >
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none"
-              stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
-              <Path d="M20 4.5V10h-5.5" />
-            </Svg>
-          </TouchableOpacity>
-          <Text style={styles.fabLabel}>更新</Text>
-        </View>
-        {right.map((r, i) => renderTab(r, i + 2))}
+        {state.routes.map((r, i) => renderTab(r, i))}
       </View>
     </View>
   );
@@ -157,52 +142,42 @@ export function TabBar({ state, navigation }: TabBarProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderTopColor: '#E5E7EB',
+    backgroundColor: COLORS.surfaceWarm,
+    borderTopColor: COLORS.hairline,
     borderTopWidth: StyleSheet.hairlineWidth,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
   },
   row: {
     flexDirection: 'row',
-    height: 64,
-    paddingBottom: 6,
+    height: 66,
+    paddingTop: 6,
+    paddingHorizontal: 16,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabSlot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: ACTIVE_COLOR,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -22,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
+    justifyContent: 'flex-start',
   },
   label: {
     marginTop: 2,
-    fontSize: 10,
-    color: INACTIVE_COLOR,
+    fontSize: 9.5,
+    color: COLORS.faint,
   },
   labelActive: {
-    color: ACTIVE_COLOR,
-    fontWeight: '700',
+    color: COLORS.ink,
+    fontWeight: '600',
   },
-  fabLabel: {
-    marginTop: 2,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#6B7280',
+  dot: {
+    width: 4,
+    height: 4,
+    marginTop: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.transparent,
+  },
+  dotActive: {
+    backgroundColor: COLORS.gold,
   },
 });

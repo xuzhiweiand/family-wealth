@@ -6,6 +6,7 @@
  * 做圆角裁剪，children 浮在上层。
  */
 
+import { GRADIENTS, GOLD_DECOR } from '../theme';
 import { View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { ReactNode } from 'react';
@@ -26,8 +27,8 @@ export function GradientCard({
   width,
   height,
   radius = 24,
-  from = '#10B981',
-  to = '#059669',
+  from = GRADIENTS.hero[0],
+  to = GRADIENTS.hero[2],
   decoration = true,
 }: GradientCardProps) {
   return (
@@ -43,8 +44,8 @@ export function GradientCard({
       </Svg>
       {decoration ? (
         <Svg width={width} height={height} style={{ position: 'absolute' }} pointerEvents="none">
-          <Circle cx={width - 60} cy={-30} r={70} fill="#FFFFFF" fillOpacity={0.08} />
-          <Circle cx={width - 20} cy={height + 30} r={48} fill="#FFFFFF" fillOpacity={0.08} />
+          <Circle cx={width - 60} cy={-30} r={70} fill={GOLD_DECOR} />
+          <Circle cx={width - 20} cy={height + 30} r={48} fill={GOLD_DECOR} />
         </Svg>
       ) : null}
       <View style={{ flex: 1 }} pointerEvents="box-none">

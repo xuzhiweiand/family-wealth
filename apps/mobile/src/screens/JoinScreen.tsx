@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 加入家庭：输入邀请码 → 解封 FDK → 加入
  *
  * 用户在这一页交出的不只是「资格」，而是把家庭密钥接到自己名下：
@@ -6,13 +6,14 @@
  * 密码取回，不再依赖邀请码（短码只在这一个时刻用一次）。
  */
 
+import { COLORS } from '../theme';
 import { useState } from 'react';
 import { Button, Card, Input, Text, XStack, YStack } from 'tamagui';
 import { normalizeInviteCode } from '@family-wealth/crypto';
 import { useAppNavigation } from '../lib/navigation';
 import { useFamilyStore } from '../stores/family-store';
 
-const WARN_COLOR = '#DC2626';
+const WARN_COLOR = COLORS.danger;
 
 export default function JoinFamilyScreen() {
   const navigation = useAppNavigation();
@@ -59,7 +60,7 @@ export default function JoinFamilyScreen() {
             size={48}
             fontSize={16}
             backgroundColor={canSubmit ? '$primary' : '$border'}
-            color={canSubmit ? 'white' : '$textSecondary'}
+            color={canSubmit ? COLORS.surface : '$textSecondary'}
             disabled={!canSubmit || loading}
             onPress={() => void onSubmit()}
           >

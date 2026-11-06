@@ -1,10 +1,12 @@
-/**
+﻿/**
  * 手机号绑定 / 更换底部弹层
  *
  * 短信验证码走 Supabase Phone OTP（updateUser → verifyOtp）；
  * 绑定成功后同时写入本机 Keychain，供「我的」页展示脱敏号码。
  */
 
+import { COLORS } from '../theme';
+import { FONT, SERIF_CN_TEXT } from '../typography';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert, KeyboardAvoidingView, Modal, Platform, TextInput, TouchableOpacity, View,
@@ -24,7 +26,7 @@ interface Props {
 const INPUT_STYLE = {
   flex: 1,
   fontSize: 13,
-  color: '#111827',
+  color: COLORS.text,
   paddingVertical: 0,
 } as const;
 
@@ -122,18 +124,18 @@ export function PhoneBindingSheet({ visible, currentPhone, onClose, onSaved }: P
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(7,42,31,0.48)', justifyContent: 'flex-end' }}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
-          <YStack backgroundColor="white" borderTopLeftRadius={24} borderTopRightRadius={24} padding="$lg" paddingBottom={32}>
+          <YStack backgroundColor={COLORS.surface} borderTopLeftRadius={24} borderTopRightRadius={24} padding="$lg" paddingBottom={32}>
             <View style={{
-              width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB',
+              width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.hairline,
               alignSelf: 'center', marginBottom: 12,
             }} />
             <XStack alignItems="center" marginBottom="$xs">
-              <Text flex={1} fontSize={15} fontWeight="700" color="$textPrimary">
+              <Text flex={1} fontSize={15} fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={0.6}>
                 {currentPhone ? '更换手机号' : '绑定手机号'}
               </Text>
-              <Text fontSize={11} color="$textTertiary" onPress={onClose}>取消</Text>
+              <Text fontSize={11} color={COLORS.faint} onPress={onClose}>取消</Text>
             </XStack>
             <Text fontSize={10.5} color="$textSecondary" marginBottom="$md" lineHeight={17}>
               用于账号找回与家庭邀请，仅你自己与家庭成员可见脱敏后的号码。
@@ -141,16 +143,16 @@ export function PhoneBindingSheet({ visible, currentPhone, onClose, onSaved }: P
 
             <YStack space="$sm">
               <XStack
-                height={46} borderRadius={12} borderWidth={1} borderColor="#E5E7EB"
-                backgroundColor="#F9FAFB" paddingHorizontal={12} alignItems="center" space="$sm"
+                height={48} borderRadius={14} borderWidth={1} borderColor={COLORS.hairline}
+                backgroundColor={COLORS.paper} paddingHorizontal={12} alignItems="center" space="$sm"
               >
-                <Text fontSize={12} fontWeight="600" color="#4B5563">+86</Text>
-                <View style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
+                <Text fontSize={12} fontWeight="600" color={COLORS.sub}>+86</Text>
+                <View style={{ width: 1, height: 16, backgroundColor: COLORS.hairline }} />
                 <TextInput
                   value={phone}
                   onChangeText={(v) => setPhone(v.replace(/\D/g, '').slice(0, 11))}
                   placeholder="请输入 11 位手机号"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={COLORS.faint}
                   keyboardType="phone-pad"
                   maxLength={11}
                   style={INPUT_STYLE}
@@ -158,14 +160,14 @@ export function PhoneBindingSheet({ visible, currentPhone, onClose, onSaved }: P
               </XStack>
 
               <XStack
-                height={46} borderRadius={12} borderWidth={1} borderColor="#E5E7EB"
-                backgroundColor="#F9FAFB" paddingHorizontal={12} alignItems="center" space="$sm"
+                height={48} borderRadius={14} borderWidth={1} borderColor={COLORS.hairline}
+                backgroundColor={COLORS.paper} paddingHorizontal={12} alignItems="center" space="$sm"
               >
                 <TextInput
                   value={code}
                   onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
                   placeholder="6 位验证码"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={COLORS.faint}
                   keyboardType="number-pad"
                   maxLength={6}
                   style={INPUT_STYLE}
@@ -173,13 +175,13 @@ export function PhoneBindingSheet({ visible, currentPhone, onClose, onSaved }: P
                 <TouchableOpacity onPress={handleSendCode} disabled={sending || countdown > 0}>
                   <View style={{
                     height: 30, paddingHorizontal: 10, borderRadius: 8,
-                    backgroundColor: countdown > 0 ? '#F3F4F6' : '#ECFDF5',
+                    backgroundColor: countdown > 0 ? COLORS.divider : COLORS.inkWash,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
                     {sending ? (
-                      <Spinner color="#059669" size="small" />
+                      <Spinner color={COLORS.inkSoft} size="small" />
                     ) : (
-                      <Text fontSize={10.5} color={countdown > 0 ? '#9CA3AF' : '#047857'} fontWeight="600">
+                      <Text fontSize={10.5} color={countdown > 0 ? COLORS.faint : COLORS.inkSoft} fontWeight="600">
                         {countdown > 0 ? `${countdown}s 后重发` : '获取验证码'}
                       </Text>
                     )}
@@ -204,11 +206,11 @@ export function PhoneBindingSheet({ visible, currentPhone, onClose, onSaved }: P
               fontWeight="700"
               marginTop="$md"
               backgroundColor="$primary"
-              color="white"
+              color={COLORS.surface}
               onPress={handleSave}
               disabled={saving || !isValidPhone(phone) || !/^\d{6}$/.test(code)}
               opacity={isValidPhone(phone) && /^\d{6}$/.test(code) ? 1 : 0.4}
-              {...(saving ? { icon: <Spinner color="white" /> } : {})}
+              {...(saving ? { icon: <Spinner color={COLORS.surface} /> } : {})}
             >
               {saving ? '保存中...' : '保存'}
             </Button>

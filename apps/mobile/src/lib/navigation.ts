@@ -16,8 +16,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 export type MainTabParamList = {
   Home: undefined;
-  Assets: undefined;
   Trends: undefined;
+  Update: undefined;
+  Report: undefined;
   Me: undefined;
 };
 
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   Join: undefined;
   OcrLab: undefined;
   AssetNew: undefined;
+  Assets: undefined;
   UpdateCenter: undefined;
   AssetTrash: undefined;
   AssetDetail: { id: string };

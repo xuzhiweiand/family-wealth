@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 华为账号登录 · 加密密码过渡页
  *
  * 华为账号只负责身份鉴权，资产仍由本地派生的 UMK 加密：
@@ -6,6 +6,8 @@
  *  - 已有档案 → 输入原加密主密码，校验通过后才进入主页
  */
 
+import { COLORS } from '../theme';
+import { FONT, SERIF_CN_TEXT } from '../typography';
 import { useState } from 'react';
 import { Alert, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -32,7 +34,7 @@ function LockBadge({ firstTime }: { firstTime: boolean }) {
   return (
     <View style={{
       width: 64, height: 64, borderRadius: 32,
-      backgroundColor: firstTime ? '#D1FAE5' : '#DBEAFE',
+      backgroundColor: firstTime ? COLORS.inkWashSoft : COLORS.inkWashSoft,
       alignItems: 'center', justifyContent: 'center', marginBottom: 8,
     }}>
       <Svg
@@ -40,7 +42,7 @@ function LockBadge({ firstTime }: { firstTime: boolean }) {
         height={28}
         viewBox="0 0 24 24"
         fill="none"
-        stroke={firstTime ? '#059669' : '#2563EB'}
+        stroke={firstTime ? COLORS.inkSoft : COLORS.inkSoft}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -63,7 +65,7 @@ function passwordStrength(pwd: string): number {
   return Math.min(score, 4);
 }
 
-const STRENGTH_COLORS = ['#E5E7EB', '#EF4444', '#F59E0B', '#10B981', '#059669'];
+const STRENGTH_COLORS = [COLORS.hairline, COLORS.danger, COLORS.warning, COLORS.ink, COLORS.inkSoft];
 const STRENGTH_LABELS = ['', '太弱', '一般', '良好', '很强'];
 
 export default function HuaweiKeySetupScreen() {
@@ -133,7 +135,8 @@ export default function HuaweiKeySetupScreen() {
         <TouchableOpacity onPress={handleBack} hitSlop={12}>
           <Text fontSize="$6" color="$textPrimary">‹</Text>
         </TouchableOpacity>
-        <Text flex={1} textAlign="center" fontSize="$3" fontWeight="600" color="$textPrimary">
+        <Text flex={1} textAlign="center" fontSize="$3" fontWeight="700" color={COLORS.text}
+          style={SERIF_CN_TEXT} letterSpacing={1}>
           华为账号登录
         </Text>
         <View style={{ width: 24 }} />
@@ -142,7 +145,8 @@ export default function HuaweiKeySetupScreen() {
       <YStack flex={1} padding="$xl" space="$lg" justifyContent="center">
         <YStack space="$xs" alignItems="center">
           <LockBadge firstTime={isFirstTime} />
-          <Text fontSize="$6" fontWeight="700" color="$textPrimary" textAlign="center">
+          <Text fontSize="$6" fontWeight="700" color={COLORS.text} textAlign="center"
+            style={SERIF_CN_TEXT} letterSpacing={2}>
             {isFirstTime ? '设置加密主密码' : '输入加密主密码'}
           </Text>
           <Text fontSize="$2" color="$textSecondary" textAlign="center" lineHeight={20}>
@@ -160,11 +164,13 @@ export default function HuaweiKeySetupScreen() {
                 flex={1}
                 height={38}
                 borderRadius={19}
-                backgroundColor={mode === key ? '$primary' : '#F2F3F7'}
+                backgroundColor={mode === key ? COLORS.ink : COLORS.surface}
+                borderWidth={1}
+                borderColor={mode === key ? COLORS.ink : COLORS.hairline}
                 pressStyle={{ opacity: 0.85 }}
                 onPress={() => setMode(key)}
               >
-                <Text fontSize={13} fontWeight="600" color={mode === key ? 'white' : '$textSecondary'}>
+                <Text fontSize={13} fontWeight="600" color={mode === key ? COLORS.surface : COLORS.sub}>
                   {label}
                 </Text>
               </Button>
@@ -185,8 +191,9 @@ export default function HuaweiKeySetupScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
-              backgroundColor="white"
-              borderColor="$border"
+              backgroundColor={COLORS.surface}
+              borderColor={COLORS.hairline}
+              borderRadius={14}
               marginBottom={4}
             />
           )}
@@ -206,8 +213,9 @@ export default function HuaweiKeySetupScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             spellCheck={false}
-            backgroundColor="white"
-            borderColor="$border"
+            backgroundColor={COLORS.surface}
+            borderColor={COLORS.hairline}
+            borderRadius={14}
           />
 
           {isFirstTime && !isBind && (
@@ -220,7 +228,7 @@ export default function HuaweiKeySetupScreen() {
                       flex: 1,
                       height: 4,
                       borderRadius: 2,
-                      backgroundColor: strength >= i ? STRENGTH_COLORS[strength] : '#E5E7EB',
+                      backgroundColor: strength >= i ? STRENGTH_COLORS[strength] : COLORS.hairline,
                     }}
                   />
                 ))}
@@ -239,8 +247,9 @@ export default function HuaweiKeySetupScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 spellCheck={false}
-                backgroundColor="white"
-                borderColor="$border"
+                backgroundColor={COLORS.surface}
+                borderColor={COLORS.hairline}
+                borderRadius={14}
                 marginTop={4}
               />
             </>
@@ -254,15 +263,15 @@ export default function HuaweiKeySetupScreen() {
         )}
 
         {isFirstTime && !isBind && (
-          <YStack backgroundColor="#FEF3C7" borderRadius="$md" padding="$md">
-            <Text fontSize="$2" color="#92400E" lineHeight={19}>
+          <YStack backgroundColor={COLORS.warningWash} borderRadius="$md" padding="$md">
+            <Text fontSize="$2" color={COLORS.goldDeep} lineHeight={19}>
               加密密码无法由服务器找回，丢失后将无法解密已同步的数据。请务必自行记录。
             </Text>
           </YStack>
         )}
 
         {isBind && (
-          <YStack backgroundColor="#EBF3FE" borderRadius="$md" padding="$md">
+          <YStack backgroundColor={COLORS.inkWashSoft} borderRadius="$md" padding="$md">
             <Text fontSize="$2" color="$primary" lineHeight={19}>
               绑定后，华为账号将与该邮箱账号关联，下次可直接用华为账号登录；数据与加密密码保持不变。
             </Text>
@@ -272,13 +281,15 @@ export default function HuaweiKeySetupScreen() {
         <Button
           size={52}
           fontSize={17}
-          backgroundColor="$primary"
-          color="white"
+          borderRadius={16}
+          letterSpacing={2}
+          backgroundColor={COLORS.ink}
+          color={COLORS.surface}
           marginTop="$sm"
           onPress={handleSubmit}
           disabled={submitting || !canSubmit}
           opacity={canSubmit ? 1 : 0.5}
-          {...(submitting ? { icon: <Spinner color="white" /> } : {})}
+          {...(submitting ? { icon: <Spinner color={COLORS.surface} /> } : {})}
         >
           {submitting ? '处理中...' : isBind ? '绑定并进入' : isFirstTime ? '设置并进入' : '验证并进入'}
         </Button>

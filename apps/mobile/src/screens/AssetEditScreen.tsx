@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 资产编辑页
  *
  * 字段：name / type / visibility / 金额
@@ -10,6 +10,8 @@
  *       路由层 race condition 兜底）；canDoOnAsset(edit)=false 也禁用。
  */
 
+import { COLORS } from '../theme';
+import { FONT, SERIF_CN_TEXT } from '../typography';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
@@ -115,7 +117,7 @@ export default function EditAssetScreen() {
 
   if (!asset) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
+      <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             资产不存在
@@ -132,7 +134,7 @@ export default function EditAssetScreen() {
   const canEdit = canDoOnAsset({ role: myRole, visibility: asset.visibility, isOwn }, 'edit');
   if (!canEdit) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
+      <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">
             无权编辑
@@ -207,10 +209,10 @@ export default function EditAssetScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$5" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             编辑资产
           </Text>
           <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
@@ -230,7 +232,7 @@ export default function EditAssetScreen() {
                   size={36}
                   fontSize={14}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
-                  color={t === type ? 'white' : '$textPrimary'}
+                  color={t === type ? COLORS.surface : '$textPrimary'}
                   onPress={() => setType(t)}
                 >
                   {ASSET_TYPE_LABELS[t]}
@@ -317,7 +319,7 @@ export default function EditAssetScreen() {
                 size={36}
                 fontSize={14}
                 backgroundColor={groupId === null ? '$primary' : '$bgPrimary'}
-                color={groupId === null ? 'white' : '$textPrimary'}
+                color={groupId === null ? COLORS.surface : '$textPrimary'}
                 onPress={() => setGroupId(null)}
               >
                 未分组
@@ -328,7 +330,7 @@ export default function EditAssetScreen() {
                   size={36}
                   fontSize={14}
                   backgroundColor={g.id === groupId ? '$primary' : '$bgPrimary'}
-                  color={g.id === groupId ? 'white' : '$textPrimary'}
+                  color={g.id === groupId ? COLORS.surface : '$textPrimary'}
                   onPress={() => setGroupId(g.id)}
                 >
                   {g.name}
@@ -372,7 +374,7 @@ export default function EditAssetScreen() {
           fontSize={18}
           marginTop={12}
           backgroundColor="$primary"
-          color="white"
+          color={COLORS.surface}
           disabled={saving || !hasChange || cents === null}
           onPress={() => void save()}
         >

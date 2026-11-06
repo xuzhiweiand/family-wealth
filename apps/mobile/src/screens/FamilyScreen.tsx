@@ -1,10 +1,12 @@
-/**
+﻿/**
  * 家庭页：成员管理 + 邀请 + 轮换
  *
  * 权限按钮的可用性全部来自 packages/family 的纯函数裁决（can /
  * checkMemberRemoval），服务端仍会再校验一次——这里的禁用只是 UX。
  */
 
+import { COLORS } from '../theme';
+import { FONT, SERIF_CN_TEXT } from '../typography';
 import { useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +17,7 @@ import { useAuthStore } from '../stores/auth-store';
 import { useFamilyStore } from '../stores/family-store';
 
 /** 撤销成员后未轮换 → 必须强提示（ADR-0010） */
-const WARN_COLOR = '#DC2626';
+const WARN_COLOR = COLORS.danger;
 
 export default function FamilyScreen() {
   const navigation = useAppNavigation();
@@ -44,15 +46,15 @@ export default function FamilyScreen() {
 
   if (!family) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24, flexGrow: 1 }}>
+      <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24, flexGrow: 1 }}>
         <YStack space="$lg" marginTop="$xl">
-          <Text fontSize="$6" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$6" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             家庭共享
           </Text>
           <Text fontSize="$2" color="$textSecondary">
             家庭数据端到端加密：服务端只见密文。邀请成员时，家庭密钥会通过邀请码安全地交到对方手里。
           </Text>
-          <Button size={48} fontSize={16} backgroundColor="$primary" color="white" onPress={() => createFamily('我的家庭')}>
+          <Button size={48} fontSize={16} backgroundColor="$primary" color={COLORS.surface} onPress={() => createFamily('我的家庭')}>
             创建家庭
           </Button>
           <Button
@@ -73,10 +75,10 @@ export default function FamilyScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
+    <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
       <YStack space="$md">
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$6" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$6" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             {family.name}
           </Text>
           <Text fontSize="$2" color="$primary" onPress={() => navigation.goBack()}>
@@ -95,13 +97,13 @@ export default function FamilyScreen() {
         {rotationPending ? (
           <Card padded backgroundColor="$bgPrimary" borderColor={WARN_COLOR} borderWidth={2} borderRadius="$md">
             <Text fontSize="$3" fontWeight="700" color={WARN_COLOR}>
-              ⚠ 有成员被移除但密钥尚未轮换
+              有成员被移除但密钥尚未轮换
             </Text>
             <Text fontSize="$1" color="$textSecondary" marginTop="$xs">
               被移除的成员将无法读取新数据，但其在撤销前已下载的数据仍可被其解开。轮换后彻底切断。
             </Text>
             {can(myRole, 'rotate_family_key') ? (
-              <Button size={36} fontSize={14} backgroundColor={WARN_COLOR} color="white" marginTop="$sm" onPress={rotateNow}>
+              <Button size={36} fontSize={14} backgroundColor={WARN_COLOR} color={COLORS.surface} marginTop="$sm" onPress={rotateNow}>
                 立即轮换密钥
               </Button>
             ) : null}
@@ -158,7 +160,7 @@ export default function FamilyScreen() {
             <Text fontSize="$1" color="$textSecondary">
               邀请码 15 分钟内有效、仅可使用一次。生成后请当面或私下告知对方，不要发到群里。
             </Text>
-            <Button size={48} fontSize={16} backgroundColor="$primary" color="white" onPress={makeInvite}>
+            <Button size={48} fontSize={16} backgroundColor="$primary" color={COLORS.surface} onPress={makeInvite}>
               生成邀请码
             </Button>
             {activeInvite ? (

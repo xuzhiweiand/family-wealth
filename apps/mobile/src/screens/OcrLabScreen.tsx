@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OCR Lab —— 端侧 OCR 联调页（ADR-0008 / ADR-0011）
  *
  * 真机拿到一次识别结果后，把全文粘到这里 →
@@ -14,6 +14,7 @@
  * ⚠️ 此页绕过 AuthGuard（仅开发态用），生产构建不会暴露入口（dev-only 提示）
  */
 
+import { COLORS } from '../theme';
 import { useState } from 'react';
 import { ScrollView, Alert } from 'react-native';
 import { Button, Card, Input, Text, XStack, YStack, TextArea } from 'tamagui';
@@ -94,7 +95,7 @@ export default function OcrLabScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         <XStack justifyContent="space-between" alignItems="center">
           <Text fontSize="$5" fontWeight="700" color="$textPrimary">OCR Lab（开发态）</Text>
@@ -118,7 +119,7 @@ export default function OcrLabScreen() {
             minHeight={160}
             multiline
           />
-          <Button size="$3" backgroundColor="$primary" color="white" onPress={analyze}>
+          <Button size="$3" backgroundColor="$primary" color={COLORS.surface} onPress={analyze}>
             解析
           </Button>
         </YStack>
@@ -145,19 +146,19 @@ export default function OcrLabScreen() {
                     <Text
                       fontSize="$4"
                       fontWeight="600"
-                      color={isPicked ? 'white' : '$textPrimary'}
+                      color={isPicked ? COLORS.surface : '$textPrimary'}
                     >
                       {formatCNY(c.valueInCents)}
                     </Text>
                     <Text
                       fontSize="$1"
-                      color={isPicked ? 'white' : '$textSecondary'}
+                      color={isPicked ? COLORS.surface : '$textSecondary'}
                     >
                       {c.keyword ?? (c.reason === 'currency-symbol' ? '带货币符号' : '纯数字')} ·{' '}
                       {Math.round(c.score * 100)}%
                     </Text>
                   </XStack>
-                  <Text fontSize="$1" color={isPicked ? 'white' : '$textSecondary'}>
+                  <Text fontSize="$1" color={isPicked ? COLORS.surface : '$textSecondary'}>
                     原文：{c.raw}
                   </Text>
                 </Card>
@@ -182,7 +183,7 @@ export default function OcrLabScreen() {
                 key={d}
                 size="$3"
                 backgroundColor={d === difficulty ? '$primary' : '$bgPrimary'}
-                color={d === difficulty ? 'white' : '$textPrimary'}
+                color={d === difficulty ? COLORS.surface : '$textPrimary'}
                 onPress={() => setDifficulty(d)}
               >
                 {d}
@@ -195,7 +196,7 @@ export default function OcrLabScreen() {
           <Input value={notes} onChangeText={setNotes} backgroundColor="$bgPrimary" borderColor="$border" />
         </YStack>
 
-        <Button size="$4" backgroundColor="$primary" color="white" onPress={generate} disabled={!picked}>
+        <Button size="$4" backgroundColor="$primary" color={COLORS.surface} onPress={generate} disabled={!picked}>
           生成 CorpusSample 片段
         </Button>
       </YStack>

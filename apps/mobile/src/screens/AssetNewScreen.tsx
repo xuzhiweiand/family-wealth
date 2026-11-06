@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 资产录入页
  *
  * 两种录入方式：
@@ -9,6 +9,8 @@
  * 供趋势图使用。
  */
 
+import { COLORS } from '../theme';
+import { FONT, SERIF_CN_TEXT } from '../typography';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
@@ -114,9 +116,9 @@ export default function NewAssetScreen() {
   // 让用户知道为什么不能录入——产品反馈 W2 原型就嫌黑盒）
   if (!canCreate) {
     return (
-      <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
+      <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: 24 + insets.top, paddingHorizontal: 24, paddingBottom: 24 }}>
         <YStack space="$md" marginTop="$xl">
-          <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$5" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             录入资产
           </Text>
           <Text fontSize="$2" color="$textSecondary">
@@ -199,7 +201,7 @@ export default function NewAssetScreen() {
   return (
     // 页面容器用 RN 的 ScrollView（tamagui 的 ScrollView 在部分版本不导出），
     // 内层仍用 tamagui 的 YStack 保持间距/主题一致
-    <ScrollView style={{ backgroundColor: '#F5F7FA' }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: COLORS.paper }} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}>
       <YStack padding="$lg" space="$md">
         {/* 顶部返回按钮：录入页 headerShown:false，不保存时也可返回 */}
         <XStack alignItems="center" space="$sm">
@@ -211,9 +213,9 @@ export default function NewAssetScreen() {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.surface,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
+              borderColor: COLORS.hairline,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -222,7 +224,7 @@ export default function NewAssetScreen() {
               ←
             </Text>
           </TouchableOpacity>
-          <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+          <Text fontSize="$5" fontWeight="700" color={COLORS.text} style={SERIF_CN_TEXT} letterSpacing={1}>
             录入资产
           </Text>
         </XStack>
@@ -239,7 +241,7 @@ export default function NewAssetScreen() {
                   size={36}
                   fontSize={14}
                   backgroundColor={t === type ? '$primary' : '$bgPrimary'}
-                  color={t === type ? 'white' : '$textPrimary'}
+                  color={t === type ? COLORS.surface : '$textPrimary'}
                   onPress={() => {
                     setType(t);
                     if (!nameEdited) setName(ASSET_TYPE_LABELS[t]);
@@ -354,7 +356,7 @@ export default function NewAssetScreen() {
                   size={36}
                   fontSize={14}
                   backgroundColor={groupId === null ? '$primary' : '$bgPrimary'}
-                  color={groupId === null ? 'white' : '$textPrimary'}
+                  color={groupId === null ? COLORS.surface : '$textPrimary'}
                   onPress={() => setGroupId(null)}
                 >
                   未分组
@@ -365,7 +367,7 @@ export default function NewAssetScreen() {
                     size={36}
                     fontSize={14}
                     backgroundColor={g.id === groupId ? '$primary' : '$bgPrimary'}
-                    color={g.id === groupId ? 'white' : '$textPrimary'}
+                    color={g.id === groupId ? COLORS.surface : '$textPrimary'}
                     onPress={() => setGroupId(g.id)}
                   >
                     {g.name}
@@ -420,7 +422,7 @@ export default function NewAssetScreen() {
           fontSize={18}
           marginTop={12}
           backgroundColor="$primary"
-          color="white"
+          color={COLORS.surface}
           disabled={saving || cents === null}
           onPress={() => void save()}
         >

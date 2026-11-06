@@ -5,6 +5,7 @@
  * 顺序累加 strokeDashoffset 定位。比 path 弧计算更短、更不容易出缝。
  */
 
+import { COLORS } from '../theme';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Text, YStack } from 'tamagui';
 import type { CategorySlice } from '../lib/asset-meta';
@@ -40,7 +41,7 @@ export function DonutChart({
         <G transform={`rotate(-90 ${CENTER} ${CENTER})`}>
           {/* 底环：空数据时也有个浅圈 */}
           <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none"
-            stroke="#F3F4F6" strokeWidth={thickness} />
+            stroke={COLORS.divider} strokeWidth={thickness} />
           {slices.map((s) => {
             const len = (s.pct / 100) * CIRC;
             const visible = Math.max(0, len - GAP);

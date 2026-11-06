@@ -1,18 +1,37 @@
-/**
- * 帮助与反馈（v0.5.0）
+﻿/**
+ * 帮助与反馈（v0.6.0）
  *
- * - 常见问题：本地静态 FAQ
- * - 提交反馈：类型 + 描述（500 字）+ 联系方式，生成本地工单号
- * - 我的反馈：本机记录与处理状态
+ * 对照 v0.6.0 高保真单页「v0.6.0-support.html」复刻：
+ *   沉浸墨绿 hero → 常见问题（展开 / 收起）→ 意见反馈（类型 / 内容 / 提交）
+ *   → 我的反馈（历史工单与处理状态）。
+ *
+ * 保留原有业务：
+ *   - 反馈内容先落本机工单（AsyncStorage），离线也可提交；
+ *   - 再通过 reportFeedback 上报 Edge Function，失败时提示「已保存到本机」；
+ *   - 联系方式默认取绑定手机号（脱敏展示）或账号邮箱，用户可修改，
+ *     提交时若为合法手机号则回写本机留存；
+ *   - 提交后插入「我的反馈」列表，状态徽标沿用 pending / resolved。
  */
 
+import { COLORS, GRADIENTS, SHADOW } from '../theme';
+import { SERIF_CN_TEXT } from '../typography';
 import { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, ScrollView, TextInput, TouchableOpacity, View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
-import { Button, Spinner, Text, XStack, YStack } from 'tamagui';
+import Svg, {
+  Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop,
+} from 'react-native-svg';
 import { useAppNavigation } from '../lib/navigation';
 import { useAuthStore } from '../stores/auth-store';
 import { getPhone, savePhone } from '../services/secure-storage';
@@ -20,7 +39,6 @@ import { maskPhone } from '../services/phone';
 import { reportFeedback } from '../services/feedback-report';
 import {
   FEEDBACK_MAX_LENGTH,
-  FEEDBACK_TYPES,
   formatFeedbackDate,
   loadFeedbacks,
   submitFeedback,
@@ -47,10 +65,48 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
 ];
 
+/** 设计稿：输入框计数 0 / 200（工单本身仍支持 500 字上限，取两者较小值） */
+const CONTENT_MAX = Math.min(200, FEEDBACK_MAX_LENGTH);
+const HERO_HEIGHT = 150;
+const HERO_RADIUS = 28;
+
+/** 展示用反馈类型；本地工单类型枚举不含「体验问题」，归入「其他」 */
+type SupportType = '功能建议' | '体验问题' | '数据异常' | '其他';
+
+const SUPPORT_TYPES: readonly SupportType[] = ['功能建议', '体验问题', '数据异常', '其他'];
+
+const RECORD_TYPE: Record<SupportType, FeedbackType> = {
+  功能建议: '功能建议',
+  体验问题: '其他',
+  数据异常: '数据异常',
+  其他: '其他',
+};
+
+const STATUS_META: Record<
+  FeedbackRecord['status'],
+  { label: string; color: string; background: string }
+> = {
+  pending: { label: '处理中', color: COLORS.warning, background: COLORS.warningWash },
+  resolved: { label: '已解决', color: COLORS.inkSoft, background: COLORS.inkWash },
+};
+
+const HERO_SUBTITLE = 'rgba(233,220,192,0.55)';
+const HERO_BTN_BG = 'rgba(233,220,192,0.10)';
+const HERO_BTN_LINE = 'rgba(233,220,192,0.20)';
+
 function BackIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth={2.2} strokeLinecap="round">
-      <Path d="M15 19l-7-7 7-7" />
+    <Svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={COLORS.inkWash}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="m15 18-6-6 6-6" />
     </Svg>
   );
 }
@@ -58,16 +114,49 @@ function BackIcon() {
 function Chevron({ open }: { open: boolean }) {
   return (
     <Svg
-      width={14}
-      height={14}
+      width={15}
+      height={15}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#9CA3AF"
-      strokeWidth={2}
+      stroke={COLORS.goldDeep}
+      strokeWidth={1.8}
       strokeLinecap="round"
+      strokeLinejoin="round"
       style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}
     >
-      <Path d="m9 6 6 6-6 6" />
+      <Path d="m9 18 6-6-6-6" />
+    </Svg>
+  );
+}
+
+function HeroBackdrop({ width, height }: { width: number; height: number }) {
+  return (
+    <Svg width={width} height={height} style={styles.heroBg} pointerEvents="none">
+      <Defs>
+        <LinearGradient id="supportHeroBase" x1="0.15" y1="0" x2="0.7" y2="1">
+          <Stop offset="0" stopColor={GRADIENTS.hero[0]} />
+          <Stop offset="0.46" stopColor={GRADIENTS.hero[1]} />
+          <Stop offset="1" stopColor={GRADIENTS.hero[2]} />
+        </LinearGradient>
+        <RadialGradient
+          id="supportHeroGold"
+          cx="0.9"
+          cy="-0.1"
+          r="0.9"
+          gradientUnits="objectBoundingBox"
+        >
+          <Stop offset="0" stopColor={COLORS.gold} stopOpacity={0.24} />
+          <Stop offset="0.62" stopColor={COLORS.gold} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect x={0} y={0} width={width} height={height} fill="url(#supportHeroBase)" />
+      <Rect x={0} y={0} width={width} height={height} fill="url(#supportHeroGold)" />
+      <Circle cx={width - 34} cy={-26} r={112}
+        stroke="rgba(233,220,192,0.16)" strokeWidth={1} fill="none" />
+      <Circle cx={width - 4} cy={16} r={72}
+        stroke="rgba(233,220,192,0.10)" strokeWidth={1} fill="none" />
+      <Circle cx={width + 30} cy={48} r={46}
+        stroke="rgba(233,220,192,0.07)" strokeWidth={1} fill="none" />
     </Svg>
   );
 }
@@ -75,10 +164,11 @@ function Chevron({ open }: { open: boolean }) {
 export default function HelpFeedbackScreen() {
   const navigation = useAppNavigation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
 
-  const [openIndex, setOpenIndex] = useState(0);
-  const [type, setType] = useState<FeedbackType>('数据异常');
+  const [openIndex, setOpenIndex] = useState(-1);
+  const [type, setType] = useState<SupportType>('数据异常');
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
   const [records, setRecords] = useState<FeedbackRecord[]>([]);
@@ -100,10 +190,14 @@ export default function HelpFeedbackScreen() {
   }, [toast]);
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || !content.trim()) return;
     setSubmitting(true);
     try {
-      const record = await submitFeedback({ type, content, contact });
+      const record = await submitFeedback({
+        type: RECORD_TYPE[type],
+        content,
+        contact,
+      });
       setRecords((prev) => [record, ...prev]);
       setContent('');
       // 本地已落库，再尝试发送邮件到开发者邮箱
@@ -118,213 +212,376 @@ export default function HelpFeedbackScreen() {
         await savePhone(contact.trim());
       }
     } catch (err) {
-      setToast((err as Error).message);
+      setToast(err instanceof Error ? err.message : '提交失败，请稍后重试');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const canSubmit = content.trim().length > 0;
+  const heroHeight = insets.top + HERO_HEIGHT;
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ height: insets.top, backgroundColor: '#F9FAFB' }} />
-      <XStack
-        height={52}
-        alignItems="center"
-        paddingHorizontal="$md"
-        borderBottomColor="$border"
-        borderBottomWidth={1}
-        backgroundColor="#F9FAFB"
-      >
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} style={{ width: 32 }}>
-          <BackIcon />
-        </TouchableOpacity>
-        <YStack flex={1}>
-          <Text fontSize={16} fontWeight="700" color="$textPrimary" textAlign="center">
-            帮助与反馈
-          </Text>
-          <Text fontSize={10} color="$textTertiary" textAlign="center">
-            工作日 1–2 天内回复 · 工单可追踪
-          </Text>
-        </YStack>
-        <View style={{ width: 32 }} />
-      </XStack>
+    <View style={styles.page}>
+      <StatusBar barStyle="light-content" />
+
+      {/* 沉浸墨绿 hero：返回 + 金色小标 + 宋体标题 */}
+      <View style={[styles.hero, { height: heroHeight, paddingTop: insets.top }]}>
+        <HeroBackdrop width={width} height={heroHeight} />
+        <View style={styles.heroInner}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="返回"
+            activeOpacity={0.7}
+          >
+            <BackIcon />
+          </TouchableOpacity>
+          <Text style={styles.heroKicker}>SUPPORT</Text>
+          <Text style={[styles.heroTitle, SERIF_CN_TEXT]}>帮助与反馈</Text>
+          <Text style={styles.heroSubtitle}>我们会在 1 个工作日内回复</Text>
+        </View>
+      </View>
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 16 }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text fontSize={10.5} color="$textTertiary" fontWeight="600" marginBottom="$sm" marginLeft={4}>
-            常见问题
-          </Text>
-          <YStack backgroundColor="white" borderRadius="$lg" borderColor="$border" borderWidth={1} overflow="hidden">
+          {/* 常见问题 */}
+          <View style={[styles.card, styles.faqCard]}>
+            <Text style={[styles.cardTitle, SERIF_CN_TEXT]}>常见问题</Text>
             {FAQS.map((faq, index) => {
               const open = openIndex === index;
+              const last = index === FAQS.length - 1;
               return (
-                <YStack
-                  key={faq.q}
-                  borderBottomColor={index === FAQS.length - 1 ? 'transparent' : '#F3F4F6'}
-                  borderBottomWidth={index === FAQS.length - 1 ? 0 : 1}
-                >
+                <View key={faq.q} style={[styles.faqRow, last && styles.rowLast]}>
                   <TouchableOpacity
                     onPress={() => setOpenIndex(open ? -1 : index)}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: open }}
                   >
-                    <XStack paddingHorizontal="$md" height={48} alignItems="center" space="$sm">
-                      <Text flex={1} fontSize={12.5} color="$textPrimary">{faq.q}</Text>
+                    <View style={styles.faqHead}>
+                      <Text style={styles.faqQuestion}>{faq.q}</Text>
                       <Chevron open={open} />
-                    </XStack>
+                    </View>
                   </TouchableOpacity>
-                  {open && (
-                    <Text
-                      paddingHorizontal="$md"
-                      paddingBottom="$sm"
-                      fontSize={10.5}
-                      lineHeight={18}
-                      color="$textSecondary"
-                    >
-                      {faq.a}
-                    </Text>
+                  {open ? (
+                    <Text style={styles.faqAnswer}>{faq.a}</Text>
+                  ) : (
+                    <Text style={styles.faqPreview} numberOfLines={1}>{faq.a}</Text>
                   )}
-                </YStack>
+                </View>
               );
             })}
-          </YStack>
+          </View>
 
-          <Text fontSize={10.5} color="$textTertiary" fontWeight="600" marginTop="$lg" marginBottom="$sm" marginLeft={4}>
-            没找到答案？提交反馈
-          </Text>
-          <YStack backgroundColor="white" borderRadius="$lg" borderColor="$border" borderWidth={1} padding="$md">
-            <XStack flexWrap="wrap" gap={6} marginBottom="$sm">
-              {FEEDBACK_TYPES.map((item) => {
+          {/* 意见反馈 */}
+          <View style={[styles.card, styles.feedbackCard]}>
+            <Text style={[styles.cardTitle, SERIF_CN_TEXT]}>意见反馈</Text>
+
+            <View style={styles.chips}>
+              {SUPPORT_TYPES.map((item) => {
                 const on = item === type;
                 return (
-                  <TouchableOpacity key={item} onPress={() => setType(item)} activeOpacity={0.7}>
-                    <View style={{
-                      paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
-                      borderWidth: 1, borderColor: on ? '#10B981' : '#E5E7EB',
-                      backgroundColor: on ? '#ECFDF5' : 'white',
-                    }}>
-                      <Text fontSize={10.5} color={on ? '#047857' : '#6B7280'} fontWeight={on ? '700' : '400'}>
-                        {item}
-                      </Text>
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => setType(item)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                  >
+                    <View style={[styles.chip, on && styles.chipOn]}>
+                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{item}</Text>
                     </View>
                   </TouchableOpacity>
                 );
               })}
-            </XStack>
-
-            <View style={{
-              borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB',
-              backgroundColor: '#F9FAFB', padding: 10,
-            }}>
-              <TextInput
-                value={content}
-                onChangeText={(text) => setContent(text.slice(0, FEEDBACK_MAX_LENGTH))}
-                placeholder="请描述遇到的问题：在哪一步、看到什么、期望是什么"
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={4}
-                maxLength={FEEDBACK_MAX_LENGTH}
-                style={{
-                  minHeight: 76, fontSize: 12, lineHeight: 19, color: '#111827',
-                  textAlignVertical: 'top', padding: 0,
-                }}
-              />
-              <Text fontSize={9.5} color="$textTertiary" textAlign="right" marginTop={4}>
-                {content.length}/{FEEDBACK_MAX_LENGTH}
-              </Text>
             </View>
 
-            <XStack alignItems="center" space="$sm" marginTop="$sm">
-              <Text fontSize={10} color="$textSecondary">联系方式</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                value={content}
+                onChangeText={(text) => setContent(text.slice(0, CONTENT_MAX))}
+                placeholder="说说你遇到的问题…"
+                placeholderTextColor={COLORS.faint}
+                multiline
+                maxLength={CONTENT_MAX}
+                style={styles.input}
+              />
+              <Text style={styles.counter}>{content.length} / {CONTENT_MAX}</Text>
+            </View>
+
+            {/* 联系方式：沿用原有「手机号或邮箱」可编辑逻辑 */}
+            <View style={styles.contactRow}>
+              <Text style={styles.contactLabel}>联系方式</Text>
               <TextInput
                 value={contact}
                 onChangeText={setContact}
                 placeholder="手机号或邮箱"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={COLORS.faint}
                 autoCapitalize="none"
-                style={{ flex: 1, fontSize: 11, color: '#374151', paddingVertical: 2 }}
+                style={styles.contactInput}
               />
-            </XStack>
+            </View>
 
-            <Button
-              height={42}
-              fontSize={13}
-              fontWeight="700"
-              marginTop="$md"
-              backgroundColor="$primary"
-              color="white"
+            <TouchableOpacity
+              style={[styles.submit, !canSubmit && styles.submitDisabled]}
               onPress={handleSubmit}
-              disabled={submitting || !content.trim()}
-              opacity={content.trim() ? 1 : 0.4}
-              {...(submitting ? { icon: <Spinner color="white" /> } : {})}
+              disabled={!canSubmit || submitting}
+              activeOpacity={0.88}
+              accessibilityRole="button"
             >
-              {submitting ? '提交中...' : '提交反馈'}
-            </Button>
-            <Text fontSize={9.5} color="$textTertiary" textAlign="center" marginTop="$xs">
-              提交后会生成工单号，可在下方查看处理进度
-            </Text>
-          </YStack>
+              <Text style={styles.submitText}>{submitting ? '提交中…' : '提交反馈'}</Text>
+            </TouchableOpacity>
+          </View>
 
-          <Text fontSize={10.5} color="$textTertiary" fontWeight="600" marginTop="$lg" marginBottom="$sm" marginLeft={4}>
-            我的反馈
-          </Text>
-          <YStack backgroundColor="white" borderRadius="$lg" borderColor="$border" borderWidth={1} overflow="hidden">
+          {/* 我的反馈 */}
+          <View style={[styles.card, styles.ticketCard]}>
+            <Text style={[styles.cardTitle, SERIF_CN_TEXT]}>我的反馈</Text>
             {records.length === 0 ? (
-              <Text fontSize={11} color="$textTertiary" padding="$lg" textAlign="center">
-                还没有提交过反馈
-              </Text>
+              <Text style={styles.empty}>暂无反馈记录</Text>
             ) : (
-              records.map((record, index) => (
-                <XStack
-                  key={record.id}
-                  paddingHorizontal="$md"
-                  paddingVertical="$sm"
-                  alignItems="flex-start"
-                  space="$sm"
-                  borderBottomColor={index === records.length - 1 ? 'transparent' : '#F3F4F6'}
-                  borderBottomWidth={index === records.length - 1 ? 0 : 1}
-                >
-                  <YStack flex={1}>
-                    <Text fontSize={11.5} color="$textPrimary" numberOfLines={1}>
-                      {record.type} · {record.content}
-                    </Text>
-                    <Text fontSize={9.5} color="$textTertiary" marginTop={3}>
-                      {record.id} · {formatFeedbackDate(record.createdAt)}
-                    </Text>
-                  </YStack>
-                  <View style={{
-                    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999,
-                    backgroundColor: record.status === 'resolved' ? '#ECFDF5' : '#FFFBEB',
-                  }}>
-                    <Text fontSize={9.5} color={record.status === 'resolved' ? '#047857' : '#B45309'}>
-                      {record.status === 'resolved' ? '已解决' : '待处理'}
-                    </Text>
+              records.map((record, index) => {
+                const meta = STATUS_META[record.status];
+                const last = index === records.length - 1;
+                return (
+                  <View key={record.id} style={[styles.ticketRow, last && styles.rowLast]}>
+                    <View style={styles.ticketMain}>
+                      <Text style={styles.ticketTitle} numberOfLines={1}>
+                        {record.content}
+                      </Text>
+                      <Text style={styles.ticketDate}>
+                        {record.id} · {formatFeedbackDate(record.createdAt)}
+                      </Text>
+                    </View>
+                    <View style={[styles.badge, { backgroundColor: meta.background }]}>
+                      <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
+                    </View>
                   </View>
-                </XStack>
-              ))
+                );
+              })
             )}
-          </YStack>
+          </View>
+
+          <Text style={styles.footnote}>工单将在 1 个工作日内处理 · 感谢你的反馈</Text>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {toast !== '' && (
-        <View style={{
-          position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 72,
-          alignItems: 'center', pointerEvents: 'none',
-        }}>
-          <View style={{
-            backgroundColor: 'rgba(17,24,39,0.92)', paddingHorizontal: 14, paddingVertical: 8,
-            borderRadius: 999,
-          }}>
-            <Text fontSize={11} fontWeight="600" color="white">{toast}</Text>
+        <View style={[styles.toastWrap, { bottom: insets.bottom + 24 }]}>
+          <View style={styles.toast}>
+            <Text style={styles.toastText}>{toast}</Text>
           </View>
         </View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: COLORS.paper },
+  flex: { flex: 1 },
+
+  /* ── hero ── */
+  hero: {
+    backgroundColor: COLORS.ink,
+    borderBottomLeftRadius: HERO_RADIUS,
+    borderBottomRightRadius: HERO_RADIUS,
+    overflow: 'hidden',
+  },
+  heroBg: { position: 'absolute', left: 0, top: 0 },
+  heroInner: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: HERO_BTN_BG,
+    borderWidth: 1,
+    borderColor: HERO_BTN_LINE,
+  },
+  heroKicker: {
+    marginTop: 16,
+    fontSize: 11,
+    lineHeight: 13,
+    letterSpacing: 3,
+    color: COLORS.gold,
+  },
+  heroTitle: {
+    marginTop: 6,
+    fontSize: 21,
+    lineHeight: 28,
+    letterSpacing: 1.5,
+    color: COLORS.inkWash,
+  },
+  heroSubtitle: {
+    marginTop: 6,
+    fontSize: 10.5,
+    lineHeight: 14,
+    letterSpacing: 0.3,
+    color: HERO_SUBTITLE,
+  },
+
+  /* ── 页面 ── */
+  body: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 16 },
+
+  card: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.hairlineSoft,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    ...SHADOW.card,
+  },
+  faqCard: { paddingBottom: 6, marginBottom: 16 },
+  feedbackCard: { paddingBottom: 16, marginBottom: 16 },
+  ticketCard: { paddingBottom: 6 },
+
+  cardTitle: {
+    fontSize: 17,
+    lineHeight: 24,
+    letterSpacing: 0.6,
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+
+  /* ── FAQ ── */
+  faqRow: {
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  rowLast: { borderBottomWidth: 0 },
+  faqHead: { flexDirection: 'row', alignItems: 'center' },
+  faqQuestion: { flex: 1, fontSize: 13, lineHeight: 19, color: COLORS.text, marginRight: 12 },
+  faqPreview: { marginTop: 5, fontSize: 11, lineHeight: 16, color: COLORS.faint },
+  faqAnswer: { marginTop: 6, fontSize: 11, lineHeight: 18, color: COLORS.sub },
+
+  /* ── 反馈表单 ── */
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    backgroundColor: COLORS.surface,
+  },
+  chipOn: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
+  chipText: { fontSize: 12, color: COLORS.sub },
+  chipTextOn: { color: COLORS.inkWash, fontWeight: '600' },
+
+  inputBox: {
+    backgroundColor: COLORS.surfaceWarm,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
+  },
+  input: {
+    minHeight: 96,
+    padding: 0,
+    paddingBottom: 14,
+    fontSize: 12.5,
+    lineHeight: 19,
+    color: COLORS.text,
+    textAlignVertical: 'top',
+  },
+  counter: {
+    position: 'absolute',
+    right: 12,
+    bottom: 8,
+    fontSize: 10,
+    color: COLORS.faint,
+  },
+
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    backgroundColor: COLORS.surfaceWarm,
+  },
+  contactLabel: { fontSize: 10.5, color: COLORS.faint, marginRight: 10 },
+  contactInput: { flex: 1, padding: 0, fontSize: 11.5, color: COLORS.text },
+
+  submit: {
+    height: 46,
+    marginTop: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.ink,
+    shadowColor: COLORS.ink,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 22,
+    elevation: 6,
+  },
+  submitDisabled: { opacity: 0.45 },
+  submitText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 2,
+    color: COLORS.inkWash,
+  },
+
+  /* ── 我的反馈 ── */
+  empty: { paddingVertical: 18, textAlign: 'center', fontSize: 11, color: COLORS.faint },
+  ticketRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  ticketMain: { flex: 1, marginRight: 12 },
+  ticketTitle: { fontSize: 12.5, fontWeight: '600', color: COLORS.text },
+  ticketDate: { marginTop: 3, fontSize: 10, color: COLORS.faint },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  badgeText: { fontSize: 10, fontWeight: '600' },
+
+  footnote: {
+    marginTop: 14,
+    textAlign: 'center',
+    fontSize: 10,
+    color: COLORS.faint,
+  },
+
+  /* ── toast ── */
+  toastWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  toast: {
+    backgroundColor: 'rgba(11,61,46,0.94)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    shadowColor: COLORS.inkDeep,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  toastText: { fontSize: 12, fontWeight: '500', color: COLORS.inkWash },
+});

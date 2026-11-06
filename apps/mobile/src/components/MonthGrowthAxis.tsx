@@ -6,15 +6,16 @@
  * 涨跌配色遵循原型：绿涨红跌（与卡片内既有的 A 股红涨口径相互独立）。
  */
 
+import { COLORS } from '../theme';
 import { useWindowDimensions, View } from 'react-native';
 import { Text, YStack } from 'tamagui';
 import type { MonthGrowthLabel } from '../lib/asset-meta';
 import { TREND_GUTTER_LEFT, TREND_GUTTER_RIGHT, trendChartWidth } from './TrendChart';
 
-const UP_COLOR = '#059669'; // 涨：绿
-const DOWN_COLOR = '#DC2626'; // 跌：红
-const FLAT_COLOR = '#9CA3AF';
-const LABEL_COLOR = '#6B7280';
+const UP_COLOR = COLORS.inkSoft; // 涨：绿
+const DOWN_COLOR = COLORS.danger; // 跌：红
+const FLAT_COLOR = COLORS.faint;
+const LABEL_COLOR = COLORS.sub;
 
 function growthColor(delta: number): string {
   if (delta > 0) return UP_COLOR;

@@ -1,22 +1,24 @@
-/**
+﻿/**
  * 我的
  *
- * 分组对齐高保真原型：
- *  - 用户信息头
- *  - 当前家庭（名称 / 角色 / 管理）
- *  - 安全与隐私（端到端加密 / 生物识别 / 本地备份）
- *  - 功能（异动提醒 / 导出报表 / 帮助反馈）
- *  - 关于（版本）+ 退出登录
+ * 对照 v0.6.0 高保真单页「v0.6.0-profile.html」复刻：
+ *   账号头 → 账号 / 安全与隐私 / 功能 / 关于 分组卡片 → 退出登录
+ *
+ * 保留原有业务：绑定手机号弹层、注销账号、当前家庭跳转、端到端加密状态、
+ * 生物识别 / 异动提醒 / 金额默认隐藏本机偏好、盘点提醒 / 报表 / 本地备份 /
+ * 导出报表 / 帮助反馈、退出登录。
  *
  * 安全开关是本机偏好；端到端加密由架构保证、恒为开启。
  */
 
+import { COLORS, SHADOW } from '../../theme';
+import { SERIF_CN_TEXT } from '../../typography';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, ScrollView, Switch, TouchableOpacity, View,
+  Alert, ScrollView, TouchableOpacity, View,
 } from 'react-native';
 import { useAppNavigation } from '../../lib/navigation';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, XStack, YStack } from 'tamagui';
 import { ROLE_LABELS, filterVisibleAssets } from '@family-wealth/family';
@@ -31,10 +33,23 @@ import { maskPhone } from '../../services/phone';
 
 type IconGlyph = React.ReactNode;
 
+/** 设计稿的 rgba 叠加色（图标芯片 / 退出登录按钮），不写死十六进制 */
+const CHIP_INK = 'rgba(11,61,46,0.08)';
+const CHIP_GOLD = 'rgba(198,161,91,0.14)';
+const CHIP_RED = 'rgba(180,69,60,0.09)';
+const SIGN_OUT_BG = 'rgba(180,69,60,0.07)';
+const SIGN_OUT_LINE = 'rgba(180,69,60,0.18)';
+
 const LOCK: IconGlyph = (
   <>
     <Path d="M7 11V7a5 5 0 0 1 10 0v4" />
     <Path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
+  </>
+);
+const EYE: IconGlyph = (
+  <>
+    <Path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+    <Circle cx="12" cy="12" r="3" />
   </>
 );
 const FINGERPRINT: IconGlyph = (
@@ -44,6 +59,12 @@ const BACKUP: IconGlyph = (
   <>
     <Path d="M21 12a9 9 0 1 1-3-6.7" />
     <Path d="M21 3v5h-5" />
+  </>
+);
+const SYNC: IconGlyph = (
+  <>
+    <Path d="M21 12a9 9 0 1 1-9-9" />
+    <Path d="M21 3v6h-6" />
   </>
 );
 const BELL: IconGlyph = (
@@ -74,9 +95,13 @@ const DOWNLOAD: IconGlyph = (
 );
 const HELP: IconGlyph = (
   <>
-    <Path d="M9.5 9a2.5 2.5 0 0 1 4.4 1.6c0 1.7-1.9 2.2-1.9 3.6" />
-    <Path d="M12 17.5h.01" />
-    <Path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
+    <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </>
+);
+const INFO: IconGlyph = (
+  <>
+    <Circle cx="12" cy="12" r="9" />
+    <Path d="M12 16v-4M12 8h.01" />
   </>
 );
 const HOME: IconGlyph = (
@@ -93,10 +118,9 @@ const PHONE: IconGlyph = (
 );
 const TRASH: IconGlyph = (
   <>
-    <Path d="M4 7h16" />
-    <Path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-    <Path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
-    <Path d="M10 11v6M14 11v6" />
+    <Path d="M3 6h18" />
+    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </>
 );
 
@@ -113,7 +137,8 @@ export default function MeScreen() {
   const refresh = useFamilyStore((s) => s.refresh);
   const role = useMyFamilyRole();
 
-  // 本机偏好开关
+  // 本机偏好开关（金额默认隐藏沿用设计稿默认开启）
+  const [hideAmounts, setHideAmounts] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [notify, setNotify] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -137,7 +162,7 @@ export default function MeScreen() {
     [assets, user?.id, role],
   );
 
-  const version = '0.5.0';
+  const version = '0.6.0';
 
   const handleExport = async () => {
     if (exporting) return;
@@ -208,70 +233,53 @@ export default function MeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ height: insets.top, backgroundColor: '#F9FAFB' }} />
+    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
+      <View style={{ height: insets.top, backgroundColor: COLORS.paper }} />
       <OfflineBanner />
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* 用户信息头 */}
-        <XStack space="$md" alignItems="center" marginBottom="$lg">
-          <View style={{
-            width: 64, height: 64, borderRadius: 32, backgroundColor: '#10B981',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Text fontSize="$7" fontWeight="700" color="white">
-              {(user?.displayName ?? '我').slice(0, 1)}
-            </Text>
-          </View>
+        {/* 账号头：宋体姓名 + 加密徽标（头像按 v0.6.0 定稿移除印章） */}
+        <XStack alignItems="center" space={16} paddingTop={8}>
           <YStack flex={1}>
-            <Text fontSize="$5" fontWeight="700" color="$textPrimary">
+            <Text fontSize={18} color={COLORS.text} numberOfLines={1} style={SERIF_CN_TEXT}>
               {user?.displayName ?? '未登录'}
             </Text>
-            <Text fontSize="$2" color="$textTertiary" marginTop={2}>
+            <Text fontSize={11} color={COLORS.faint} marginTop={2} numberOfLines={1}>
               {user?.email ?? '—'}
             </Text>
-            <View style={{
-              alignSelf: 'flex-start', marginTop: 6, paddingHorizontal: 8, paddingVertical: 2,
-              borderRadius: 999, backgroundColor: phone ? '#ECFDF5' : '#FFFBEB',
-            }}>
-              <Text fontSize={10} color={phone ? '#047857' : '#B45309'}>
-                {phone ? `已绑定 ${maskPhone(phone)}` : '未绑定手机号'}
-              </Text>
-            </View>
           </YStack>
+          <XStack alignItems="center" space={5}>
+            <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: COLORS.gold }} />
+            <Text fontSize={11} color={COLORS.ink}>已开启加密</Text>
+          </XStack>
         </XStack>
 
         {/* 账号 */}
         <SectionLabel>账号</SectionLabel>
         <Group>
           <Row
-            glyph={PHONE} glyphColor="#059669" glyphBg="#D1FAE5"
-            label="手机号"
+            glyph={PHONE} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
+            label="绑定手机号"
             value={phone ? maskPhone(phone) : '去绑定'}
-            {...(phone ? {} : { valueColor: '#059669' })}
+            {...(phone ? {} : { valueColor: COLORS.inkSoft })}
             chevron
             onPress={() => setPhoneSheet(true)}
           />
           <Row
-            glyph={TRASH} glyphColor="#DC2626" glyphBg="#FEE2E2"
+            glyph={HOME} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
+            label="当前家庭"
+            value={family ? `${family.name} · ${ROLE_LABELS[role]}` : '尚未加入家庭'}
+            chevron
+            onPress={() => navigation.navigate('Family')}
+          />
+          <Row
+            glyph={TRASH} glyphColor={COLORS.danger} glyphBg={CHIP_RED}
             label="注销账号"
-            danger
             chevron
             isLast
             onPress={handleDeleteAccount}
-          />
-        </Group>
-
-        {/* 当前家庭 */}
-        <Group>
-          <Row
-            glyph={HOME} glyphColor="#059669" glyphBg="#D1FAE5"
-            label={family ? family.name : '尚未加入家庭'}
-            {...(family ? { value: ROLE_LABELS[role] } : {})}
-            chevron
-            onPress={() => navigation.navigate('Family')}
           />
         </Group>
 
@@ -279,23 +287,30 @@ export default function MeScreen() {
         <SectionLabel>安全与隐私</SectionLabel>
         <Group>
           <Row
-            glyph={LOCK} glyphColor="#059669" glyphBg="#D1FAE5"
+            glyph={LOCK} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="端到端加密"
             value="已开启"
-            valueColor="#059669"
+            valueColor={COLORS.inkSoft}
           />
           <Row
-            glyph={FINGERPRINT} glyphColor="#2563EB" glyphBg="#DBEAFE"
+            glyph={EYE} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
+            label="金额默认隐藏"
+            toggle
+            toggleValue={hideAmounts}
+            onToggle={setHideAmounts}
+          />
+          <Row
+            glyph={FINGERPRINT} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="生物识别解锁"
             toggle
             toggleValue={biometric}
             onToggle={setBiometric}
-            isLast
           />
           <Row
-            glyph={BACKUP} glyphColor="#D97706" glyphBg="#FEF3C7"
+            glyph={BACKUP} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
             label="本地备份"
             chevron
+            isLast
             onPress={() => navigation.navigate('Backup')}
           />
         </Group>
@@ -304,19 +319,30 @@ export default function MeScreen() {
         <SectionLabel>功能</SectionLabel>
         <Group>
           <Row
-            glyph={CALENDAR} glyphColor="#059669" glyphBg="#D1FAE5"
+            glyph={SYNC} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
+            label="数据同步"
+            value="刚刚"
+          />
+          <Row
+            glyph={HELP} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
+            label="帮助与反馈"
+            chevron
+            onPress={() => navigation.navigate('HelpFeedback')}
+          />
+          <Row
+            glyph={CALENDAR} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="盘点提醒"
             chevron
             onPress={() => navigation.navigate('ReminderSettings')}
           />
           <Row
-            glyph={CHART} glyphColor="#2563EB" glyphBg="#DBEAFE"
+            glyph={CHART} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="月度/年度报表"
             chevron
             onPress={() => navigation.navigate('Report')}
           />
           <Row
-            glyph={BELL} glyphColor="#DC2626" glyphBg="#FEE2E2"
+            glyph={BELL} glyphColor={COLORS.warning} glyphBg={CHIP_GOLD}
             label="异动提醒"
             toggle
             toggleValue={notify}
@@ -324,18 +350,12 @@ export default function MeScreen() {
           />
           {/* P0-3：全平台导出（Android 系统分享 / 鸿蒙系统另存为）；空数据置灰 */}
           <Row
-            glyph={DOWNLOAD} glyphColor="#7C3AED" glyphBg="#EDE9FE"
+            glyph={DOWNLOAD} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
             label={exporting ? '正在导出…' : '导出报表'}
             chevron
             dimmed={exportableAssets.length === 0}
-            onPress={handleExport}
-          />
-          <Row
-            glyph={HELP} glyphColor="#0891B2" glyphBg="#CFFAFE"
-            label="帮助与反馈"
-            chevron
             isLast
-            onPress={() => navigation.navigate('HelpFeedback')}
+            onPress={handleExport}
           />
         </Group>
 
@@ -343,16 +363,18 @@ export default function MeScreen() {
         <SectionLabel>关于</SectionLabel>
         <Group>
           <Row
-            glyph={HOME} glyphColor="#6B7280" glyphBg="#F3F4F6"
+            glyph={INFO} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="版本"
             value={`v${version}`}
+            valueColor={COLORS.goldDeep}
+            valueBold
             isLast
           />
         </Group>
 
         {/* 退出登录 */}
-        <TouchableOpacity style={styles.signOut} onPress={handleSignOut}>
-          <Text fontSize="$3" fontWeight="600" color="#DC2626">退出登录</Text>
+        <TouchableOpacity activeOpacity={0.8} style={styles.signOut} onPress={handleSignOut}>
+          <Text fontSize={13} fontWeight="600" color={COLORS.danger}>退出登录</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -368,8 +390,10 @@ export default function MeScreen() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text fontSize="$2" color="$textTertiary" fontWeight="600"
-      marginTop="$lg" marginBottom="$sm" marginLeft="$xs">
+    <Text
+      fontSize={10} color={COLORS.faint} letterSpacing={2}
+      marginTop={16} marginBottom={6} paddingLeft={4}
+    >
       {children}
     </Text>
   );
@@ -377,10 +401,40 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Group({ children }: { children: React.ReactNode }) {
   return (
-    <YStack backgroundColor="white" borderRadius="$lg"
-      borderColor="$border" borderWidth={1} overflow="hidden">
+    <YStack
+      backgroundColor={COLORS.surface}
+      borderRadius={20}
+      borderColor={COLORS.hairlineSoft}
+      borderWidth={1}
+      paddingHorizontal={16}
+      style={SHADOW.card}
+    >
       {children}
     </YStack>
+  );
+}
+
+function Toggle({ value }: { value: boolean }) {
+  return (
+    <View
+      style={{
+        width: 42, height: 24, borderRadius: 12, padding: 3,
+        backgroundColor: value ? COLORS.ink : COLORS.hairlineStrong,
+        alignItems: value ? 'flex-end' : 'flex-start',
+      }}
+    >
+      <View
+        style={{
+          width: 18, height: 18, borderRadius: 9,
+          backgroundColor: COLORS.surfaceWarm,
+          shadowColor: COLORS.text,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3,
+          elevation: 2,
+        }}
+      />
+    </View>
   );
 }
 
@@ -391,6 +445,8 @@ interface RowProps {
   label: string;
   value?: string;
   valueColor?: string;
+  /** 版本等需要强调的值 */
+  valueBold?: boolean;
   chevron?: boolean;
   onPress?: () => void;
   toggle?: boolean;
@@ -399,64 +455,75 @@ interface RowProps {
   isLast?: boolean;
   /** 置灰（如空数据时的导出按钮）：标签/图标变灰，仍可点击以给出提示 */
   dimmed?: boolean;
-  /** 危险操作：标签显示为红色 */
-  danger?: boolean;
 }
 
 function Row({
-  glyph, glyphColor, glyphBg, label, value, valueColor,
-  chevron, onPress, toggle, toggleValue, onToggle, isLast, dimmed, danger,
+  glyph, glyphColor, glyphBg, label, value, valueColor, valueBold,
+  chevron, onPress, toggle, toggleValue, onToggle, isLast, dimmed,
 }: RowProps) {
+  const handlePress = onPress ?? (toggle && onToggle
+    ? () => onToggle(!Boolean(toggleValue))
+    : undefined);
+
   const content = (
     <XStack
-      paddingHorizontal="$md" height={56} alignItems="center" space="$md"
-      borderBottomColor={isLast ? 'transparent' : '#F3F4F6'}
+      height={56} alignItems="center" space={12}
       borderBottomWidth={isLast ? 0 : 1}
+      borderBottomColor={COLORS.divider}
+      {...(toggle
+        ? {
+          accessibilityRole: 'switch' as const,
+          accessibilityState: { checked: Boolean(toggleValue) },
+        }
+        : {})}
     >
-      <View style={{ width: 32, height: 32, borderRadius: 10,
-        backgroundColor: dimmed ? '#F3F4F6' : glyphBg,
-        alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-          stroke={dimmed ? '#9CA3AF' : glyphColor} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <View style={{
+        width: 34, height: 34, borderRadius: 11,
+        backgroundColor: dimmed ? COLORS.divider : glyphBg,
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+          stroke={dimmed ? COLORS.faint : glyphColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           {glyph}
         </Svg>
       </View>
       <Text
-        fontSize="$3"
-        color={danger ? '#DC2626' : dimmed ? '$textTertiary' : '$textPrimary'}
+        fontSize={13}
+        fontWeight="500"
+        color={dimmed ? COLORS.faint : COLORS.text}
         flex={1}
+        numberOfLines={1}
       >
         {label}
       </Text>
       {value !== undefined ? (
-        <Text fontSize="$2" color={valueColor ?? '$textTertiary'}>{value}</Text>
+        <Text
+          fontSize={12}
+          color={valueColor ?? COLORS.sub}
+          fontWeight={valueBold ? '600' : '400'}
+          numberOfLines={1}
+        >
+          {value}
+        </Text>
       ) : null}
-      {toggle ? (
-        <Switch
-          value={toggleValue}
-          onValueChange={onToggle}
-          trackColor={{ true: '#10B981', false: '#D1D5DB' }}
-          thumbColor="white"
-        />
-      ) : null}
+      {toggle ? <Toggle value={Boolean(toggleValue)} /> : null}
       {chevron ? (
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-          stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="m9 6 6 6-6 6" />
+        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+          stroke={COLORS.faint} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="m9 18 6-6-6-6" />
         </Svg>
       ) : null}
     </XStack>
   );
-  if (onPress && !toggle) {
-    return <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{content}</TouchableOpacity>;
-  }
-  return content;
+
+  if (!handlePress) return content;
+  return <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>{content}</TouchableOpacity>;
 }
 
 const styles = {
   signOut: {
-    marginTop: 24, height: 50, borderRadius: 14,
-    backgroundColor: 'white', borderColor: '#FECACA', borderWidth: 1,
+    marginTop: 16, height: 46, borderRadius: 16,
+    backgroundColor: SIGN_OUT_BG, borderColor: SIGN_OUT_LINE, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
 } as const;

@@ -7,6 +7,8 @@
  * - 底部展示「下次提醒」预览（来自 ReminderService 当前计划）。
  */
 
+import { COLORS } from '../theme';
+import { FONT } from '../typography';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -214,7 +216,7 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F5F7FA' },
+  root: { flex: 1, backgroundColor: COLORS.paper },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -223,28 +225,28 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  backText: { fontSize: 30, color: '#111827', marginTop: -4 },
-  title: { fontSize: 17, fontWeight: '600', color: '#111827' },
+  backText: { fontSize: 30, color: COLORS.text, marginTop: -4 },
+  title: { fontSize: 17, fontWeight: '700', color: COLORS.text, fontFamily: FONT.serifCn, letterSpacing: 1 },
   body: { padding: 16, paddingBottom: 40 },
   permBanner: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: COLORS.warningWash,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
-  permText: { fontSize: 13, color: '#92400E', lineHeight: 18 },
+  permText: { fontSize: 13, color: COLORS.goldDeep, lineHeight: 18 },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: 14,
     padding: 14,
     marginBottom: 4,
   },
   rowBetween: { flexDirection: 'row', alignItems: 'center' },
-  rowTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  rowDesc: { fontSize: 12, color: '#6B7280', marginTop: 4 },
+  rowTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  rowDesc: { fontSize: 12, color: COLORS.sub, marginTop: 4 },
   sectionLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.sub,
     marginTop: 16,
     marginBottom: 8,
     marginLeft: 4,
@@ -254,19 +256,19 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.divider,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chipActive: { backgroundColor: '#10B981' },
-  chipText: { fontSize: 14, color: '#374151' },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '600' },
-  footnote: { fontSize: 12, color: '#9CA3AF', marginTop: 10, lineHeight: 17 },
+  chipActive: { backgroundColor: COLORS.ink },
+  chipText: { fontSize: 14, color: COLORS.text },
+  chipTextActive: { color: COLORS.surface, fontWeight: '600' },
+  footnote: { fontSize: 12, color: COLORS.faint, marginTop: 10, lineHeight: 17 },
   nextBox: {
     marginTop: 16,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: COLORS.inkWash,
   },
-  nextText: { fontSize: 13, color: '#059669', textAlign: 'center' },
+  nextText: { fontSize: 13, color: COLORS.inkSoft, textAlign: 'center' },
 });

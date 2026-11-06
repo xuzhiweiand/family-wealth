@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 分组管理页（P0-4）
  *
  * - 新建 / 重命名 / 删除 / 上下排序分组；
@@ -7,6 +7,8 @@
  * - 分组配置为本机配置（验收 2 选定口径），页面顶部明示。
  */
 
+import { COLORS } from '../theme';
+import { FONT } from '../typography';
 import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -83,7 +85,7 @@ export default function AssetGroupsScreen() {
           <TextInput
             style={styles.input}
             placeholder="新分组名称（如：银行 / 投资 / 负债）"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={COLORS.faint}
             value={newName}
             onChangeText={setNewName}
             maxLength={20}
@@ -189,42 +191,42 @@ export default function AssetGroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#F9FAFB' },
+  page: { flex: 1, backgroundColor: COLORS.paper },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
   },
-  back: { fontSize: 16, color: '#10B981', width: 48 },
-  title: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  back: { fontSize: 16, color: COLORS.ink, width: 48 },
+  title: { fontSize: 18, fontWeight: '700', color: COLORS.text, fontFamily: FONT.serifCn, letterSpacing: 1 },
   body: { paddingHorizontal: 20, paddingBottom: 40 },
-  note: { fontSize: 12, color: '#9CA3AF', marginBottom: 12, lineHeight: 18 },
+  note: { fontSize: 12, color: COLORS.faint, marginBottom: 12, lineHeight: 18 },
   addRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   input: {
-    flex: 1, height: 48, fontSize: 16, color: '#111827',
-    backgroundColor: 'white', borderColor: '#E5E7EB', borderWidth: 1,
+    flex: 1, height: 48, fontSize: 16, color: COLORS.text,
+    backgroundColor: COLORS.surface, borderColor: COLORS.hairline, borderWidth: 1,
     borderRadius: 12, paddingHorizontal: 14,
   },
   rowInput: { flex: 1 },
   primaryBtn: {
     height: 48, paddingHorizontal: 20, borderRadius: 12,
-    backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.ink, alignItems: 'center', justifyContent: 'center',
   },
-  primaryBtnText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  primaryBtnText: { color: COLORS.surface, fontSize: 16, fontWeight: '600' },
   btnDisabled: { opacity: 0.4 },
-  error: { fontSize: 13, color: '#DC2626', marginBottom: 8 },
-  empty: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 32 },
+  error: { fontSize: 13, color: COLORS.danger, marginBottom: 8 },
+  empty: { fontSize: 14, color: COLORS.faint, textAlign: 'center', marginTop: 32 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: 'white', borderColor: '#E5E7EB', borderWidth: 1,
+    backgroundColor: COLORS.surface, borderColor: COLORS.hairline, borderWidth: 1,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10,
   },
-  rowName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111827' },
+  rowName: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.text },
   smallBtn: { paddingHorizontal: 6, paddingVertical: 6 },
-  smallBtnText: { fontSize: 14, color: '#10B981' },
-  smallBtnTextMuted: { fontSize: 14, color: '#6B7280' },
-  dangerText: { fontSize: 14, color: '#DC2626' },
+  smallBtnText: { fontSize: 14, color: COLORS.ink },
+  smallBtnTextMuted: { fontSize: 14, color: COLORS.sub },
+  dangerText: { fontSize: 14, color: COLORS.danger },
   dangerBtn: {
-    backgroundColor: '#DC2626', borderRadius: 8, paddingHorizontal: 10,
+    backgroundColor: COLORS.danger, borderRadius: 8, paddingHorizontal: 10,
   },
-  dangerBtnText: { fontSize: 14, color: 'white', fontWeight: '600' },
+  dangerBtnText: { fontSize: 14, color: COLORS.surface, fontWeight: '600' },
 });

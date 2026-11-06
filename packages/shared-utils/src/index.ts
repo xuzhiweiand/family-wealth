@@ -4,13 +4,23 @@ import { LIABILITY_TYPES, type Asset, type TrendPoint } from '@family-wealth/sha
  * 金额格式化：¥1,285,432.68
  * 金额统一以「分」为整数单位存储，展示时除以 100。
  */
+/** 千分位分组（Hermes 的 toLocaleString 不保证输出分组分隔符，这里手动实现） */
+function groupThousands(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function formatCNY(amountInCents: number, options?: { fraction?: boolean }): string {
-  const yuan = amountInCents / 100;
   const fraction = options?.fraction ?? true;
-  return `¥${yuan.toLocaleString('zh-CN', {
-    minimumFractionDigits: fraction ? 2 : 0,
-    maximumFractionDigits: fraction ? 2 : 0,
-  })}`;
+  const negative = amountInCents < 0;
+  const abs = Math.abs(amountInCents);
+
+  // fraction=false 时四舍五入到元；fraction=true 时精确到分
+  const yuan = fraction ? Math.floor(abs / 100) : Math.round(abs / 100);
+  const cents = abs % 100;
+
+  const intText = groupThousands(String(yuan));
+  const decimalText = fraction ? `.${String(cents).padStart(2, '0')}` : '';
+  return `¥${negative ? '-' : ''}${intText}${decimalText}`;
 }
 
 /** 紧凑格式：¥128.5万 / ¥1.2亿（图表轴、卡片用） */
