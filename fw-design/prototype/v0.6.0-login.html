@@ -58,22 +58,6 @@
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.52 0 0 0 0 0.46 0 0 0 0.028 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* ===== 墨绿 hero ===== */
-  .hero-ink {
-    background:
-      radial-gradient(360px 240px at 88% -12%, rgba(198,161,91,.24), transparent 62%),
-      radial-gradient(300px 300px at -12% 108%, rgba(20,83,63,.92), transparent 60%),
-      linear-gradient(160deg, #0E4634 0%, var(--ink) 46%, var(--ink-deep) 100%);
-    box-shadow: 0 18px 40px -18px rgba(7,42,31,.5);
-    position: relative; overflow: hidden;
-  }
-  .hero-ink::before { content:""; position:absolute; width:230px; height:230px; border-radius:50%;
-    border:1px solid rgba(233,220,192,.16); top:-96px; right:-74px; }
-  .hero-ink::after { content:""; position:absolute; width:156px; height:156px; border-radius:50%;
-    border:1px solid rgba(233,220,192,.1); top:-44px; right:-22px; }
-  .ring-3 { position:absolute; width:110px; height:110px; border-radius:50%;
-    border:1px solid rgba(233,220,192,.07); top:-8px; right:24px; pointer-events:none; }
-
   .seal {
     width: 28px; height: 28px; border-radius: 7px; background: var(--danger);
     color:#F7F1E4; font-family:'Songti SC','STSong',serif; font-size:11px; line-height:1.1;
@@ -108,8 +92,6 @@
   /* ===== 动效 ===== */
   @keyframes fadeUp { from { opacity:0; transform: translateY(16px);} to { opacity:1; transform: translateY(0);} }
   .fu { opacity:0; animation: fadeUp .55s cubic-bezier(.2,.7,.2,1) forwards; }
-  @keyframes ringIn { from { opacity:0; transform: scale(.94);} to { opacity:1; transform: scale(1);} }
-  .hero-ink::before, .hero-ink::after { animation: ringIn 1s ease-out both; }
   .eye-btn { transition: opacity .18s ease, transform .18s ease; }
   .eye-btn:active { opacity:.7; transform: scale(.92); }
   .amount-swap { transition: opacity .16s ease; }
