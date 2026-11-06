@@ -163,7 +163,7 @@
         </div>
         <button class="w-full h-[50px] rounded-2xl text-[15px] font-semibold tracking-[6px]"
                 style="background:var(--gold);color:var(--ink-deep);box-shadow:0 12px 26px -12px rgba(198,161,91,.55)">登 录</button>
-        <p class="text-center text-[11px]" style="color:rgba(233,220,192,.45)">还没有账号？<span style="color:var(--gold-light)">注册</span> · 忘记密码</p>
+        <p class="text-center text-[11px]" style="color:rgba(233,220,192,.45)">还没有账号？<span style="color:var(--gold-light)">创建账号</span></p>
       </div>
 
       <div class="flex-1"></div>
@@ -178,18 +178,6 @@
         <button class="w-full flex items-center justify-center gap-2.5"
                 style="height:48px;border-radius:999px;background:#CE0E2D;color:#fff;box-shadow:0 12px 26px -12px rgba(206,14,45,.45)"
                 @click="huaweiLogin()">
-          <svg class="w-5 h-5" viewBox="0 0 24 24">
-            <g fill="#fff">
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(45 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(90 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(135 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(180 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(225 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(270 12 12)"/>
-              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(315 12 12)"/>
-            </g>
-          </svg>
           <span class="text-[15px] font-semibold"
                 x-text="huaweiState==='idle' ? '华为账号登录' : (huaweiState==='loading' ? '正在授权…' : '已登录，正在进入…')"></span>
         </button>
