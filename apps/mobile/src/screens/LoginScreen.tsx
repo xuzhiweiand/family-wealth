@@ -1,6 +1,8 @@
 /**
  * 登录/注册屏（浅色纸感 + 墨绿鎏金点缀，提升文字对比度）
  *
+ * 对照 v0.6.0 高保真单页「v0.6.0-login.html」复刻。
+ *
  * W2 用 Tamagui 组件 + InMemoryAuthClient 做演示
  * 真实流程：用户输入 → signIn() → 派生 UMK → setKeyStore → 进入主页
  *
