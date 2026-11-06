@@ -115,16 +115,18 @@
   .amount-swap { transition: opacity .16s ease; }
 </style>
 </head>
-<body x-data="{ huaweiState: 'idle', huaweiLogin() { if (this.huaweiState !== 'idle') return; this.huaweiState = 'loading'; setTimeout(() => { this.huaweiState = 'done'; }, 900); setTimeout(() => { this.huaweiState = 'idle'; }, 2400); } }">
+<body x-data="{ huaweiState: 'idle', agreed: true, huaweiLogin() { if (this.huaweiState !== 'idle') return; this.huaweiState = 'loading'; setTimeout(() => { this.huaweiState = 'done'; }, 900); setTimeout(() => { this.huaweiState = 'idle'; }, 2400); } }">
 
 <div class="caption">家 资 · 私 行 墨 绿 · v 0 . 6 . 0 · 登 录</div>
 
 <div class="phone">
   <div class="notch"></div>
-  <!-- 整屏墨绿沉浸 -->
-  <div class="hero-ink h-full flex flex-col">
-    <div class="ring-3"></div>
-    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:rgba(233,220,192,.85)">
+  <!-- 整屏浅色纸感（与首页/趋势/报告/我的一致） -->
+  <div class="paper h-full flex flex-col relative overflow-hidden">
+    <!-- 同心金环装饰（呼应登录页浅色柔光） -->
+    <div class="absolute rounded-full pointer-events-none" style="width:230px;height:230px;border:1px solid rgba(198,161,91,.14);top:-96px;right:-74px"></div>
+    <div class="absolute rounded-full pointer-events-none" style="width:156px;height:156px;border:1px solid rgba(198,161,91,.1);top:-44px;right:-22px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
       <span class="num">9:41</span>
       <div class="flex items-center gap-1">
         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
@@ -137,52 +139,61 @@
       <!-- 品牌锁 -->
       <div class="flex flex-col items-center mb-10 fu" style="animation-delay:.05s">
         <div class="w-[64px] h-[64px] rounded-[20px] flex items-center justify-center mb-5"
-             style="border:1px solid rgba(233,220,192,.3); background:rgba(233,220,192,.06)">
-          <svg class="w-7 h-7" style="color:var(--gold-light)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+             style="border:1px solid rgba(11,61,46,.16); background:rgba(11,61,46,.05)">
+          <svg class="w-7 h-7" style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
             <path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
           </svg>
         </div>
-        <h1 class="font-serif-cn text-[26px] tracking-[8px] mb-2" style="color:#F2EEE2">家 资</h1>
+        <h1 class="font-serif-cn text-[26px] tracking-[8px] mb-2" style="color:var(--ink)">家 资</h1>
         <div class="hairline-gold w-16 mb-2.5"></div>
-        <p class="text-[10.5px] tracking-[3px]" style="color:rgba(233,220,192,.5)">端到端加密 · 数据只属于你</p>
+        <p class="text-[10.5px] tracking-[3px]" style="color:var(--sub)">家庭资产管理 · 端到端加密</p>
       </div>
 
-      <!-- 下划线表单 -->
-      <div class="space-y-5 fu" style="animation-delay:.14s">
-        <div>
-          <label class="block text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.45)">邮箱</label>
-          <input type="email" value="demo@family.local" class="w-full h-11 text-[15px] num"
-                 style="background:transparent;border:0;border-bottom:1px solid rgba(233,220,192,.28);outline:none;color:#F2EEE2;caret-color:var(--gold);transition:border-color .18s ease"
-                 @focus="$el.style.borderBottomColor='var(--gold)'" @blur="$el.style.borderBottomColor='rgba(233,220,192,.28)'">
+      <!-- 表单卡（白卡 + 发丝边框，与全局 card 一致） -->
+      <div class="card px-5 py-5 fu" style="animation-delay:.14s">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-[10px] tracking-[2px] mb-0.5" style="color:var(--sub)">邮箱</label>
+            <input type="email" value="demo@family.local" class="w-full h-11 text-[15px] num"
+                   style="background:transparent;border:0;border-bottom:1px solid var(--hairline);outline:none;color:var(--text);caret-color:var(--gold);transition:border-color .18s ease"
+                   @focus="$el.style.borderBottomColor='var(--gold)'" @blur="$el.style.borderBottomColor='var(--hairline)'">
+          </div>
+          <div>
+            <label class="block text-[10px] tracking-[2px] mb-0.5" style="color:var(--sub)">密码</label>
+            <input type="password" value="••••••••" class="w-full h-11 text-[15px]"
+                   style="background:transparent;border:0;border-bottom:1px solid var(--hairline);outline:none;color:var(--text);caret-color:var(--gold);transition:border-color .18s ease"
+                   @focus="$el.style.borderBottomColor='var(--gold)'" @blur="$el.style.borderBottomColor='var(--hairline)'">
+          </div>
         </div>
-        <div>
-          <label class="block text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.45)">密码</label>
-          <input type="password" value="••••••••" class="w-full h-11 text-[15px]"
-                 style="background:transparent;border:0;border-bottom:1px solid rgba(233,220,192,.28);outline:none;color:#F2EEE2;caret-color:var(--gold);transition:border-color .18s ease"
-                 @focus="$el.style.borderBottomColor='var(--gold)'" @blur="$el.style.borderBottomColor='rgba(233,220,192,.28)'">
-        </div>
-        <button class="w-full h-[50px] rounded-2xl text-[15px] font-semibold tracking-[6px]"
+        <label class="flex items-start gap-2.5 mt-4 cursor-pointer select-none" @click="agreed=!agreed">
+          <span class="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center flex-shrink-0 mt-[1px]"
+                :style="agreed ? 'background:var(--gold)' : 'background:transparent;border:1px solid var(--hairline)'">
+            <svg x-show="agreed" class="w-3 h-3" style="color:#fff" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span class="text-[10.5px] leading-relaxed" style="color:var(--sub)">我已阅读并同意<span style="color:var(--gold-deep)">《用户协议》</span>与<span style="color:var(--gold-deep)">《隐私政策》</span></span>
+        </label>
+        <button class="w-full h-[50px] rounded-2xl text-[15px] font-semibold tracking-[6px] mt-4"
                 style="background:var(--gold);color:var(--ink-deep);box-shadow:0 12px 26px -12px rgba(198,161,91,.55)">登 录</button>
-        <p class="text-center text-[11px]" style="color:rgba(233,220,192,.45)">还没有账号？<span style="color:var(--gold-light)">创建账号</span></p>
+        <p class="text-center text-[11px] mt-3.5" style="color:var(--sub)">还没有账号？<span style="color:var(--gold-deep)">创建账号</span></p>
       </div>
 
       <div class="flex-1"></div>
 
-      <!-- 底部华为胶囊 -->
+      <!-- 底部华为胶囊（白底墨绿描边，与代码一致） -->
       <div class="pb-9 fu" style="animation-delay:.24s">
         <div class="flex items-center gap-3 mb-4">
           <div class="flex-1 hairline-gold"></div>
-          <span class="text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.4)">或</span>
+          <span class="text-[10px] tracking-[2px]" style="color:var(--faint)">或</span>
           <div class="flex-1 hairline-gold"></div>
         </div>
-        <button class="w-full flex items-center justify-center gap-2.5"
-                style="height:48px;border-radius:999px;background:#CE0E2D;color:#fff;box-shadow:0 12px 26px -12px rgba(206,14,45,.45)"
+        <button class="w-full flex items-center justify-center"
+                style="height:48px;border-radius:999px;background:var(--surface);border:1px solid var(--ink);color:var(--ink);box-shadow:0 2px 10px rgba(28,43,38,.05)"
                 @click="huaweiLogin()">
           <span class="text-[15px] font-semibold"
                 x-text="huaweiState==='idle' ? '华为账号登录' : (huaweiState==='loading' ? '正在授权…' : '已登录，正在进入…')"></span>
         </button>
-        <p class="text-center text-[9.5px] mt-3 leading-relaxed" style="color:rgba(233,220,192,.35)">
-          登录即代表同意《用户协议》与《隐私政策》<br>华为登录仅获取头像、昵称与 openID
+        <p class="text-center text-[9.5px] mt-3 leading-relaxed" style="color:var(--faint)">
+          华为登录仅获取头像、昵称与 openID
         </p>
       </div>
     </div>
