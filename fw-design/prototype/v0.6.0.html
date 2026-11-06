@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家资 v0.6.0 · 视觉升级「私行墨绿 × 鎏金」设计板</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  :root{
+    --ink:#0B3D2E; --ink-deep:#072A1F; --ink-soft:#14533F;
+    --gold:#C6A15B; --gold-light:#E9DCC0; --gold-deep:#A8853F;
+    --bg:#F7F5EF; --surface:#FFFFFF; --surface-warm:#FBFAF6;
+    --hairline:#E7E3D8; --divider:#F0EDE4;
+    --text:#1C2B26; --sub:#75807A; --faint:#A8B0AA;
+    --danger:#B4453C; --success:#0F7B5C; --warning:#B9862F; --huawei:#CE0E2D;
+  }
+  * { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif; }
+  .font-display { font-family: Georgia, 'Times New Roman', serif; font-variant-numeric: tabular-nums; }
+  .font-serif-cn { font-family: 'Songti SC', 'STSong', 'SimSun', serif; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* ===== 深色画廊画板 ===== */
+  body {
+    background:
+      radial-gradient(1200px 700px at 20% -10%, rgba(198,161,91,.08), transparent 60%),
+      radial-gradient(900px 600px at 110% 110%, rgba(11,61,46,.35), transparent 55%),
+      #101614;
+  }
+  .board-title { color: var(--gold-light); }
+  .frame-label {
+    position:absolute; top:-46px; left:0; right:0; text-align:center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:12px; font-weight:600; letter-spacing:2.5px; color:var(--gold);
+  }
+  .frame-label small { display:block; font-family:'Songti SC','STSong',serif; font-size:10.5px;
+    letter-spacing:4px; color:rgba(233,220,192,.45); margin-top:3px; font-weight:400; }
+
+  /* ===== 手机框 ===== */
+  .phone-frame {
+    background: var(--bg); border-radius: 44px;
+    box-shadow: 0 30px 60px -18px rgba(0,0,0,.55), 0 0 0 11px #1B2420, 0 0 0 13px #2E3A34;
+    overflow: hidden; position: relative;
+  }
+  .notch { height: 30px; background: #1B2420; border-radius: 0 0 18px 18px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; }
+  .status-bar { height: 50px; padding-top: 12px; }
+  .page { height: calc(852px - 50px); overflow-y: auto; position: relative; }
+  .page::-webkit-scrollbar { width: 0; }
+
+  /* 纸感底纹 */
+  .paper {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(700px 420px at 85% -8%, rgba(198,161,91,.07), transparent 60%),
+      radial-gradient(500px 380px at -10% 30%, rgba(11,61,46,.045), transparent 55%);
+  }
+
+  /* ===== 墨绿 hero ===== */
+  .hero-ink {
+    background:
+      radial-gradient(360px 240px at 88% -12%, rgba(198,161,91,.22), transparent 62%),
+      radial-gradient(300px 300px at -12% 108%, rgba(20,83,63,.9), transparent 60%),
+      linear-gradient(160deg, #0E4634 0%, var(--ink) 46%, var(--ink-deep) 100%);
+    box-shadow: 0 18px 40px -18px rgba(7,42,31,.45);
+    position: relative; overflow: hidden;
+  }
+  .hero-ink::before { /* 金色细环 */
+    content:""; position:absolute; width:220px; height:220px; border-radius:50%;
+    border:1px solid rgba(233,220,192,.16); top:-90px; right:-70px; pointer-events:none;
+  }
+  .hero-ink::after {
+    content:""; position:absolute; width:150px; height:150px; border-radius:50%;
+    border:1px solid rgba(233,220,192,.10); top:-40px; right:-20px; pointer-events:none;
+  }
+  .seal { /* 朱砂印章 */
+    width: 26px; height: 26px; border-radius: 6px; background: var(--danger);
+    color:#F7F1E4; font-family:'Songti SC','STSong',serif; font-size:11px; line-height:1.05;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    box-shadow: 0 2px 6px rgba(180,69,60,.35); letter-spacing:0;
+  }
+
+  /* ===== 组件 ===== */
+  .card {
+    background: var(--surface); border:1px solid #ECE8DD; border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(28,43,38,.05);
+  }
+  .btn-ink {
+    background: var(--ink); color:#F7F3E8; border-radius: 16px;
+    box-shadow: 0 10px 22px -10px rgba(11,61,46,.5);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .btn-ink:active { opacity:.88; transform: translateY(1px); }
+  .btn-huawei {
+    background: var(--huawei); color:#fff; border-radius: 999px; height:48px;
+    box-shadow: 0 10px 22px -10px rgba(206,14,45,.45);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .btn-huawei:active { opacity:.88; transform: translateY(1px); }
+  .input-line {
+    background: transparent; border:0; border-bottom:1px solid rgba(233,220,192,.28);
+    border-radius:0; color:#F2EEE2; outline:none; transition: border-color .2s ease;
+  }
+  .input-line::placeholder { color: rgba(233,220,192,.38); }
+  .input-line:focus { border-bottom-color: var(--gold); }
+  .input-card {
+    background: var(--surface-warm); border:1px solid var(--hairline); border-radius:14px;
+    outline:none; transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .input-card:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(198,161,91,.14); }
+
+  .icon-chip { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon-chip.ink  { background: rgba(11,61,46,.08); color: var(--ink); }
+  .icon-chip.gold { background: rgba(198,161,91,.14); color: var(--gold-deep); }
+  .icon-chip.red  { background: rgba(180,69,60,.09); color: var(--danger); }
+
+  .row { display:flex; align-items:center; gap:12px; padding: 12px 0; border-bottom:1px solid var(--divider); }
+  .row:last-child { border-bottom:0; }
+
+  .chip { border:1px solid var(--hairline); background:var(--surface); color:var(--sub);
+    border-radius:999px; font-size:12px; padding:6px 14px; transition: all .18s ease; }
+  .chip.on { background: var(--ink); border-color: var(--ink); color:#F7F3E8; font-weight:600; }
+
+  .tab-bar {
+    background: rgba(251,250,246,.92); backdrop-filter: blur(14px);
+    border-top:1px solid var(--hairline);
+  }
+  .tab-item { color: var(--faint); }
+  .tab-item.on { color: var(--ink); }
+  .tab-dot { width:4px; height:4px; border-radius:99px; background: var(--gold); margin:3px auto 0; opacity:0; }
+  .tab-item.on .tab-dot { opacity:1; }
+
+  .badge-on { color: var(--ink); font-size:11px; display:inline-flex; align-items:center; gap:5px; }
+  .badge-on::before { content:""; width:5px; height:5px; border-radius:99px; background: var(--gold); }
+
+  .hairline-gold { height:1px; background: linear-gradient(90deg, transparent, rgba(198,161,91,.5), transparent); }
+
+  /* FAQ */
+  .faq-body { display:none; }
+  .faq.open .faq-body { display:block; }
+  .faq.open .faq-arrow { transform: rotate(90deg); }
+  .faq-arrow { transition: transform .2s ease; }
+
+  /* toast / 动画 */
+  @keyframes toastIn { from { opacity:0; transform: translate(-50%, 12px);} to { opacity:1; transform: translate(-50%, 0);} }
+  .toast { animation: toastIn .22s ease-out; }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(14px);} to { opacity:1; transform: translateY(0);} }
+  .fu { opacity:0; animation: fadeUp .5s ease-out forwards; }
+
+  /* 左侧说明栏（深底金题） */
+  .spec-card { background: linear-gradient(170deg,#16211C,#0F1613); border:1px solid rgba(233,220,192,.12); }
+  .spec-title { color: var(--gold); font-family:'Songti SC','STSong',serif; letter-spacing:1px; }
+  .spec-item { border:1px solid rgba(233,220,192,.10); background: rgba(233,220,192,.03); border-radius:14px; }
+  .spec-item b { color:#EDE6D2; }
+  .spec-item p { color: rgba(222,214,192,.55); }
+  .swatch { width:100%; height:34px; border-radius:8px; border:1px solid rgba(255,255,255,.08); }
+  textarea { resize:none; }
+  code { color: var(--gold); }
+</style>
+</head>
+<body class="min-h-screen flex flex-wrap items-start justify-center gap-14 p-8 pt-24"
+      x-data="app()">
+
+<!-- ============ 左侧：v0.6.0 设计说明 ============ -->
+<div class="w-[308px] shrink-0 spec-card rounded-3xl shadow-2xl p-5 sticky top-16 fu">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="num text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-full"
+          style="background:rgba(198,161,91,.16);color:var(--gold);border:1px solid rgba(198,161,91,.35)">v0.6.0</span>
+    <h1 class="spec-title text-[17px]">视觉升级 · 设计说明</h1>
+  </div>
+  <p class="text-[10.5px] mb-4" style="color:rgba(222,214,192,.45)">八屏并列 · 功能结构不变 · 仅质感升级</p>
+
+  <div class="mb-4">
+    <p class="spec-title text-[11px] mb-2">方向</p>
+    <p class="text-[11px] leading-relaxed" style="color:rgba(222,214,192,.6)">
+      「私行墨绿 × 鎏金」——东方私行质感的纸质账册：墨绿为骨、香槟金点睛、朱砂作印，
+      衬线大数字呈现财富陈述感。替换 v0.5.0 的亮绿互联网风。
+    </p>
+  </div>
+
+  <div class="mb-4">
+    <p class="spec-title text-[11px] mb-2">色板</p>
+    <div class="grid grid-cols-4 gap-1.5 text-[9px] text-center" style="color:rgba(222,214,192,.5)">
+      <div><div class="swatch" style="background:#0B3D2E"></div>墨绿</div>
+      <div><div class="swatch" style="background:#C6A15B"></div>鎏金</div>
+      <div><div class="swatch" style="background:#F7F5EF"></div>纸底</div>
+      <div><div class="swatch" style="background:#B4453C"></div>朱砂</div>
+    </div>
+  </div>
+
+  <div class="space-y-2">
+    <div class="spec-item p-3">
+      <b class="text-[12px]">字体系统</b>
+      <p class="text-[10.5px] mt-1 leading-relaxed">Georgia 衬线数字（tabular-nums）呈现金额；宋体中文大标题点睛；正文沿用 PingFang / 雅黑。</p>
+    </div>
+    <div class="spec-item p-3">
+      <b class="text-[12px]">材质与组件</b>
+      <p class="text-[10.5px] mt-1 leading-relaxed">暖白纸感底纹替换冷灰；卡片改 1px 暖线 + 极轻影；主按钮墨绿、选中态墨绿、焦点描边金色。</p>
+    </div>
+    <div class="spec-item p-3">
+      <b class="text-[12px]">品牌保留项</b>
+      <p class="text-[10.5px] mt-1 leading-relaxed">华为登录按钮保持品牌红 <span class="num">#CE0E2D</span> 胶囊置底（已上线结构）；金额显隐、分组、工单等功能不变。</p>
+    </div>
+    <div class="spec-item p-3">
+      <b class="text-[12px]">版本号 0.6.0</b>
+      <p class="text-[10.5px] mt-1 leading-relaxed">「我的 · 关于」显示 v0.6.0；交互演示：金额显隐 / 更新筛选 / FAQ / 反馈提交。</p>
+    </div>
+  </div>
+
+  <div class="mt-4 pt-3" style="border-top:1px solid rgba(233,220,192,.1)">
+    <p class="spec-title text-[11px] mb-2">交互演示</p>
+    <button @click="reset()"
+      class="w-full py-2 rounded-xl text-xs font-semibold"
+      style="background:rgba(198,161,91,.14);color:var(--gold);border:1px solid rgba(198,161,91,.3)">重置演示</button>
+  </div>
+</div>
+
+<!-- ============ ① 登录页 ============ -->
+<div class="relative fu" style="animation-delay:.06s">
+  <div class="frame-label">01 · SIGN IN<small>登 录</small></div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <!-- 整页墨绿沉浸 -->
+    <div class="h-full hero-ink flex flex-col">
+      <div class="status-bar flex justify-between items-center px-6 text-xs font-medium relative z-40" style="color:rgba(233,220,192,.85)">
+        <span class="num">9:41</span>
+        <div class="flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+        </div>
+      </div>
+
+      <div class="flex-1 px-8 pt-10 flex flex-col">
+        <!-- 品牌锁 -->
+        <div class="flex flex-col items-center mb-10">
+          <div class="w-[64px] h-[64px] rounded-[20px] flex items-center justify-center mb-5"
+               style="border:1px solid rgba(233,220,192,.3); background:rgba(233,220,192,.06)">
+            <svg class="w-7 h-7" style="color:var(--gold-light)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
+            </svg>
+          </div>
+          <h1 class="font-serif-cn text-[26px] tracking-[8px] mb-2" style="color:#F2EEE2">家 资</h1>
+          <div class="hairline-gold w-16 mb-2.5"></div>
+          <p class="text-[10.5px] tracking-[3px]" style="color:rgba(233,220,192,.5)">端到端加密 · 数据只属于你</p>
+        </div>
+
+        <!-- 下划线表单 -->
+        <div class="space-y-5">
+          <div>
+            <label class="text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.45)">邮箱</label>
+            <input type="email" value="demo@family.local" class="input-line w-full h-11 text-[15px] num">
+          </div>
+          <div>
+            <label class="text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.45)">密码</label>
+            <input type="password" value="••••••••" class="input-line w-full h-11 text-[15px]">
+          </div>
+          <button class="w-full h-[50px] rounded-2xl text-[15px] font-semibold tracking-[6px]"
+                  style="background:var(--gold);color:var(--ink-deep);box-shadow:0 12px 26px -12px rgba(198,161,91,.55)">登 录</button>
+          <p class="text-center text-[11px]" style="color:rgba(233,220,192,.45)">还没有账号？<span style="color:var(--gold-light)">注册</span> · 忘记密码</p>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- 底部华为胶囊（已上线结构） -->
+        <div class="pb-9">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-1 hairline-gold"></div>
+            <span class="text-[10px] tracking-[2px]" style="color:rgba(233,220,192,.4)">或</span>
+            <div class="flex-1 hairline-gold"></div>
+          </div>
+          <button class="btn-huawei w-full flex items-center justify-center gap-2.5" @click="huaweiLogin()">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <g fill="#fff">
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(45 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(90 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(135 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(180 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(225 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(270 12 12)"/>
+                <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".95" transform="rotate(315 12 12)"/>
+              </g>
+            </svg>
+            <span class="text-[15px] font-semibold"
+              x-text="huaweiState==='idle' ? '华为账号登录' : (huaweiState==='loading' ? '正在授权…' : '已登录，正在进入…')"></span>
+          </button>
+          <p class="text-center text-[9.5px] mt-3 leading-relaxed" style="color:rgba(233,220,192,.35)">
+            登录即代表同意《用户协议》与《隐私政策》<br>华为登录仅获取头像、昵称与 openID
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ② 首页 ============ -->
+<div class="relative fu" style="animation-delay:.12s">
+  <div class="frame-label">02 · OVERVIEW<small>首 页</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-24">
+      <!-- 顶部问候 -->
+      <div class="px-6 pt-2 pb-4 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] tracking-[2px]" style="color:var(--faint)">乙巳年 · 九月十七</p>
+          <h2 class="font-serif-cn text-[20px] mt-0.5" style="color:var(--text)">志伟，见字如面</h2>
+        </div>
+        <div class="w-9 h-9 rounded-full flex items-center justify-center font-serif-cn text-[13px]"
+             style="background:rgba(11,61,46,.08);color:var(--ink);border:1px solid rgba(11,61,46,.12)">徐</div>
+      </div>
+
+      <!-- 净资产 hero -->
+      <div class="px-5">
+        <div class="hero-ink rounded-[26px] px-6 pt-6 pb-5">
+          <div class="flex items-start justify-between relative z-10">
+            <div>
+              <p class="text-[10.5px] tracking-[3px] mb-2" style="color:rgba(233,220,192,.55)">家庭净资产（元）</p>
+              <div class="flex items-end gap-2">
+                <span class="font-display text-[34px] leading-none font-semibold" style="color:#F7F3E8"
+                      x-text="hideAmount ? '¥ ****' : '¥ 3,356,200'"></span>
+                <button @click="hideAmount=!hideAmount" class="pb-0.5" style="color:rgba(233,220,192,.6)">
+                  <svg x-show="!hideAmount" class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg x-show="hideAmount" class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9.9 4.24A9.5 9.5 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="seal">家资</div>
+          </div>
+          <div class="flex items-center gap-4 mt-4 relative z-10">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" style="color:var(--gold)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span class="num text-[12px]" style="color:var(--gold-light)">本月 +24,680</span>
+              <span class="num text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(198,161,91,.18);color:var(--gold-light)">+0.74%</span>
+            </div>
+          </div>
+          <div class="hairline-gold my-4 relative z-10"></div>
+          <div class="flex relative z-10 text-center">
+            <div class="flex-1">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">总资产</p>
+              <p class="num font-display text-[15px] mt-1" style="color:#F2EEE2">4,896,200</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">总负债</p>
+              <p class="num font-display text-[15px] mt-1" style="color:rgba(242,238,226,.75)">-1,540,000</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">资产负债率</p>
+              <p class="num font-display text-[15px] mt-1" style="color:var(--gold-light)">31.5%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 资产分组 -->
+      <div class="px-6 mt-6">
+        <div class="flex items-baseline justify-between mb-1">
+          <h3 class="font-serif-cn text-[16px]" style="color:var(--text)">资产构成</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">更新于 11-06 09:12</span>
+        </div>
+
+        <div class="card px-4 mt-2">
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">现金及存款</p>
+          <div class="row">
+            <div class="icon-chip ink">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">招商银行 · 活期</p>
+              <p class="text-[10px]" style="color:var(--faint)">尾号 6688</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">86,400</span>
+          </div>
+          <div class="row">
+            <div class="icon-chip ink">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">定期存款 · 三年期</p>
+              <p class="text-[10px]" style="color:var(--faint)">年利率 2.6%</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">300,000</span>
+          </div>
+
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">投资理财</p>
+          <div class="row">
+            <div class="icon-chip gold">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">沪深300指数基金</p>
+              <p class="text-[10px]" style="color:var(--faint)">定投中 · 每月 5,000</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">512,300</span>
+          </div>
+          <div class="row">
+            <div class="icon-chip gold">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.7h4a1.6 1.6 0 0 1 0 3.2h-3a1.6 1.6 0 0 0 0 3.2h4"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">实物黄金</p>
+              <p class="text-[10px]" style="color:var(--faint)">100g 金条</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">68,500</span>
+          </div>
+
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">房产</p>
+          <div class="row">
+            <div class="icon-chip ink">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">自住房 · 滨江</p>
+              <p class="text-[10px]" style="color:var(--faint)">估值 128㎡</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">3,850,000</span>
+          </div>
+
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">负债</p>
+          <div class="row">
+            <div class="icon-chip red">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">住房按揭贷款</p>
+              <p class="text-[10px]" style="color:var(--faint)">剩余 22 年 · 月供 7,840</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--danger)">-1,460,000</span>
+          </div>
+          <div class="row">
+            <div class="icon-chip red">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 17h14l-1.5-6.5a2 2 0 0 0-2-1.5h-7a2 2 0 0 0-2 1.5L5 17Z"/><path d="M7 17v2M17 17v2"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">车位贷款</p>
+              <p class="text-[10px]" style="color:var(--faint)">剩余 3 年</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--danger)">-80,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 栏 -->
+    <div class="tab-bar absolute bottom-0 left-0 right-0 h-[68px] px-4 grid grid-cols-5 pt-2">
+      <div class="tab-item on flex flex-col items-center text-[9.5px] font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+        <span class="mt-0.5">首页</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span class="mt-0.5">趋势</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="mt-0.5">更新</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <span class="mt-0.5">报表</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="mt-0.5">我的</span><div class="tab-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ③ 资产详情 ============ -->
+<div class="relative fu" style="animation-delay:.18s">
+  <div class="frame-label">03 · DETAIL<small>资产详情</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-8">
+      <!-- 导航 -->
+      <div class="px-5 pt-1 pb-3 flex items-center justify-between">
+        <div class="w-9 h-9 rounded-full card flex items-center justify-center">
+          <svg class="w-[18px] h-[18px]" style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <p class="text-[14px] font-semibold" style="color:var(--text)">资产详情</p>
+        <div class="w-9 h-9 rounded-full card flex items-center justify-center">
+          <svg class="w-[18px] h-[18px]" style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </div>
+      </div>
+
+      <!-- 标题 + 迷你趋势 -->
+      <div class="px-6">
+        <div class="flex items-center gap-3">
+          <div class="icon-chip gold" style="width:40px;height:40px;border-radius:13px">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <div>
+            <h2 class="font-serif-cn text-[18px]" style="color:var(--text)">沪深300指数基金</h2>
+            <p class="text-[10.5px]" style="color:var(--faint)">投资理财 · 定投中</p>
+          </div>
+        </div>
+        <p class="num font-display text-[30px] font-semibold mt-4" style="color:var(--text)">¥ 512,300</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="num text-[11.5px] font-semibold" style="color:var(--success)">+8,420 本月</span>
+          <span class="num text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(15,123,92,.08);color:var(--success)">+1.67%</span>
+        </div>
+
+        <!-- 迷你折线 -->
+        <div class="card mt-4 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[10px] tracking-[2px]" style="color:var(--faint)">近 6 月走势</p>
+            <p class="text-[10px] num" style="color:var(--gold-deep)">口径：月末余额</p>
+          </div>
+          <svg viewBox="0 0 320 96" class="w-full">
+            <defs>
+              <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#C6A15B" stop-opacity=".22"/>
+                <stop offset="100%" stop-color="#C6A15B" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <g stroke="#F0EDE4" stroke-width="1">
+              <line x1="0" y1="24" x2="320" y2="24"/><line x1="0" y1="48" x2="320" y2="48"/><line x1="0" y1="72" x2="320" y2="72"/>
+            </g>
+            <path d="M8,78 L70,70 L132,72 L194,58 L256,44 L312,26 L312,96 L8,96 Z" fill="url(#sparkfill)"/>
+            <path d="M8,78 L70,70 L132,72 L194,58 L256,44 L312,26" fill="none" stroke="#C6A15B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="312" cy="26" r="3.5" fill="#C6A15B" stroke="#fff" stroke-width="1.5"/>
+            <g font-size="8.5" fill="#A8B0AA" text-anchor="middle" font-family="Georgia,serif">
+              <text x="8" y="94" text-anchor="start">6月</text><text x="70" y="94">7月</text><text x="132" y="94">8月</text>
+              <text x="194" y="94">9月</text><text x="256" y="94">10月</text><text x="312" y="94" text-anchor="end">11月</text>
+            </g>
+          </svg>
+          <button class="w-full mt-2 py-2 rounded-xl text-[11.5px] font-semibold flex items-center justify-center gap-1.5"
+                  style="background:rgba(11,61,46,.06);color:var(--ink)">
+            查看完整趋势
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 按月记录 -->
+      <div class="px-6 mt-5">
+        <h3 class="font-serif-cn text-[16px] mb-2" style="color:var(--text)">余额记录</h3>
+        <div class="card px-4">
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">2026 年 11 月</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">11-06 手动更新</p>
+              <p class="text-[10px]" style="color:var(--faint)">较上期 +8,420</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">512,300</span>
+          </div>
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">2026 年 10 月</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">10-31 月末记账</p>
+              <p class="text-[10px]" style="color:var(--faint)">较上期 +5,080</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">503,880</span>
+          </div>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">10-15 定投扣款</p>
+              <p class="text-[10px]" style="color:var(--faint)">+5,000 份额确认</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">498,800</span>
+          </div>
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">2026 年 9 月</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">09-30 月末记账</p>
+              <p class="text-[10px]" style="color:var(--faint)">较上期 -2,150</p>
+            </div>
+            <span class="num text-[13.5px] font-semibold" style="color:var(--text)">493,800</span>
+          </div>
+        </div>
+
+        <button class="btn-ink w-full h-[46px] mt-5 text-[14px] font-semibold tracking-[3px]">更新余额</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ============ ④ 趋势 ============ -->
+<div class="relative fu" style="animation-delay:.24s">
+  <div class="frame-label">04 · TREND<small>趋 势</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-24">
+      <div class="px-6 pt-1">
+        <h2 class="font-serif-cn text-[20px]" style="color:var(--text)">净资产趋势</h2>
+        <p class="text-[10.5px] mt-0.5" style="color:var(--faint)">近 6 个月 · 直板口径 · 单位：万元</p>
+      </div>
+
+      <!-- 汇总 -->
+      <div class="px-5 mt-4">
+        <div class="hero-ink rounded-[22px] px-5 py-4 flex items-center justify-between relative z-10">
+          <div class="relative z-10">
+            <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.5)">半年累计增长</p>
+            <p class="num font-display text-[22px] font-semibold mt-1" style="color:#F7F3E8">+373,800</p>
+          </div>
+          <div class="text-right relative z-10">
+            <span class="num text-[11px] px-2 py-1 rounded-lg" style="background:rgba(198,161,91,.18);color:var(--gold-light)">+12.53%</span>
+            <p class="text-[9.5px] mt-1.5" style="color:rgba(233,220,192,.45)">月均 +62,300</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 柱+折线图 -->
+      <div class="px-5 mt-4">
+        <div class="card p-4">
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[10px] tracking-[2px]" style="color:var(--faint)">2026-06 → 2026-11</p>
+            <div class="flex items-center gap-3 text-[9px]" style="color:var(--sub)">
+              <span class="flex items-center gap-1"><i class="inline-block w-2 h-2 rounded-sm" style="background:rgba(11,61,46,.85)"></i>净资产</span>
+              <span class="flex items-center gap-1"><i class="inline-block w-3 h-[2px] rounded" style="background:var(--gold)"></i>环比</span>
+            </div>
+          </div>
+          <svg viewBox="0 0 330 190" class="w-full">
+            <g stroke="#F0EDE4" stroke-width="1">
+              <line x1="34" y1="30" x2="322" y2="30"/><line x1="34" y1="70" x2="322" y2="70"/>
+              <line x1="34" y1="110" x2="322" y2="110"/><line x1="34" y1="150" x2="322" y2="150"/>
+            </g>
+            <g font-size="8" fill="#A8B0AA" font-family="Georgia,serif" text-anchor="end">
+              <text x="30" y="33">340</text><text x="30" y="73">320</text><text x="30" y="113">300</text><text x="30" y="153">280</text>
+            </g>
+            <!-- 柱：值 298.24/304.51/310.28/318.76/323.15/335.62 万 → 高度映射 (v-280)*2 -->
+            <g fill="#0B3D2E" opacity=".88">
+              <rect x="44"  y="113.5" width="26" height="36.5" rx="4"/>
+              <rect x="92"  y="101"   width="26" height="49"   rx="4"/>
+              <rect x="140" y="89.4"  width="26" height="60.6" rx="4"/>
+              <rect x="188" y="72.5"  width="26" height="77.5" rx="4"/>
+              <rect x="236" y="63.7"  width="26" height="86.3" rx="4"/>
+              <rect x="284" y="38.8"  width="26" height="111.2" rx="4" fill="#C6A15B" opacity=".92"/>
+            </g>
+            <!-- 环比折线 -->
+            <path d="M57,108 L105,100 L153,95 L201,86 L249,82 L297,64" fill="none" stroke="#C6A15B" stroke-width="1.8" stroke-dasharray="1 3" stroke-linecap="round"/>
+            <g fill="#C6A15B" stroke="#fff" stroke-width="1">
+              <circle cx="57" cy="108" r="2.5"/><circle cx="105" cy="100" r="2.5"/><circle cx="153" cy="95" r="2.5"/>
+              <circle cx="201" cy="86" r="2.5"/><circle cx="249" cy="82" r="2.5"/><circle cx="297" cy="64" r="3"/>
+            </g>
+            <!-- 涨幅标注 -->
+            <g font-size="8.5" font-family="Georgia,serif" text-anchor="middle">
+              <text x="57"  y="101" fill="#A8B0AA">—</text>
+              <text x="105" y="93"  fill="#A8853F">+2.1%</text>
+              <text x="153" y="88"  fill="#A8853F">+1.9%</text>
+              <text x="201" y="79"  fill="#A8853F">+2.7%</text>
+              <text x="249" y="75"  fill="#A8853F">+1.4%</text>
+              <text x="297" y="57"  fill="#A8853F" font-weight="700">+3.9%</text>
+            </g>
+            <!-- 数值 + 月份 -->
+            <g font-size="8.5" fill="#75807A" font-family="Georgia,serif" text-anchor="middle">
+              <text x="57"  y="162">298.2</text><text x="105" y="162">304.5</text><text x="153" y="162">310.3</text>
+              <text x="201" y="162">318.8</text><text x="249" y="162">323.2</text>
+              <text x="297" y="162" fill="#0B3D2E" font-weight="700">335.6</text>
+            </g>
+            <g font-size="9" fill="#A8B0AA" text-anchor="middle">
+              <text x="57" y="176">06月</text><text x="105" y="176">07月</text><text x="153" y="176">08月</text>
+              <text x="201" y="176">09月</text><text x="249" y="176">10月</text><text x="297" y="176" fill="#0B3D2E" font-weight="700">11月</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 月度明细 -->
+      <div class="px-6 mt-4">
+        <div class="card px-4 py-1">
+          <div class="row">
+            <span class="text-[12px] w-14" style="color:var(--sub)">2026-11</span>
+            <div class="flex-1 h-[6px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:100%;background:var(--gold)"></div>
+            </div>
+            <span class="num text-[12px] font-semibold w-[74px] text-right" style="color:var(--text)">335.62 万</span>
+          </div>
+          <div class="row">
+            <span class="text-[12px] w-14" style="color:var(--sub)">2026-10</span>
+            <div class="flex-1 h-[6px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:96.3%;background:var(--ink)"></div>
+            </div>
+            <span class="num text-[12px] font-semibold w-[74px] text-right" style="color:var(--text)">323.15 万</span>
+          </div>
+          <div class="row">
+            <span class="text-[12px] w-14" style="color:var(--sub)">2026-09</span>
+            <div class="flex-1 h-[6px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:95%;background:var(--ink)"></div>
+            </div>
+            <span class="num text-[12px] font-semibold w-[74px] text-right" style="color:var(--text)">318.76 万</span>
+          </div>
+          <div class="row">
+            <span class="text-[12px] w-14" style="color:var(--sub)">2026-08</span>
+            <div class="flex-1 h-[6px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:92.5%;background:var(--ink)"></div>
+            </div>
+            <span class="num text-[12px] font-semibold w-[74px] text-right" style="color:var(--text)">310.28 万</span>
+          </div>
+        </div>
+        <p class="text-[10px] text-center mt-3" style="color:var(--faint)">仅展示最近 4 个月明细，滑动查看全部</p>
+      </div>
+    </div>
+
+    <div class="tab-bar absolute bottom-0 left-0 right-0 h-[68px] px-4 grid grid-cols-5 pt-2">
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+        <span class="mt-0.5">首页</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item on flex flex-col items-center text-[9.5px] font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span class="mt-0.5">趋势</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="mt-0.5">更新</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <span class="mt-0.5">报表</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="mt-0.5">我的</span><div class="tab-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ⑤ 更新数据 ============ -->
+<div class="relative fu" style="animation-delay:.3s">
+  <div class="frame-label">05 · UPDATE<small>更新数据</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-24">
+      <div class="px-6 pt-1">
+        <h2 class="font-serif-cn text-[20px]" style="color:var(--text)">更新数据</h2>
+        <p class="text-[10.5px] mt-0.5" style="color:var(--faint)">2026 年 11 月 · 本地加密保存后同步</p>
+      </div>
+
+      <!-- 汇总预览 -->
+      <div class="px-5 mt-4">
+        <div class="hero-ink rounded-[22px] px-5 py-4 relative z-10">
+          <p class="text-[9.5px] tracking-[2px] relative z-10" style="color:rgba(233,220,192,.5)">本次更新后净资产（预估）</p>
+          <p class="num font-display text-[24px] font-semibold mt-1 relative z-10" style="color:#F7F3E8">¥ 3,359,700</p>
+          <div class="flex items-center gap-2 mt-1.5 relative z-10">
+            <span class="num text-[11px]" style="color:var(--gold-light)">较当前 +3,500</span>
+            <span class="num text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(198,161,91,.18);color:var(--gold-light)">已改 2 项</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选 -->
+      <div class="px-6 mt-4 flex gap-2">
+        <button class="chip" :class="filter==='all' && 'on'" @click="filter='all'">全部</button>
+        <button class="chip" :class="filter==='asset' && 'on'" @click="filter='asset'">资产</button>
+        <button class="chip" :class="filter==='debt' && 'on'" @click="filter='debt'">负债</button>
+      </div>
+
+      <!-- 分组输入 -->
+      <div class="px-6 mt-4 space-y-4">
+        <div class="card px-4 pb-1" x-show="filter!=='debt'">
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">现金及存款</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">招商银行 · 活期</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 86,400</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="88,200">
+          </div>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">定期存款 · 三年期</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 300,000</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="300,000">
+          </div>
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">投资理财</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">沪深300指数基金</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 512,300</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="514,000">
+          </div>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">实物黄金</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 68,500</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="68,500">
+          </div>
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">房产</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">自住房 · 滨江</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 3,850,000</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="3,850,000">
+          </div>
+        </div>
+
+        <div class="card px-4 pb-1" x-show="filter!=='asset'">
+          <p class="text-[10px] tracking-[2px] pt-3" style="color:var(--faint)">负债</p>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">住房按揭贷款</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 -1,460,000</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="-1,457,600">
+          </div>
+          <div class="row">
+            <div class="flex-1">
+              <p class="text-[13px] font-medium" style="color:var(--text)">车位贷款</p>
+              <p class="text-[10px] num" style="color:var(--faint)">上期 -80,000</p>
+            </div>
+            <input class="input-card num w-[110px] h-9 px-3 text-right text-[13px]" value="-78,500">
+          </div>
+        </div>
+
+        <button class="btn-ink w-full h-[48px] text-[14px] font-semibold tracking-[3px]">保存并同步</button>
+        <p class="text-[10px] text-center pb-2" style="color:var(--faint)">数据在本机加密后才上传，服务端无法读取明文</p>
+      </div>
+    </div>
+
+    <div class="tab-bar absolute bottom-0 left-0 right-0 h-[68px] px-4 grid grid-cols-5 pt-2">
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+        <span class="mt-0.5">首页</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span class="mt-0.5">趋势</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item on flex flex-col items-center text-[9.5px] font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="mt-0.5">更新</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <span class="mt-0.5">报表</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="mt-0.5">我的</span><div class="tab-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ⑥ 报表 ============ -->
+<div class="relative fu" style="animation-delay:.36s">
+  <div class="frame-label">06 · REPORT<small>报 表</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-24">
+      <div class="px-6 pt-1 flex items-baseline justify-between">
+        <div>
+          <h2 class="font-serif-cn text-[20px]" style="color:var(--text)">月度报表</h2>
+          <p class="text-[10.5px] mt-0.5" style="color:var(--faint)">2026 年 10 月 · 已归档</p>
+        </div>
+        <span class="text-[11px] flex items-center gap-1" style="color:var(--gold-deep)">
+          年度报表
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+      </div>
+
+      <!-- 月度总览卡 -->
+      <div class="px-5 mt-4">
+        <div class="hero-ink rounded-[22px] px-5 py-5 relative z-10">
+          <div class="flex items-center justify-between relative z-10">
+            <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.5)">十月结余</p>
+            <div class="seal" style="width:22px;height:22px;font-size:9px">拾月</div>
+          </div>
+          <p class="num font-display text-[28px] font-semibold mt-1 relative z-10" style="color:#F7F3E8">¥ 17,160</p>
+          <div class="hairline-gold my-3.5 relative z-10"></div>
+          <div class="flex relative z-10 text-center">
+            <div class="flex-1">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">收入</p>
+              <p class="num font-display text-[16px] mt-1" style="color:var(--gold-light)">38,500</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">支出</p>
+              <p class="num font-display text-[16px] mt-1" style="color:rgba(242,238,226,.8)">21,340</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">储蓄率</p>
+              <p class="num font-display text-[16px] mt-1" style="color:#F7F3E8">44.6%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分类占比 -->
+      <div class="px-6 mt-5">
+        <h3 class="font-serif-cn text-[16px] mb-2" style="color:var(--text)">支出构成</h3>
+        <div class="card px-4 py-4 space-y-3.5">
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">居住</span>
+              <span class="num" style="color:var(--sub)">8,960 · 42%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:42%;background:var(--ink)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">餐饮</span>
+              <span class="num" style="color:var(--sub)">3,840 · 18%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:18%;background:var(--gold)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">教育</span>
+              <span class="num" style="color:var(--sub)">2,560 · 12%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:12%;background:var(--ink-soft)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">交通</span>
+              <span class="num" style="color:var(--sub)">1,920 · 9%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:9%;background:var(--gold-deep)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">其他</span>
+              <span class="num" style="color:var(--sub)">4,060 · 19%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="h-full rounded-full" style="width:19%;background:#D8CFBB"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 月份选择 -->
+      <div class="px-6 mt-4">
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          <button class="chip on shrink-0">2026-10</button>
+          <button class="chip shrink-0">2026-09</button>
+          <button class="chip shrink-0">2026-08</button>
+          <button class="chip shrink-0">2026-07</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar absolute bottom-0 left-0 right-0 h-[68px] px-4 grid grid-cols-5 pt-2">
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+        <span class="mt-0.5">首页</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span class="mt-0.5">趋势</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="mt-0.5">更新</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item on flex flex-col items-center text-[9.5px] font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <span class="mt-0.5">报表</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="mt-0.5">我的</span><div class="tab-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ⑦ 我的 ============ -->
+<div class="relative fu" style="animation-delay:.42s">
+  <div class="frame-label">07 · PROFILE<small>我 的</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-24">
+      <!-- 账号头 -->
+      <div class="px-6 pt-2 pb-4 flex items-center gap-4">
+        <div class="w-[52px] h-[52px] rounded-2xl hero-ink flex items-center justify-center">
+          <span class="font-serif-cn text-[19px]" style="color:var(--gold-light)">徐</span>
+        </div>
+        <div class="flex-1">
+          <h2 class="font-serif-cn text-[18px]" style="color:var(--text)">徐志伟</h2>
+          <p class="text-[11px] num" style="color:var(--faint)">demo@family.local</p>
+        </div>
+        <span class="badge-on">已开启加密</span>
+      </div>
+
+      <div class="px-6 space-y-3.5">
+        <!-- 账号 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">账号</p>
+          <div class="card px-4">
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip ink">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">绑定手机号</span>
+              <span class="num text-[12px]" style="color:var(--sub)">138****8000</span>
+              <svg class="w-4 h-4" style="color:var(--faint)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip red">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">注销账号</span>
+              <svg class="w-4 h-4" style="color:var(--faint)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- 安全与隐私 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">安全与隐私</p>
+          <div class="card px-4">
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip ink">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">修改加密密码</span>
+              <svg class="w-4 h-4" style="color:var(--faint)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip gold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">金额默认隐藏</span>
+              <div class="w-[42px] h-[24px] rounded-full p-[3px] cursor-pointer" style="background:var(--ink)" @click="hideAmount=!hideAmount">
+                <div class="w-[18px] h-[18px] rounded-full bg-white transition-transform" :style="hideAmount ? 'transform:translateX(18px)' : ''"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 功能 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">功能</p>
+          <div class="card px-4">
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip ink">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">数据同步</span>
+              <span class="text-[11px]" style="color:var(--sub)">刚刚</span>
+            </div>
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip gold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">帮助与反馈</span>
+              <svg class="w-4 h-4" style="color:var(--faint)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关于 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">关于</p>
+          <div class="card px-4">
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip ink">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">版本</span>
+              <span class="num text-[12px] font-semibold" style="color:var(--gold-deep)">v0.6.0</span>
+            </div>
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip gold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+              </div>
+              <span class="flex-1 text-[13px] font-medium" style="color:var(--text)">用户协议与隐私政策</span>
+              <svg class="w-4 h-4" style="color:var(--faint)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <button class="w-full h-[46px] rounded-2xl text-[13px] font-semibold"
+                style="background:rgba(180,69,60,.07);color:var(--danger);border:1px solid rgba(180,69,60,.18)">退出登录</button>
+      </div>
+    </div>
+
+    <div class="tab-bar absolute bottom-0 left-0 right-0 h-[68px] px-4 grid grid-cols-5 pt-2">
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+        <span class="mt-0.5">首页</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span class="mt-0.5">趋势</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="mt-0.5">更新</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item flex flex-col items-center text-[9.5px]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <span class="mt-0.5">报表</span><div class="tab-dot"></div>
+      </div>
+      <div class="tab-item on flex flex-col items-center text-[9.5px] font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="mt-0.5">我的</span><div class="tab-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ⑧ 帮助与反馈 ============ -->
+<div class="relative fu" style="animation-delay:.48s">
+  <div class="frame-label">08 · SUPPORT<small>帮助与反馈</small></div>
+  <div class="phone-frame paper" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+      <span class="num">9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page pb-8">
+      <div class="px-5 pt-1 pb-3 flex items-center justify-between">
+        <div class="w-9 h-9 rounded-full card flex items-center justify-center">
+          <svg class="w-[18px] h-[18px]" style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <p class="text-[14px] font-semibold" style="color:var(--text)">帮助与反馈</p>
+        <div class="w-9"></div>
+      </div>
+
+      <div class="px-6 space-y-4">
+        <!-- FAQ -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">常见问题</p>
+          <div class="card px-4">
+            <div class="faq py-3" :class="faq===1 && 'open'" style="border-bottom:1px solid var(--divider)">
+              <button class="w-full flex items-center justify-between text-left" @click="faq = faq===1 ? 0 : 1">
+                <span class="text-[12.5px] font-medium" style="color:var(--text)">数据会被平台看到吗？</span>
+                <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+                不会。所有资产数据在本机用主密码派生密钥加密后才上传，服务端只存密文，无法还原明文。
+              </p>
+            </div>
+            <div class="faq py-3" :class="faq===2 && 'open'" style="border-bottom:1px solid var(--divider)">
+              <button class="w-full flex items-center justify-between text-left" @click="faq = faq===2 ? 0 : 2">
+                <span class="text-[12.5px] font-medium" style="color:var(--text)">忘记加密密码怎么办？</span>
+                <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+                加密密码不上传、不可找回。忘记后只能重置账号并重新录入数据，请务必妥善保管。
+              </p>
+            </div>
+            <div class="faq py-3" :class="faq===3 && 'open'">
+              <button class="w-full flex items-center justify-between text-left" @click="faq = faq===3 ? 0 : 3">
+                <span class="text-[12.5px] font-medium" style="color:var(--text)">如何邀请家庭成员？</span>
+                <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+              <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+                在「我的 · 绑定手机号」后，可通过手机号邀请家人加入家庭空间，共享同一份加密账本。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 提交反馈 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">提交反馈</p>
+          <div class="card p-4">
+            <div class="flex flex-wrap gap-2 mb-3">
+              <template x-for="(t,i) in fbTypes" :key="i">
+                <button class="chip" :class="fbType===i && 'on'" @click="fbType=i" x-text="t"></button>
+              </template>
+            </div>
+            <div class="relative">
+              <textarea rows="4" maxlength="500" x-model="fbText"
+                class="input-card w-full p-3 text-[12.5px] leading-relaxed"
+                placeholder="请描述你遇到的问题或建议（500 字以内）…"></textarea>
+              <span class="absolute bottom-2.5 right-3 text-[10px] num" style="color:var(--faint)" x-text="fbText.length + ' / 500'"></span>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+                   style="border:1px dashed var(--hairline);color:var(--faint)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+              </div>
+              <p class="text-[10px]" style="color:var(--faint)">可添加截图（选填）</p>
+            </div>
+            <button class="btn-ink w-full h-[44px] mt-3.5 text-[13px] font-semibold tracking-[3px]" @click="submitFeedback()">提交反馈</button>
+          </div>
+        </div>
+
+        <!-- 我的反馈 -->
+        <div>
+          <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">我的反馈</p>
+          <div class="card px-4">
+            <template x-for="(t,i) in tickets" :key="t.id">
+              <div class="row" style="min-height:56px">
+                <div class="icon-chip" :class="t.status==='已解决' ? 'ink' : 'gold'">
+                  <svg x-show="t.status==='已解决'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                  <svg x-show="t.status!=='已解决'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="num text-[12.5px] font-semibold" style="color:var(--text)" x-text="t.id"></p>
+                  <p class="text-[10px]" style="color:var(--faint)" x-text="t.desc"></p>
+                </div>
+                <span class="text-[10.5px] font-semibold"
+                      :style="t.status==='已解决' ? 'color:var(--success)' : 'color:var(--warning)'"
+                      x-text="t.status"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- toast -->
+    <div x-show="toast" x-transition.opacity
+         class="toast absolute left-1/2 bottom-10 z-50 px-4 py-2.5 rounded-full text-[12px] font-medium whitespace-nowrap"
+         style="transform:translateX(-50%);background:rgba(11,61,46,.94);color:#F7F3E8;box-shadow:0 10px 24px -8px rgba(7,42,31,.5)"
+         x-text="toast"></div>
+  </div>
+</div>
+
+<script>
+function app() {
+  return {
+    // ===== Mock DB（契约冻结） =====
+    huaweiState: 'idle',
+    hideAmount: false,
+    filter: 'all',
+    faq: 0,
+    fbTypes: ['功能异常', '体验建议', '数据问题', '其他'],
+    fbType: 0,
+    fbText: '',
+    toast: '',
+    tickets: [
+      { id: 'FB-20261028-0031', desc: '趋势图月份顺序显示异常', status: '已解决' }
+    ],
+
+    huaweiLogin() {
+      if (this.huaweiState !== 'idle') return;
+      this.huaweiState = 'loading';
+      setTimeout(() => { this.huaweiState = 'done'; }, 900);
+      setTimeout(() => { this.huaweiState = 'idle'; }, 2400);
+    },
+
+    submitFeedback() {
+      if (!this.fbText.trim()) {
+        this.showToast('请先填写反馈内容');
+        return;
+      }
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const id = 'FB-' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' +
+                 String(Math.floor(1000 + Math.random()*9000));
+      this.tickets.unshift({ id, desc: this.fbText.trim().slice(0, 18) + (this.fbText.trim().length > 18 ? '…' : ''), status: '待处理' });
+      this.fbText = '';
+      this.showToast('已提交，工单号 ' + id);
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      clearTimeout(this._t);
+      this._t = setTimeout(() => { this.toast = ''; }, 2200);
+    },
+
+    reset() {
+      this.huaweiState = 'idle';
+      this.hideAmount = false;
+      this.filter = 'all';
+      this.faq = 0;
+      this.fbType = 0;
+      this.fbText = '';
+      this.toast = '';
+      this.tickets = [{ id: 'FB-20261028-0031', desc: '趋势图月份顺序显示异常', status: '已解决' }];
+    }
+  }
+}
+</script>
+</body>
+</html>

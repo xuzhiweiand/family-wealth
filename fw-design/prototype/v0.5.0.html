@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家资 v0.5.0 · 华为账号登录 + 帮助反馈 + 手机号绑定</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; }
+  body { background: #E5E7EB; }
+  .phone-frame { background: #F9FAFB; border-radius: 40px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 12px #1F2937, 0 0 0 14px #374151;
+    overflow: hidden; position: relative; }
+  .notch { height: 30px; background: #1F2937; border-radius: 0 0 18px 18px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; }
+  .status-bar { height: 50px; padding-top: 12px; }
+  .page { height: calc(852px - 50px); overflow-y: auto; }
+  .page::-webkit-scrollbar { width: 0; }
+  .gradient-card { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+  .shadow-soft { box-shadow: 0 4px 24px -8px rgba(16,185,129,0.18); }
+  .v050 { background:#F59E0B; color:#fff; font-size:9px; font-weight:700; padding:2px 6px;
+    border-radius:99px; letter-spacing:.5px; display:inline-block; vertical-align:middle; }
+  .mono { font-variant-numeric: tabular-nums; }
+  .frame-label { position:absolute; top:-42px; left:0; right:0; text-align:center;
+    font-size:12px; font-weight:700; color:#374151; letter-spacing:.3px; }
+  @keyframes toastIn { from { opacity:0; transform: translate(-50%, 12px);} to { opacity:1; transform: translate(-50%, 0);} }
+  .toast { animation: toastIn .22s ease-out; }
+  @keyframes sheetIn { from { transform: translateY(100%);} to { transform: translateY(0);} }
+  .sheet-in { animation: sheetIn .25s cubic-bezier(.2,.8,.2,1); }
+  .btn-huawei { background:#fff; border:1px solid #E5E7EB; box-shadow:0 1px 2px rgba(16,24,40,.06); }
+  .btn-huawei:active { background:#F9FAFB; }
+  .code-btn { border:1px solid #10B981; color:#059669; font-weight:700; }
+  .code-btn.off { border-color:#E5E7EB; color:#9CA3AF; }
+  .chip { border:1px solid #E5E7EB; background:#fff; }
+  .chip.on { border-color:#10B981; background:#ECFDF5; color:#047857; font-weight:700; }
+  textarea { resize:none; }
+  .faq-body { display:none; }
+  .faq.open .faq-body { display:block; }
+  .faq.open .faq-arrow { transform: rotate(90deg); }
+</style>
+</head>
+<body class="min-h-screen flex flex-wrap items-start justify-center gap-12 p-8 pt-20"
+      x-data="app()">
+
+<!-- ============ 左侧：变更说明 ============ -->
+<div class="w-[300px] shrink-0 bg-white rounded-3xl shadow-xl p-5 sticky top-16">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="v050" style="font-size:11px;padding:4px 10px">v0.5.0</span>
+    <h1 class="text-base font-bold text-gray-900">账号与反馈</h1>
+  </div>
+  <p class="text-[11px] text-gray-500 mb-4">五屏并列 · 橙色标记为本次新增</p>
+
+  <div class="space-y-2.5">
+    <div class="p-3 rounded-2xl border border-amber-200 bg-amber-50/60">
+      <p class="font-semibold text-gray-800 text-[13px]">① 登录页 · 华为账号登录</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        表单上方新增<strong>华为账号登录</strong>（Account Kit 授权登录，非一键登录）：
+        点击后跳转华为账号授权页，授权后回传 authorization code，由服务端换取 token。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-amber-200 bg-amber-50/60">
+      <p class="font-semibold text-gray-800 text-[13px]">② 华为账号授权页</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        系统级授权界面，只申请<strong>头像、昵称、openID</strong>，不申请手机号；
+        用户可取消授权并回到登录页。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-amber-200 bg-amber-50/60">
+      <p class="font-semibold text-gray-800 text-[13px]">③ 首次登录 · 设置加密密码</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        华为账号只替代鉴权，<strong>没有密码就没有 UMK</strong>。首次登录引导设置一次加密主密码，
+        用 PBKDF2 + 服务端 salt 派生 UMK，密码仅本机使用、不上传。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-gray-100">
+      <p class="font-semibold text-gray-800 text-[13px]">④ 我的页 · 绑定手机号</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        新增「账号」分组，已注册用户可绑定 / 换绑 11 位手机号（短信验证码），
+        用于账号找回与家庭成员邀请；列表只展示 <span class="mono">138****8000</span>。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-gray-100">
+      <p class="font-semibold text-gray-800 text-[13px]">⑤ 我的页 · 帮助与反馈</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        由原来的 Alert 弹窗升级为<strong>独立反馈页</strong>：常见问题、问题类型、
+        描述与截图、联系方式、提交记录（含工单号与状态）。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-gray-100">
+      <p class="font-semibold text-gray-800 text-[13px]">版本号 0.5.0</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        「关于」分组显示 v0.5.0；Android versionCode 13 / 鸿蒙 1000007。
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-4 pt-3 border-t border-gray-100">
+    <p class="text-[10.5px] font-bold text-gray-500 mb-2">后端接口（Edge Function）</p>
+    <ul class="text-[10px] text-gray-500 space-y-1 leading-relaxed">
+      <li><code class="text-emerald-700">POST /functions/v1/huawei-auth</code></li>
+      <li>入参：<span class="mono">authorizationCode</span>、<span class="mono">state</span></li>
+      <li>服务端换 token → 取 openID → 建号/关联 → 返回 Supabase JWT</li>
+      <li>加密密码仍在客户端派生，接口不收密码</li>
+    </ul>
+  </div>
+
+  <div class="mt-4 pt-3 border-t border-gray-100">
+    <p class="text-[10.5px] font-bold text-gray-500 mb-2">交互演示</p>
+    <button @click="openSheet()"
+      class="w-full py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold mb-2">打开手机号绑定弹层</button>
+    <button @click="reset()"
+      class="w-full py-2 rounded-xl bg-gray-100 text-gray-600 text-xs font-bold">重置演示</button>
+  </div>
+
+  <p class="mt-3 text-[10px] text-gray-400 leading-relaxed">
+    需在 AGC 开通 Account Kit 并声明权限；client_id / secret 只放 Edge Function 环境变量。
+  </p>
+</div>
+
+<!-- ============ ① 登录页 ============ -->
+<div class="relative">
+  <div class="frame-label">① 登录页 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page px-6 pt-6">
+      <!-- logo -->
+      <div class="flex flex-col items-center mb-6">
+        <div class="w-[68px] h-[68px] rounded-[22px] gradient-card shadow-soft flex items-center justify-center mb-3">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
+          </svg>
+        </div>
+        <h1 class="text-[19px] font-bold text-gray-900">家资管理工具</h1>
+        <p class="text-[11px] text-gray-500 mt-1">端到端加密 · 数据只属于你</p>
+      </div>
+
+      <!-- 华为账号登录（新增） -->
+      <div class="relative">
+        <span class="v050 absolute -top-2 right-3 z-10" style="background:#F59E0B">新增</span>
+        <button class="btn-huawei w-full h-[52px] rounded-2xl flex items-center justify-center gap-2.5"
+          @click="huaweiLogin()">
+          <svg class="w-6 h-6" viewBox="0 0 24 24">
+            <g fill="#E60012">
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(45 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(90 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(135 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(180 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(225 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(270 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" opacity=".92" transform="rotate(315 12 12)"/>
+            </g>
+          </svg>
+          <span class="text-[15px] font-bold text-gray-900"
+            x-text="huaweiState==='idle' ? '华为账号登录' : (huaweiState==='loading' ? '正在授权…' : '已登录，正在进入…')"></span>
+        </button>
+        <p class="text-[10px] text-center text-gray-400 mt-1.5">跳转华为账号授权页，仅获取头像、昵称与 openID</p>
+      </div>
+
+      <!-- 分隔线 -->
+      <div class="flex items-center gap-3 my-5">
+        <div class="flex-1 h-px bg-gray-200"></div>
+        <span class="text-[10.5px] text-gray-400">或使用邮箱登录</span>
+        <div class="flex-1 h-px bg-gray-200"></div>
+      </div>
+
+      <!-- 邮箱表单（次要） -->
+      <div class="space-y-2.5">
+        <input type="email" placeholder="邮箱" value="demo@family.local"
+          class="w-full h-[46px] rounded-xl bg-white border border-gray-200 px-4 text-[13px] text-gray-800 outline-none focus:border-emerald-400">
+        <input type="password" placeholder="密码" value="••••••••"
+          class="w-full h-[46px] rounded-xl bg-white border border-gray-200 px-4 text-[13px] text-gray-800 outline-none focus:border-emerald-400">
+      </div>
+
+      <button class="w-full h-[46px] rounded-xl bg-emerald-500 text-white text-[14px] font-bold mt-3">登录</button>
+
+      <!-- 隐私 -->
+      <div class="flex items-start gap-2 mt-4">
+        <div class="w-[17px] h-[17px] rounded-[4px] bg-emerald-500 flex items-center justify-center mt-[1px] shrink-0">
+          <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+        </div>
+        <p class="text-[10.5px] text-gray-500 leading-[1.6]">
+          我已阅读并同意 <span class="text-emerald-600 font-semibold">《隐私政策》</span> 与
+          <span class="text-emerald-600 font-semibold">《用户协议》</span>。
+          使用华为账号登录同样代表同意上述条款。
+        </p>
+      </div>
+
+      <p class="text-center text-[11px] text-gray-400 mt-5">
+        还没有账号？<span class="text-emerald-600 font-semibold">立即注册</span>
+      </p>
+
+      <div class="mt-6 p-3 rounded-2xl bg-white border border-gray-100">
+        <p class="text-[10.5px] font-bold text-gray-600 mb-1">华为账号登录后还要设置密码？</p>
+        <p class="text-[10px] text-gray-500 leading-relaxed">
+          华为账号负责证明"你是谁"；资产加密用的密钥必须由你设置的加密密码在本机派生。
+          密码不上传，服务端只保存密文，因此换设备时也需要同一密码才能解密。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ② 华为账号授权页 ============ -->
+<div class="relative">
+  <div class="frame-label">② 华为账号授权 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page px-5 pt-1">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[12px] text-gray-500">取消</span>
+        <span class="text-[13px] font-semibold text-gray-900">华为账号</span>
+        <span class="text-[12px] text-gray-300">帮助</span>
+      </div>
+
+      <div class="flex flex-col items-center mt-8 mb-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-2xl gradient-card flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center">
+            <svg class="w-6 h-6" viewBox="0 0 24 24"><g fill="#E60012">
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5"/><ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(45 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(90 12 12)"/><ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(135 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(180 12 12)"/><ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(225 12 12)"/>
+              <ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(270 12 12)"/><ellipse cx="12" cy="6.2" rx="2.05" ry="4.5" transform="rotate(315 12 12)"/>
+            </g></svg>
+          </div>
+        </div>
+        <h2 class="text-[15px] font-bold text-gray-900">家资管理工具 请求</h2>
+        <p class="text-[11px] text-gray-500 mt-1">访问你的华为账号信息</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-50 overflow-hidden">
+        <div class="flex items-center gap-3 px-4 h-[54px]">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+          <span class="text-[12.5px] text-gray-800 flex-1">头像</span>
+          <span class="text-[10px] text-gray-400">可选</span>
+        </div>
+        <div class="flex items-center gap-3 px-4 h-[54px]">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+          <span class="text-[12.5px] text-gray-800 flex-1">昵称</span>
+          <span class="text-[10px] text-gray-400">可选</span>
+        </div>
+        <div class="flex items-center gap-3 px-4 h-[54px]">
+          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M12 5v14"/></svg>
+          <div class="flex-1">
+            <p class="text-[12.5px] text-gray-800">openID（用户标识）</p>
+            <p class="text-[9.5px] text-gray-400 mt-0.5">用于识别你的账号，不含手机号</p>
+          </div>
+          <span class="text-[10px] text-gray-400">必选</span>
+        </div>
+      </div>
+
+      <div class="mt-3 px-1">
+        <p class="text-[10px] text-gray-400 leading-relaxed">
+          不会获取你的手机号、位置、通讯录或相册。授权结果仅用于登录本应用，
+          可随时在「设置 → 华为账号 → 账号安全」中取消授权。
+        </p>
+      </div>
+
+      <button class="w-full h-[46px] rounded-xl bg-[#E60012] text-white text-[14px] font-bold mt-6"
+        @click="huaweiState='loading'">允许</button>
+      <button class="w-full h-[44px] rounded-xl bg-white border border-gray-200 text-gray-600 text-[13px] font-semibold mt-2.5"
+        @click="huaweiState='idle'">取消</button>
+
+      <p class="text-[9.5px] text-gray-400 text-center mt-4">
+        授权后由服务端使用 authorization code 换取 access token，客户端不接触 App Secret
+      </p>
+      <div class="h-6"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ③ 首次登录 · 设置加密密码 ============ -->
+<div class="relative">
+  <div class="frame-label">③ 首次登录 · 设置加密密码 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page px-6 pt-2">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-8 h-8 rounded-full bg-white shadow-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </div>
+        <span class="text-[11px] text-gray-400">华为账号已授权</span>
+      </div>
+
+      <h1 class="text-[20px] font-bold text-gray-900">设置加密密码</h1>
+      <p class="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+        这是你首次使用该账号。密码只用于<strong>在本机加密资产数据</strong>，
+        不会上传，也无法由服务端或华为账号代管。
+      </p>
+
+      <div class="mt-4 p-3 rounded-2xl bg-amber-50 border border-amber-200">
+        <p class="text-[10px] text-amber-800 leading-relaxed">
+          请牢记此密码：换设备、卸载重装或恢复备份时都需要它解密。
+          忘记密码将无法恢复已有数据（可重新设置，但历史数据不可解）。
+        </p>
+      </div>
+
+      <div class="mt-5 space-y-2.5">
+        <div>
+          <p class="text-[10.5px] text-gray-500 mb-1.5 ml-1">加密密码</p>
+          <input type="password" value="••••••••••"
+            class="w-full h-[46px] rounded-xl bg-white border border-gray-200 px-4 text-[13px] text-gray-800 outline-none focus:border-emerald-400">
+        </div>
+        <div class="flex items-center gap-1.5 ml-1">
+          <div class="h-[3px] flex-1 rounded-full bg-emerald-500"></div>
+          <div class="h-[3px] flex-1 rounded-full bg-emerald-500"></div>
+          <div class="h-[3px] flex-1 rounded-full bg-emerald-500"></div>
+          <div class="h-[3px] flex-1 rounded-full bg-gray-200"></div>
+          <span class="text-[9.5px] text-emerald-600 font-semibold ml-1">强度：中</span>
+        </div>
+        <div>
+          <p class="text-[10.5px] text-gray-500 mb-1.5 ml-1">确认密码</p>
+          <input type="password" value="••••••••••"
+            class="w-full h-[46px] rounded-xl bg-white border border-gray-200 px-4 text-[13px] text-gray-800 outline-none focus:border-emerald-400">
+        </div>
+        <p class="text-[9.5px] text-gray-400 ml-1">至少 8 位，建议包含大小写字母、数字与符号</p>
+      </div>
+
+      <button class="w-full h-[46px] rounded-xl bg-emerald-500 text-white text-[14px] font-bold mt-5"
+        @click="huaweiState='done'">完成并进入</button>
+
+      <div class="mt-4 flex items-center gap-3">
+        <div class="flex-1 h-px bg-gray-200"></div>
+        <span class="text-[10px] text-gray-400">已是老用户？</span>
+        <div class="flex-1 h-px bg-gray-200"></div>
+      </div>
+      <p class="text-center text-[11px] text-emerald-600 font-semibold mt-2.5">
+        输入原有加密密码登录
+      </p>
+      <p class="text-center text-[9.5px] text-gray-400 mt-1">
+        老用户不会重设密码，直接沿用原密码解密历史数据
+      </p>
+
+      <div class="mt-6 p-3 rounded-2xl bg-white border border-gray-100">
+        <p class="text-[10.5px] font-bold text-gray-600 mb-1">密钥是怎么来的？</p>
+        <p class="text-[10px] text-gray-500 leading-relaxed">
+          PBKDF2(密码 + 服务端随机 salt) → UMK → 包裹 FDK。
+          服务端只保存 salt 与密文信封，用于校验密码是否正确。
+        </p>
+      </div>
+      <div class="h-8"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ④ 我的页 ============ -->
+<div class="relative">
+  <div class="frame-label">④ 我的 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page px-5 pt-4">
+      <!-- 用户头 -->
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-16 h-16 rounded-full gradient-card flex items-center justify-center shrink-0">
+          <span class="text-[22px] font-bold text-white">徐</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h2 class="text-[17px] font-bold text-gray-900 leading-tight">徐志伟</h2>
+          <p class="text-[10.5px] text-gray-400 mt-0.5">demo@family.local</p>
+          <div class="flex items-center gap-1.5 mt-1.5">
+            <span class="text-[10px] px-2 py-[2px] rounded-full"
+              :class="phone ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+              x-text="phone ? ('已绑定 ' + maskPhone()) : '未绑定手机号'"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 账号（新增分组） -->
+      <div class="flex items-center gap-2 mb-2 ml-1">
+        <p class="text-[10.5px] text-gray-400 font-semibold">账号</p>
+        <span class="v050" style="background:#F59E0B">新增</span>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-1">
+        <button class="w-full flex items-center gap-3 h-[56px] px-4 active:bg-gray-50" @click="openSheet()">
+          <div class="w-8 h-8 rounded-[10px] bg-emerald-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1 text-left">手机号</span>
+          <span class="text-[11px] mono"
+            :class="phone ? 'text-gray-400' : 'text-emerald-600 font-semibold'"
+            x-text="phone ? maskPhone() : '去绑定'"></span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <!-- 安全与隐私 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-4 mb-2 ml-1">安全与隐私</p>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-1 divide-y divide-gray-50">
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-emerald-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="5" y="11" width="14" height="11" rx="2"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">端到端加密</span>
+          <span class="text-[11px] text-emerald-600 font-semibold">已开启</span>
+        </div>
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-blue-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-blue-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12 11a2 2 0 0 0-2 2c0 1.5.5 3 .5 4.5M8.5 8.5a5 5 0 0 1 8.2 3.8c0 1.4-.2 2.7-.6 4M5 12a7 7 0 0 1 .6-2.9M5.8 16c.5 1 .7 2 .7 3M12 7.5A8.5 8.5 0 0 0 4 14c0 1 .1 2 .3 3M19 13c0 3-.5 5-2 7"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">生物识别解锁</span>
+          <div class="w-[42px] h-[24px] rounded-full bg-gray-300 relative">
+            <div class="absolute top-[2px] left-[2px] w-[20px] h-[20px] rounded-full bg-white shadow"></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-amber-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-amber-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">本地备份</span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+      </div>
+
+      <!-- 功能 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-4 mb-2 ml-1">功能</p>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-1 divide-y divide-gray-50">
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-emerald-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M8 2v4M16 2v4"/><path d="M3 8h18"/><rect x="3" y="4" width="18" height="18" rx="2"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">盘点提醒</span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-blue-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-blue-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M3 3v18h18"/><path d="M8 17V9M13 17V5M18 17v-7"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">月度/年度报表</span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-red-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-red-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">异动提醒</span>
+          <div class="w-[42px] h-[24px] rounded-full bg-emerald-500 relative">
+            <div class="absolute top-[2px] right-[2px] w-[20px] h-[20px] rounded-full bg-white shadow"></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-violet-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-violet-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">导出报表</span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <!-- 帮助与反馈（新增入口） -->
+        <button class="w-full flex items-center gap-3 h-[56px] px-4 active:bg-gray-50 text-left">
+          <div class="w-8 h-8 rounded-[10px] bg-cyan-50 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M9.5 9a2.5 2.5 0 0 1 4.4 1.6c0 1.7-1.9 2.2-1.9 3.6"/><path d="M12 17.5h.01"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">帮助与反馈</span>
+          <span class="v050" style="background:#F59E0B">升级</span>
+          <svg class="w-[16px] h-[16px] text-gray-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <!-- 关于 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-4 mb-2 ml-1">关于</p>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center gap-3 h-[56px] px-4">
+          <div class="w-8 h-8 rounded-[10px] bg-gray-100 flex items-center justify-center shrink-0">
+            <svg class="w-[18px] h-[18px] text-gray-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg>
+          </div>
+          <span class="text-[13px] text-gray-800 flex-1">版本</span>
+          <span class="text-[11px] text-gray-400 mono">v0.5.0</span>
+        </div>
+      </div>
+
+      <div class="mt-5 h-[50px] rounded-[14px] bg-white border border-red-200 flex items-center justify-center">
+        <span class="text-[13px] font-semibold text-red-600">退出登录</span>
+      </div>
+      <div class="h-8"></div>
+    </div>
+
+    <!-- 手机号绑定底部弹层 -->
+    <div x-show="sheet" x-transition.opacity
+      class="absolute inset-0 bg-black/40 z-40 flex items-end" @click.self="sheet=false">
+      <div class="sheet-in w-full bg-white rounded-t-[24px] px-5 pt-3 pb-6">
+        <div class="w-9 h-[4px] rounded-full bg-gray-200 mx-auto mb-3"></div>
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-[15px] font-bold text-gray-900" x-text="phone ? '更换手机号' : '绑定手机号'"></h3>
+          <button class="text-[11px] text-gray-400" @click="sheet=false">取消</button>
+        </div>
+        <p class="text-[10.5px] text-gray-500 leading-relaxed mb-3">
+          用于账号找回与家庭成员邀请，仅你自己与家庭成员可见脱敏后的号码。
+        </p>
+
+        <div class="space-y-2.5">
+          <div class="flex items-center h-[46px] rounded-xl border border-gray-200 bg-gray-50 px-3 gap-2">
+            <span class="text-[12px] font-semibold text-gray-600">+86</span>
+            <div class="w-px h-4 bg-gray-200"></div>
+            <input type="tel" maxlength="11" placeholder="请输入 11 位手机号" x-model="phoneInput"
+              class="flex-1 bg-transparent text-[13px] mono text-gray-800 outline-none">
+          </div>
+          <div class="flex items-center h-[46px] rounded-xl border border-gray-200 bg-gray-50 px-3 gap-2">
+            <input type="tel" maxlength="6" placeholder="6 位验证码" x-model="codeInput"
+              class="flex-1 bg-transparent text-[13px] mono text-gray-800 outline-none">
+            <button class="code-btn h-[30px] px-2.5 rounded-lg text-[10.5px]"
+              :class="countdown > 0 && 'off'"
+              @click="sendCode()"
+              x-text="countdown > 0 ? (countdown + 's 后重发') : '获取验证码'"></button>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-gray-400 mt-2" x-show="codeSent">
+          验证码已发送至 <span class="mono" x-text="maskInput()"></span>，5 分钟内有效
+        </p>
+
+        <button class="w-full h-[46px] rounded-xl text-white text-[14px] font-bold mt-4"
+          :class="canSave() ? 'bg-emerald-500' : 'bg-emerald-500/40'"
+          @click="savePhone()">保存</button>
+
+        <p class="text-[10px] text-gray-400 text-center mt-2">
+          需先完成短信验证；一个手机号最多绑定 3 个账号
+        </p>
+      </div>
+    </div>
+
+    <!-- toast -->
+    <div id="toast-me" x-show="toast" x-transition.opacity
+      class="toast absolute left-1/2 bottom-24 -translate-x-1/2 bg-gray-900/90 text-white text-[11px] font-semibold px-3.5 py-2 rounded-full z-50 whitespace-nowrap"
+      x-text="toast"></div>
+  </div>
+</div>
+
+<!-- ============ ⑤ 帮助与反馈 ============ -->
+<div class="relative">
+  <div class="frame-label">⑤ 帮助与反馈 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="page px-4 pt-1 pb-6">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-8 h-8 rounded-full bg-white shadow-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </div>
+        <div>
+          <h2 class="text-[16px] font-bold text-gray-900 leading-tight">帮助与反馈</h2>
+          <p class="text-[10px] text-gray-500">工作日 1–2 天内回复 · 工单可追踪</p>
+        </div>
+      </div>
+
+      <!-- 常见问题 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-3 mb-2 ml-1">常见问题</p>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-50">
+        <div class="faq" x-data="{open:true}" :class="open && 'open'">
+          <button class="w-full flex items-center gap-2 px-4 h-[48px] text-left" @click="open=!open">
+            <span class="text-[12.5px] text-gray-800 flex-1">为什么我的数据在另一台手机上打不开？</span>
+            <svg class="faq-arrow w-[14px] h-[14px] text-gray-300 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <div class="faq-body px-4 pb-3">
+            <p class="text-[10.5px] text-gray-500 leading-relaxed">
+              数据密钥只保存在首次登录的设备与本机备份中。换机请先在旧设备「我的 → 本地备份」生成加密备份包，
+              在新设备登录后通过「本地备份 → 恢复」导入；仅登录同一账号不会自动同步密钥。
+            </p>
+          </div>
+        </div>
+        <div class="faq" x-data="{open:false}" :class="open && 'open'">
+          <button class="w-full flex items-center gap-2 px-4 h-[48px] text-left" @click="open=!open">
+            <span class="text-[12.5px] text-gray-800 flex-1">当月净资产为什么和上月不一致？</span>
+            <svg class="faq-arrow w-[14px] h-[14px] text-gray-300 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <div class="faq-body px-4 pb-3">
+            <p class="text-[10.5px] text-gray-500 leading-relaxed">
+              首页按「当月有快照」的口径统计：只计入本月提交过余额的资产，每笔取当月最新一条。
+              若当月没有提交，会回退到最近一次有数据的月份，并标注「数据截至」。
+            </p>
+          </div>
+        </div>
+        <div class="faq" x-data="{open:false}" :class="open && 'open'">
+          <button class="w-full flex items-center gap-2 px-4 h-[48px] text-left" @click="open=!open">
+            <span class="text-[12.5px] text-gray-800 flex-1">华为账号登录后，原来的邮箱账号还在吗？</span>
+            <svg class="faq-arrow w-[14px] h-[14px] text-gray-300 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <div class="faq-body px-4 pb-3">
+            <p class="text-[10.5px] text-gray-500 leading-relaxed">
+              华为账号是独立身份，不会合并到已有邮箱账号。若需继续使用原家庭数据，
+              请在「我的 → 账号 → 绑定手机号」完成绑定后，用原账号登录并邀请新账号加入家庭。
+            </p>
+          </div>
+        </div>
+        <div class="faq" x-data="{open:false}" :class="open && 'open'">
+          <button class="w-full flex items-center gap-2 px-4 h-[48px] text-left" @click="open=!open">
+            <span class="text-[12.5px] text-gray-800 flex-1">提醒没有按时弹出怎么办？</span>
+            <svg class="faq-arrow w-[14px] h-[14px] text-gray-300 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <div class="faq-body px-4 pb-3">
+            <p class="text-[10.5px] text-gray-500 leading-relaxed">
+              请在系统设置中允许「家资管理工具」发送通知与读取日历；鸿蒙端提醒写入系统日历，
+              关闭日历权限会导致提醒不显示。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提交反馈 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-4 mb-2 ml-1">没找到答案？提交反馈</p>
+      <div class="bg-white rounded-2xl border border-gray-200 p-3.5">
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <button class="chip px-2.5 py-1 rounded-full text-[10.5px] text-gray-600"
+            :class="type==='数据异常' && 'on'" @click="type='数据异常'">数据异常</button>
+          <button class="chip px-2.5 py-1 rounded-full text-[10.5px] text-gray-600"
+            :class="type==='登录/账号' && 'on'" @click="type='登录/账号'">登录/账号</button>
+          <button class="chip px-2.5 py-1 rounded-full text-[10.5px] text-gray-600"
+            :class="type==='同步/备份' && 'on'" @click="type='同步/备份'">同步/备份</button>
+          <button class="chip px-2.5 py-1 rounded-full text-[10.5px] text-gray-600"
+            :class="type==='功能建议' && 'on'" @click="type='功能建议'">功能建议</button>
+          <button class="chip px-2.5 py-1 rounded-full text-[10.5px] text-gray-600"
+            :class="type==='其他' && 'on'" @click="type='其他'">其他</button>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-2.5">
+          <textarea rows="3" x-model="text" maxlength="500"
+            placeholder="请描述遇到的问题：在哪一步、看到什么、期望是什么"
+            class="w-full bg-transparent text-[11.5px] text-gray-800 leading-relaxed outline-none placeholder:text-gray-400"></textarea>
+          <div class="flex items-center justify-between mt-1">
+            <div class="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              添加截图（最多 3 张）
+            </div>
+            <span class="text-[9.5px] text-gray-400 mono" x-text="text.length + '/500'"></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-2.5">
+          <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+          <span class="text-[10px] text-gray-500">联系方式</span>
+          <span class="text-[10px] mono text-gray-700" x-text="phone ? maskPhone() : 'demo@family.local'"></span>
+          <span class="text-[9.5px] text-emerald-600 font-semibold ml-auto">修改</span>
+        </div>
+
+        <button class="w-full h-[42px] rounded-xl text-white text-[13px] font-bold mt-3"
+          :class="text.trim() ? 'bg-emerald-500' : 'bg-emerald-500/40'"
+          @click="submitFeedback()">提交反馈</button>
+        <p class="text-[9.5px] text-gray-400 mt-2 text-center">
+          提交后会生成工单号，可在下方查看处理进度
+        </p>
+      </div>
+
+      <!-- 我的反馈 -->
+      <p class="text-[10.5px] text-gray-400 font-semibold mt-4 mb-2 ml-1">我的反馈</p>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-50">
+        <div class="px-4 py-3 flex items-start gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-[11.5px] text-gray-800 truncate">数据异常 · 更新页保存后净资产没变化</p>
+            <p class="text-[9.5px] text-gray-400 mt-1 mono">FB-20261028-0031 · 2026-10-28</p>
+          </div>
+          <span class="text-[9.5px] px-2 py-[2px] rounded-full bg-emerald-50 text-emerald-700 shrink-0">已解决</span>
+        </div>
+        <template x-if="feedbackList.length">
+          <template x-for="item in feedbackList" :key="item.id">
+            <div class="px-4 py-3 flex items-start gap-2">
+              <div class="flex-1 min-w-0">
+                <p class="text-[11.5px] text-gray-800 truncate" x-text="item.type + ' · ' + item.text"></p>
+                <p class="text-[9.5px] text-gray-400 mt-1 mono" x-text="item.id + ' · ' + item.date"></p>
+              </div>
+              <span class="text-[9.5px] px-2 py-[2px] rounded-full bg-amber-50 text-amber-700 shrink-0">待处理</span>
+            </div>
+          </template>
+        </template>
+        <div class="px-4 py-3 flex items-center justify-center gap-1">
+          <span class="text-[10px] text-gray-400">查看全部记录</span>
+          <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+      </div>
+      <div class="h-6"></div>
+    </div>
+
+    <!-- toast -->
+    <div id="toast-fb" x-show="fbToast" x-transition.opacity
+      class="toast absolute left-1/2 bottom-24 -translate-x-1/2 bg-gray-900/90 text-white text-[11px] font-semibold px-3.5 py-2 rounded-full z-50 whitespace-nowrap"
+      x-text="fbToast"></div>
+  </div>
+</div>
+
+<script>
+function app() {
+  return {
+    // 登录演示
+    huaweiState: 'idle',
+    // 手机号
+    sheet: false,
+    phone: '',
+    phoneInput: '',
+    codeInput: '',
+    codeSent: false,
+    countdown: 0,
+    timer: null,
+    toast: '',
+    // 反馈
+    type: '数据异常',
+    text: '',
+    fbToast: '',
+    feedbackList: [],
+
+    openSheet() {
+      this.sheet = true;
+      this.phoneInput = this.phone;
+      this.codeInput = '';
+      this.codeSent = false;
+    },
+
+    maskInput() {
+      const p = this.phoneInput || '';
+      return p.length >= 7 ? p.slice(0, 3) + '****' + p.slice(-4) : '该号码';
+    },
+
+    maskPhone() {
+      const p = this.phone || '';
+      return p.length >= 7 ? p.slice(0, 3) + '****' + p.slice(-4) : p;
+    },
+
+    canSave() {
+      return this.phoneInput.length === 11 && this.codeInput.length === 6;
+    },
+
+    sendCode() {
+      if (this.phoneInput.length !== 11 || this.countdown > 0) return;
+      this.codeSent = true;
+      this.countdown = 60;
+      clearInterval(this.timer);
+      this.timer = setInterval(() => {
+        this.countdown -= 1;
+        if (this.countdown <= 0) clearInterval(this.timer);
+      }, 1000);
+    },
+
+    savePhone() {
+      if (!this.canSave()) return;
+      this.phone = this.phoneInput;
+      this.sheet = false;
+      clearInterval(this.timer);
+      this.countdown = 0;
+      this.showToast('手机号已绑定');
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      setTimeout(() => { this.toast = ''; }, 2000);
+    },
+
+    huaweiLogin() {
+      if (this.huaweiState !== 'idle') return;
+      this.huaweiState = 'loading';
+      setTimeout(() => { this.huaweiState = 'done'; }, 900);
+    },
+
+    submitFeedback() {
+      if (!this.text.trim()) return;
+      const now = new Date();
+      const ymd = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+      const id = 'FB-' + ymd + '-' + String(this.feedbackList.length + 32).padStart(4, '0');
+      this.feedbackList.unshift({
+        id,
+        type: this.type,
+        text: this.text.trim(),
+        date: now.toISOString().slice(0, 10),
+      });
+      this.fbToast = '反馈已提交，工单 ' + id;
+      this.text = '';
+      setTimeout(() => { this.fbToast = ''; }, 2400);
+    },
+
+    reset() {
+      clearInterval(this.timer);
+      this.huaweiState = 'idle';
+      this.sheet = false;
+      this.phone = '';
+      this.phoneInput = '';
+      this.codeInput = '';
+      this.codeSent = false;
+      this.countdown = 0;
+      this.toast = '';
+      this.type = '数据异常';
+      this.text = '';
+      this.fbToast = '';
+      this.feedbackList = [];
+    },
+  };
+}
+</script>
+</body>
+</html>

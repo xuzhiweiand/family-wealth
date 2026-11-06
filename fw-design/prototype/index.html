@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="4pjGjpCGjKcd1HH7q1Rhog">
+<head data-page-node-id="3dPXmCx3ncdJmjvbT1fsOv">
+  <meta charset="UTF-8" data-page-node-id="xxsvuEiLCawIx6bnOEoZKO">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="XFbn7D3aXBFrbFBEHhCHFk">
+  <title>家资 · 家庭资产管理原型</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" data-page-node-id="9C5A4hkCGmcAzjHGlkcspn">
+  <style>
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; }
+    body { background: #E5E7EB; }
+    .phone-frame {
+      width: 393px; height: 852px;
+      background: #F9FAFB;
+      border-radius: 48px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 12px #1F2937, 0 0 0 14px #374151;
+      overflow: hidden;
+      position: relative;
+    }
+    .notch {
+      width: 124px; height: 34px; background: #1F2937;
+      border-radius: 0 0 20px 20px;
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      z-index: 50;
+    }
+    .status-bar { height: 54px; padding-top: 14px; }
+    .page { display: none; height: calc(852px - 54px - 83px); overflow-y: auto; }
+    .page.active { display: block; }
+    .page::-webkit-scrollbar { width: 0; }
+    .tab-item.active svg { color: #10B981; }
+    .tab-item.active span { color: #10B981; font-weight: 600; }
+    .gradient-card {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    }
+    .shadow-soft { box-shadow: 0 4px 24px -8px rgba(16, 185, 129, 0.18); }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .slide-up { animation: slideUp 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fadeIn 0.2s ease-out; }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #EF4444;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4" data-page-node-id="qXfiPBlsVWnx0eM6RhAeop">
+
+<div x-data="app()" x-init="init()" class="phone-frame" data-page-node-id="A3hugqNPMxSn0Fv2odH9B7">
+  <div class="notch" data-page-node-id="ZGRozsY8IEpwskwl1NVHzL"></div>
+
+  <!-- 状态栏 -->
+  <div class="status-bar flex justify-between items-center px-7 text-sm font-semibold text-gray-900 relative z-40" data-page-node-id="iqvQyPW7Z2AzcChRGcIVeP">
+    <span data-page-node-id="oR2gmUBi6L7TrNxlttKrSI">9:41</span>
+    <div class="flex items-center gap-1.5" data-page-node-id="WKVUNZqTagh1EinCjjNln4">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" data-page-node-id="nB7yrDeL0BiinnmiQ6VRnf"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z" data-page-node-id="KA4bcFYeVCYaCUPzq6RoMA"/></svg>
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" data-page-node-id="fuN1cYKyBYk4sOsMtcGtWv"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" data-page-node-id="zfTxSdq6Q0k9FTXttFJbxy"/></svg>
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" data-page-node-id="k1K9ZNeMHLyjXncHCUarGB"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" data-page-node-id="3rpIb5gfEjPBD28DVJQzfh"/></svg>
+    </div>
+  </div>
+
+  <!-- ========== 页面 1：总览仪表盘 ========== -->
+  <div id="page-dashboard" class="page active" data-page-node-id="WvQXnmpArHZN0bAEBq5RtB">
+    <!-- 顶部问候 -->
+    <div class="px-6 pt-3 pb-4 flex justify-between items-center" data-page-node-id="ztKvTsTaGmuJ7AQuXqnYeU">
+      <div data-page-node-id="VXvEb80FsEKokbbPKuUQZt">
+        <p class="text-sm text-gray-500" data-page-node-id="BSWKmnd5AIYO0WSwaelP0R">晚上好，</p>
+        <h2 class="text-xl font-bold text-gray-900" data-page-node-id="9QCLpEeNBcYDXh3Cj4Ha0I">李明的家 👨‍👩‍👧</h2>
+      </div>
+      <div class="relative" data-page-node-id="RQpa7S9oUMO5zGXGvBw9sf">
+        <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold" data-page-node-id="drfgxbqo2jl9xBGbcRkQmU">李</div>
+        <div class="pulse-dot absolute -top-0.5 -right-0.5 ring-2 ring-white rounded-full" data-page-node-id="l6CirlOMScXZ8Jg3CfMEhY"></div>
+      </div>
+    </div>
+
+    <!-- 净资产卡片 -->
+    <div class="px-6" data-page-node-id="GROr065DKxpZB8qKJEYH0J">
+      <div class="gradient-card rounded-3xl p-6 text-white shadow-soft relative overflow-hidden" data-page-node-id="y2cr2GeRIRz0vQhB6xYDJz">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full" data-page-node-id="woEdRPuzDZE3Of9bBvncOg"></div>
+        <div class="absolute -right-4 -bottom-12 w-24 h-24 bg-white/10 rounded-full" data-page-node-id="wewW32IZZpz9POghB2q7Q3"></div>
+        <p class="text-sm opacity-90 mb-1" data-page-node-id="H5hdEKv8XaEFxS9sxp6Fc3">家庭净资产</p>
+        <div class="flex items-baseline gap-1 mb-3" data-page-node-id="8xsVjNrHNifGP8fQqRw16x">
+          <span class="text-sm" data-page-node-id="A3dsRUordw4XKgQl76mjDm">¥</span>
+          <span class="text-4xl font-bold tracking-tight" data-page-node-id="ltLAM0MobXqW8Hk0BAALrF">1,285,432</span>
+          <span class="text-sm opacity-75" data-page-node-id="FhFJMXYZaQYCMDnnt7tXQT">.68</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm" data-page-node-id="LWw0HsSNRRlqpIVcVl7rHV">
+          <div class="flex items-center gap-1 bg-white/20 rounded-full px-2.5 py-1" data-page-node-id="H17peLT9kFYx5glotk63Vm">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" data-page-node-id="eKrkcKh6wNYlEc9StMSsk3"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" data-page-node-id="0h0j9Y9cZxO0OeR1mR1UNh"/></svg>
+            <span data-page-node-id="dnnARftG2LS0p0rmKEhtSS">+2.34% 本月</span>
+          </div>
+          <span class="opacity-90" data-page-node-id="LYncAJtTMNaU1eMqZZSpG2">+ ¥29,388</span>
+        </div>
+        <div class="mt-5 grid grid-cols-2 gap-3 text-sm" data-page-node-id="A4Q78CXv0IEK9AXNCAD9gW">
+          <div class="bg-white/10 rounded-2xl p-3 backdrop-blur" data-page-node-id="ztF2B1DSOZdjtYvCNDAeP3">
+            <p class="opacity-80 text-xs" data-page-node-id="NDE9frFFoNu4jBnpIhCFTK">总资产</p>
+            <p class="font-semibold mt-0.5" data-page-node-id="FBikXTdqkgUoo4zE5RS7cd">¥2,336,400</p>
+          </div>
+          <div class="bg-white/10 rounded-2xl p-3 backdrop-blur" data-page-node-id="yYIOaYYmyj23KuDE6dho2z">
+            <p class="opacity-80 text-xs" data-page-node-id="5cth7ZbLxILwWQQk8IyBHU">总负债</p>
+            <p class="font-semibold mt-0.5" data-page-node-id="G06N9ZAAHuZexngCHqLx6H">¥1,050,968</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="px-6 mt-5" data-page-node-id="HKE0VlCTUPf64Y1FkwzpFa">
+      <div class="grid grid-cols-4 gap-3" data-page-node-id="mMBBKN9SUpPvEWiuyITKcj">
+        <button @click="go('add')" class="flex flex-col items-center gap-1.5" data-page-node-id="AE09IhSemjHEXiu147hhe0">
+          <div class="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center" data-page-node-id="ahbjPHKSSXg9hkeZsZz1B2">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="9lcJJgYd4iJiFuW2AAAiHv"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" data-page-node-id="kiPM3RMTdZNpRmqVhAu3aF"/></svg>
+          </div>
+          <span class="text-xs text-gray-700" data-page-node-id="mdu5n5TTMCCAHjN1mZ0JLj">录入</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5" data-page-node-id="c5Ms2dYBxMwDtXcvPZJHjG">
+          <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center" data-page-node-id="E42S9qUGq3tigZDFB5crni">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="RRDzcgSpqwEmCoXkpQQXIL"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" data-page-node-id="fhSTc92PcSjuC6PHR4NJ0c"/><circle cx="12" cy="13" r="3" data-page-node-id="yKD1n5A34HPlXUZ9UarxFn"/></svg>
+          </div>
+          <span class="text-xs text-gray-700" data-page-node-id="GXSrYsVmpTB9xLpRKNZYLN">截图识别</span>
+        </button>
+        <button @click="go('trends')" class="flex flex-col items-center gap-1.5" data-page-node-id="bQpUh3UEJZwAnQQkQhdUHt">
+          <div class="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center" data-page-node-id="Pddf6WHWUL0pJb3xbLqbg3">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="nbCbLqAqygzax6jSgUrCXB"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" data-page-node-id="nibVeJaqMdfvt4TkFscPTE"/></svg>
+          </div>
+          <span class="text-xs text-gray-700" data-page-node-id="w01LE5qBiD8E1qTnOAkuAD">趋势</span>
+        </button>
+        <button @click="go('family')" class="flex flex-col items-center gap-1.5" data-page-node-id="9qRLHksMfzuxQqwexmqReo">
+          <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center relative" data-page-node-id="IOjHyA05Cmz9M4qBih34Ov">
+            <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="4578KXQAqVMgWUGu84feiM"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" data-page-node-id="Kw0daBaQX04D9P4b6SLmdV"/></svg>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" data-page-node-id="VuMsn2HFiOzY8rxH0P5GyW">2</span>
+          </div>
+          <span class="text-xs text-gray-700" data-page-node-id="a8mfBG2cKLggTWkAG3mdGU">家庭</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 资产分布 -->
+    <div class="px-6 mt-6" data-page-node-id="vO4Oc6ZI2YoMqF3MA8vtU2">
+      <div class="flex justify-between items-center mb-3" data-page-node-id="K6aJlk7r0jQBFPHWWRpuK1">
+        <h3 class="font-semibold text-gray-900" data-page-node-id="ExSyiieNiRgK2prgzguMyw">资产分布</h3>
+        <button @click="go('trends')" class="text-emerald-600 text-sm font-medium" data-page-node-id="qfZFRY9eZe5IYkrq1PdPBM">详情 ›</button>
+      </div>
+      <div class="bg-white rounded-3xl p-5 shadow-soft" data-page-node-id="Qes7QYCyfMiF7WZDnnTn4X">
+        <div class="flex items-center gap-4 mb-4" data-page-node-id="IkqlS7LJsdkeOlGaf5gJPa">
+          <div class="relative w-24 h-24" data-page-node-id="DC1fu0JCq2Rgxjo0ETzBaE">
+            <canvas id="categoryDonut" data-page-node-id="5LLgZ9fDscZ7NYBEpVTinY"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center" data-page-node-id="WJHn8m80vQ3kjQuQiDCfAJ">
+              <p class="text-[10px] text-gray-500" data-page-node-id="5Y6odqw7Zo4cY0UDYNB0vb">11 类</p>
+              <p class="text-sm font-bold text-gray-900" data-page-node-id="YVHDMQbwggRnSiAlVFSJ7F">资产</p>
+            </div>
+          </div>
+          <div class="flex-1 space-y-1.5 text-xs" data-page-node-id="f9JOYKNFkFe7Xd8G0yT3rT">
+            <div class="flex items-center justify-between" data-page-node-id="GqpkZHreQT5GKXDd4ZRm9S"><div class="flex items-center gap-2" data-page-node-id="Rf3vlCOH2Ns40YMHL7XyHC"><span class="w-2.5 h-2.5 rounded-full bg-orange-500" data-page-node-id="1yAyAsHVvdjB6PRQgggBPE"></span><span class="text-gray-700" data-page-node-id="JS1GLawAnhe7BN7yE3pORQ">房产</span></div><span class="font-semibold" data-page-node-id="8ZuH93ioNYZMYjRVJZ30M7">52.3%</span></div>
+            <div class="flex items-center justify-between" data-page-node-id="mU68Gt9ySA1bNuGpvabxnb"><div class="flex items-center gap-2" data-page-node-id="uqCSvn6JJIdraItUjyQDPU"><span class="w-2.5 h-2.5 rounded-full bg-blue-500" data-page-node-id="AbkCNOhJ9YTDVDI1oKhKGW"></span><span class="text-gray-700" data-page-node-id="FMOSQdBIg9H1no0KSchYAM">存款</span></div><span class="font-semibold" data-page-node-id="4fkAQRglxQNPkybkfYrrGb">14.1%</span></div>
+            <div class="flex items-center justify-between" data-page-node-id="uXMT7LGC36OEIHedUJMX2w"><div class="flex items-center gap-2" data-page-node-id="eILIawbRBsmqnm4g8mFLAE"><span class="w-2.5 h-2.5 rounded-full bg-red-500" data-page-node-id="bc9pKKFK3Ez21TRDPG3FHQ"></span><span class="text-gray-700" data-page-node-id="0SeaQ22yA78muGi4EXKqz7">债务</span></div><span class="font-semibold" data-page-node-id="zNFEC4NbnrqUynFooRMc1C">-45.0%</span></div>
+            <div class="flex items-center justify-between" data-page-node-id="ypiuWYTae0hUALU28TMrlV"><div class="flex items-center gap-2" data-page-node-id="NLXYxL5jAfqGuKBfXbp9Dy"><span class="w-2.5 h-2.5 rounded-full bg-purple-500" data-page-node-id="l2gDh3ILCXT6PzkeOobaGQ"></span><span class="text-gray-700" data-page-node-id="AZiJHMRIrznPujgSsQ2M1f">股票</span></div><span class="font-semibold" data-page-node-id="GgSF8JM6m7s1kjpE7m95w5">8.0%</span></div>
+            <div class="flex items-center justify-between" data-page-node-id="LlqIbG5pPgvpvdI7EMu3Zg"><div class="flex items-center gap-2" data-page-node-id="H01tsP8YnNgyRp0I0hTOq8"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500" data-page-node-id="wJmWjhkt5fnjVBL16aRbQ2"></span><span class="text-gray-700" data-page-node-id="gTzQCseP3B2Yyv6YdefAf3">理财</span></div><span class="font-semibold" data-page-node-id="tm6xqQaxvChcAbuoIuP1EG">6.4%</span></div>
+            <div class="flex items-center justify-between" data-page-node-id="VXjy0JprbJjdo6uOWDL1Oa"><div class="flex items-center gap-2" data-page-node-id="0SnUpPY0kvl6Eqn98Zjix1"><span class="w-2.5 h-2.5 rounded-full bg-lime-500" data-page-node-id="f9XzwYAeFphe8qqQ0tx3OV"></span><span class="text-gray-700" data-page-node-id="1BxgisTZgMj59SMCfbFlQL">其他</span></div><span class="font-semibold" data-page-node-id="aas1CA02enbq6yhBciB3cr">14.2%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最近变化 -->
+    <div class="px-6 mt-6 pb-4" data-page-node-id="H3xHNzOyXDJ9QuX3Csg1GR">
+      <div class="flex justify-between items-center mb-3" data-page-node-id="Z6h1EWQGhz5oTN179dhHH7">
+        <h3 class="font-semibold text-gray-900" data-page-node-id="gEMAynPnCQyc7p5F6EYKKF">最近变化</h3>
+        <span class="text-gray-400 text-xs" data-page-node-id="9k4XcQjxwMEidFzTA0BEdO">过去 7 天</span>
+      </div>
+      <div class="bg-white rounded-3xl p-1 shadow-soft divide-y divide-gray-100" data-page-node-id="5vMUx6DIwKMLkLSu5Fd5ip">
+        <div class="flex items-center gap-3 p-3.5" data-page-node-id="ZLzxEEHQ0RdLKksJgRgTs5">
+          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center" data-page-node-id="2zsUsrBNqrHww2zONFTfHZ">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="ZIPcRKgo2JJHvjYS8ep8FV"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" data-page-node-id="chK47zgLFFIKvr1mNPaw39"/></svg>
+          </div>
+          <div class="flex-1" data-page-node-id="dTChGV8JLquQgkUGBHDQQC">
+            <p class="text-sm font-medium text-gray-900" data-page-node-id="WVODvc2Aru8noFmRKjrv65">招商银行卡 ··1234</p>
+            <p class="text-xs text-gray-500" data-page-node-id="WFCsGNfcuFVMrWcvCkt46I">3 天前 · 手动更新</p>
+          </div>
+          <div class="text-right" data-page-node-id="4W3eLiFDnnjMVdlgrRlwMX">
+            <p class="text-sm font-semibold text-gray-900" data-page-node-id="shBVoGASTH9gz2UTfpwUQd">¥328,500</p>
+            <p class="text-xs text-emerald-600 font-medium" data-page-node-id="F6hHsXexPIab3U6JWBnsqS">+¥12,000</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 p-3.5" data-page-node-id="zcf1M5KtZUqdiz2MkT8jPs">
+          <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center" data-page-node-id="jOazy5eljhoQnTMYzXkVoZ">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="8pkf5cxwi6ZnRh3gHBBdAU"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" data-page-node-id="PiryHbTeTphFSfPRGDsgsv"/></svg>
+          </div>
+          <div class="flex-1" data-page-node-id="RpfXl3w3EHxN5BzSLDusUn">
+            <p class="text-sm font-medium text-gray-900" data-page-node-id="pridcyXCkTa9gyfuAP3lLz">沪深 300 ETF</p>
+            <p class="text-xs text-gray-500" data-page-node-id="dwxb5gDms9eYfmc62cY3oy">5 天前 · 自动同步</p>
+          </div>
+          <div class="text-right" data-page-node-id="1Yft7iuElmgCWd4udjNSTt">
+            <p class="text-sm font-semibold text-gray-900" data-page-node-id="sFNcURTiJ0957GFXtmWr7N">¥186,200</p>
+            <p class="text-xs text-emerald-600 font-medium" data-page-node-id="kmdP3gbt4BDxnzdcvGI4D6">+3.42%</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 p-3.5" data-page-node-id="FwISt4evya8JyjPCO4eige">
+          <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center" data-page-node-id="iI3LMXKsV91Zx3GkEpSX0t">
+            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20" data-page-node-id="Hfxhm2Rf6uRHpQsIMyFOAw"><path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" data-page-node-id="EakE4GTsRDQqdqdEFGI2d8"/><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.75a.75.75 0 00-1.5 0v.764c-.41.094-.787.235-1.094.46a1.4 1.4 0 00-.59 1.153c0 .46.199.85.531 1.122.31.253.732.435 1.153.523v1.682c-.287-.078-.535-.207-.715-.357a.75.75 0 00-.937 1.165c.392.314.92.523 1.502.624v.764a.75.75 0 001.5 0v-.764c.41-.094.787-.235 1.094-.46.348-.282.585-.673.585-1.146 0-.475-.237-.864-.585-1.146-.307-.225-.684-.366-1.094-.46V8.846c.287.078.535.207.715.357a.75.75 0 10.937-1.165c-.392-.314-.92-.523-1.502-.624V6.25z" clip-rule="evenodd" data-page-node-id="r6W5qdZBPlzCyI5e37UXSl"/></svg>
+          </div>
+          <div class="flex-1" data-page-node-id="kcRgfWPoyXeVbAYGtNtcwv">
+            <p class="text-sm font-medium text-gray-900" data-page-node-id="RO3ahiGy1uk8xTIIH6kcl0">BTC · 冷钱包</p>
+            <p class="text-xs text-gray-500" data-page-node-id="PZkpzcKNWNxEyLK9LT6Q5w">昨天 · 手动更新</p>
+          </div>
+          <div class="text-right" data-page-node-id="dIeFMiBaJEBGmCFkA0AANy">
+            <p class="text-sm font-semibold text-gray-900" data-page-node-id="EiYEnNVKB1M4J1GNjRa9D0">¥65,000</p>
+            <p class="text-xs text-red-500 font-medium" data-page-node-id="RnsBtrE6sXH60iiENCj3sI">-5.21%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 2：资产列表 ========== -->
+  <div id="page-assets" class="page" data-page-node-id="dOgopGBm4BjoFubhOYcXPz">
+    <div class="px-6 pt-3 pb-3 flex justify-between items-center sticky top-0 bg-gray-50 z-30" data-page-node-id="GLHcjNhqBVfm5csgGOfiFb">
+      <h2 class="text-2xl font-bold text-gray-900" data-page-node-id="UW0zMQSt4lVLILFikMrGFr">资产</h2>
+      <button @click="go('add')" class="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center" data-page-node-id="hAqseb92IeTFSmk75bbB6J">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-page-node-id="z4i7u2yxqP0o1nA9wPxmkw"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" data-page-node-id="ErmQDAtVGcbwKPx5tDHUlm"/></svg>
+      </button>
+    </div>
+
+    <!-- 搜索 + 筛选 -->
+    <div class="px-6 pb-3" data-page-node-id="cY4fE7B7hmwITZxPJ5PYQR">
+      <div class="relative" data-page-node-id="vFEacgp1ZHLhLhvXDw9AoT">
+        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="3pMW2aAgOgxYTnxuzQc4MJ"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" data-page-node-id="IXjHGqwa07EBeBOSKV4jsy"/></svg>
+        <input type="text" placeholder="搜索资产..." class="w-full bg-white pl-10 pr-4 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="gnZQYgQplBGERKXuNRkekK">
+      </div>
+    </div>
+
+    <!-- 类别 Tabs -->
+    <div class="px-6 mb-3 overflow-x-auto hide-scroll" data-page-node-id="xSCWpOcMwNqRdFSt94q8MG">
+      <div class="flex gap-2" data-page-node-id="qJVskqv3xKXoXx29pQlbll">
+        <button class="px-4 py-1.5 bg-emerald-500 text-white text-sm rounded-full whitespace-nowrap font-medium" data-page-node-id="jGyKELDoXlUeXa5LQAnbNm">全部 · 23</button>
+        <button class="px-4 py-1.5 bg-white text-gray-700 text-sm rounded-full whitespace-nowrap" data-page-node-id="aojJnwR2wAFEs4T0ScXvYL">现金 · 2</button>
+        <button class="px-4 py-1.5 bg-white text-gray-700 text-sm rounded-full whitespace-nowrap" data-page-node-id="719Wo61CeXDqUaY9C8cfps">存款 · 5</button>
+        <button class="px-4 py-1.5 bg-white text-gray-700 text-sm rounded-full whitespace-nowrap" data-page-node-id="oPeIHjAyLH3xKmHM4TPyl5">股票 · 4</button>
+        <button class="px-4 py-1.5 bg-white text-gray-700 text-sm rounded-full whitespace-nowrap" data-page-node-id="IcWc3s3aAaI5xIhm9hAsxJ">基金 · 3</button>
+        <button class="px-4 py-1.5 bg-white text-gray-700 text-sm rounded-full whitespace-nowrap" data-page-node-id="DgETXcDaN08wyajfxveUBF">理财 · 2</button>
+      </div>
+    </div>
+
+    <!-- 资产列表 -->
+    <div class="px-6 space-y-3 pb-4" data-page-node-id="fyesk4rRNPnlWAO3A67cyZ">
+      <!-- 房产 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="954JrINadEUmc2HtVL67TX">
+        <div class="flex items-center justify-between mb-2" data-page-node-id="ZyFJZK9t4cbMAr1rxA9iU6">
+          <div class="flex items-center gap-2" data-page-node-id="peZeQbYg382BMHjyg0zQNH">
+            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center" data-page-node-id="oSwPYhMP6DNehyuQxFfD8n">
+              <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20" data-page-node-id="8eFYRKtbimaMVO2cNa6ykO"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" data-page-node-id="GtMi5jrvKOuYWjfTlmBDng"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-gray-900" data-page-node-id="POqgoOXYAGgSI7toqzjDf9">房产</span>
+            <span class="text-xs text-gray-400" data-page-node-id="S1M1hDj6ikTulxIAqP34Pk">1 项</span>
+          </div>
+          <span class="text-sm font-semibold text-gray-900" data-page-node-id="MI6nigL1uU77KV462QluQK">¥3,200,000</span>
+        </div>
+        <div class="pl-10 text-sm text-gray-700" data-page-node-id="bZxcpON1HvzThKVkaTzUxw">朝阳望京 · 89㎡</div>
+      </div>
+
+      <!-- 银行存款 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="ogbuKQGdw57TkKzntiKhQY">
+        <div class="flex items-center justify-between mb-2" data-page-node-id="k3tdkxLx2NQYhptgDXIQVC">
+          <div class="flex items-center gap-2" data-page-node-id="v1MmGzYZGlwJwS7LLfGG9K">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center" data-page-node-id="nDVer7KkQGgiqFO7CyAC20">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="nQzqTBvH0aoslGokmurlhq"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" data-page-node-id="sOGrp5U0l90NMgYBwiboTX"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-gray-900" data-page-node-id="DXUOW0GvTyhkB6qEf8Feep">银行存款</span>
+            <span class="text-xs text-gray-400" data-page-node-id="P2GnyMbnbe00rk3xCCQeam">5 项</span>
+          </div>
+          <span class="text-sm font-semibold text-gray-900" data-page-node-id="dKdV1RKG7Vg0bJng7K0ic0">¥328,500</span>
+        </div>
+        <div class="space-y-2 mt-3" data-page-node-id="uX23CrRQDszGe9lQMuvrSz">
+          <div class="flex justify-between items-center text-sm" data-page-node-id="bRWAXVhYm0siBaFniWA31C">
+            <span class="text-gray-700" data-page-node-id="DMtUP1DjbgcMjEbCqUNr6F">招商银行卡 ··1234</span>
+            <span class="font-medium text-gray-900" data-page-node-id="vrfSSTXRVESMtwzY3pp4zu">¥168,500</span>
+          </div>
+          <div class="flex justify-between items-center text-sm" data-page-node-id="SINBomBtux8Xq9dthyAIiy">
+            <span class="text-gray-700" data-page-node-id="BF0jgEltjTDINScFumbjg3">工商银行卡 ··5678</span>
+            <span class="font-medium text-gray-900" data-page-node-id="QT0AijBHSYqMH9lJaYWAjx">¥85,000</span>
+          </div>
+          <div class="flex justify-between items-center text-sm" data-page-node-id="Y1VIjjDMtkoqXgNNqxg0ER">
+            <span class="text-gray-700" data-page-node-id="qSHIeOWcqscwliJf39uRE2">建设银行 ··9012</span>
+            <span class="font-medium text-gray-900" data-page-node-id="Umor9Jsrif2D6QrVyCRrl1">¥45,000</span>
+          </div>
+          <div class="flex justify-between items-center text-sm" data-page-node-id="1U2qgoxxhNfqzwNz1RbWf0">
+            <span class="text-gray-700" data-page-node-id="yVG61FHgWICEvxbe7Woz8Y">招行朝朝宝</span>
+            <span class="font-medium text-gray-900" data-page-node-id="iw3bupHpn3rxR1dUtV9IGI">¥30,000</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 股票 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="XhYHA2N5ZIPrFmqqCn7Ed2">
+        <div class="flex items-center justify-between mb-2" data-page-node-id="0mJFeKjl8nQ3mgOBUPrBS9">
+          <div class="flex items-center gap-2" data-page-node-id="AtEpkT4XYMA0QXHfgncgfr">
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center" data-page-node-id="GpuNFabWxs1S2DiWdvT0pA">
+              <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="yPTy7nK4y79S3CArLDtI8J"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" data-page-node-id="Zp0b9zN8Hi5Y4QNAtVeqQ4"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-gray-900" data-page-node-id="AYmwABpAmdzHG5RfrfOagt">股票</span>
+            <span class="text-xs text-gray-400" data-page-node-id="S6fmcCtCy6mxiNN8ggkIlG">4 项</span>
+          </div>
+          <span class="text-sm font-semibold text-gray-900" data-page-node-id="93iwp1tSig6OeJc8XGuCtE">¥186,200</span>
+        </div>
+        <div class="space-y-2 mt-3" data-page-node-id="2w3LuhACm4BCpgN1uMxLWT">
+          <div class="flex justify-between items-center text-sm" data-page-node-id="1pwjjchdWlgALKYW4JXok3">
+            <div data-page-node-id="aCnn68mRCyS9gZAFZE1PXi"><span class="text-gray-700" data-page-node-id="FXKeNLk02Hcx6yiSK6HRqX">贵州茅台</span><span class="text-xs text-gray-400 ml-2" data-page-node-id="OpWVKCCCfFsw2t5I9lVbAW">100股</span></div>
+            <div class="text-right" data-page-node-id="G4QolAbWUoVow5oLi3C9eH"><div class="font-medium text-gray-900" data-page-node-id="BLCa52gtI0d4aoG5JUHnz6">¥148,000</div><div class="text-xs text-emerald-600" data-page-node-id="pBdJzdcfCFWftWpGgYzd8K">+2.13%</div></div>
+          </div>
+          <div class="flex justify-between items-center text-sm" data-page-node-id="bhM7dqDZq7iUekdj6N3pYE">
+            <div data-page-node-id="fAxpCcBTbAI24BmjJREEby"><span class="text-gray-700" data-page-node-id="D216jlEromcvLL0UXjHVbq">沪深300 ETF</span><span class="text-xs text-gray-400 ml-2" data-page-node-id="gJbIgkyBCrClptiLRxLCUG">2000份</span></div>
+            <div class="text-right" data-page-node-id="AjmaYt7xcVmlkVGPcULrop"><div class="font-medium text-gray-900" data-page-node-id="EuuQIUrC3NCVEcg2TjR4Qj">¥38,200</div><div class="text-xs text-emerald-600" data-page-node-id="YxF0ksGlprZHFIPCY2qXWs">+3.42%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 车辆 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="sCDeUikrmnSRVhzPkfnWso">
+        <div class="flex items-center justify-between" data-page-node-id="4WR50j9ih879TxuG01pUUY">
+          <div class="flex items-center gap-2" data-page-node-id="KENIsDHItlBNmW1uDSPyiy">
+            <div class="w-8 h-8 bg-lime-100 rounded-lg flex items-center justify-center" data-page-node-id="gIitDaKLgRxCkD9BDddzSt">
+              <svg class="w-4 h-4 text-lime-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="eU4xsBArjNpp0asJdN1lIG"><path stroke-linecap="round" stroke-linejoin="round" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" data-page-node-id="Er9wdM7kyGsyemyIjXbmrc"/><circle cx="7" cy="17" r="2" data-page-node-id="BlXW81eZGVU4EXZHWROa4y"/><path d="M9 17h6" data-page-node-id="vgq7laXwrysdaTo51QkH5D"/><circle cx="17" cy="17" r="2" data-page-node-id="k0wyWAJimEUujY613MoFlY"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-gray-900" data-page-node-id="QqrzrxaGD97ssdRFDVWYmS">车辆</span>
+          </div>
+          <span class="text-sm font-semibold text-gray-900" data-page-node-id="4ftIDsjrhuBMiIOBc9Huzr">¥220,000</span>
+        </div>
+      </div>
+
+      <!-- 数字货币 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="oBcAbcBaa4LwyJb69ZEIbq">
+        <div class="flex items-center justify-between" data-page-node-id="2ngGA2jwRegEMB6jT5pBPb">
+          <div class="flex items-center gap-2" data-page-node-id="M5oLU14UDsqYrf1qViib1b">
+            <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center" data-page-node-id="0HaOTbP6C7S7wcRRJXsFSR">
+              <span class="text-xs font-bold text-amber-600" data-page-node-id="fVnSA5ElMRMi7TI3O41djR">₿</span>
+            </div>
+            <span class="text-sm font-semibold text-gray-900" data-page-node-id="CBXNudGHR2AZINBHavChoR">数字货币</span>
+          </div>
+          <span class="text-sm font-semibold text-gray-900" data-page-node-id="ApEik6VahsOv1YmGEuBLjb">¥65,000</span>
+        </div>
+      </div>
+
+      <!-- 债务 -->
+      <div class="bg-red-50 rounded-2xl p-4 border border-red-100" data-page-node-id="tvZzAX00ssxYDtc0Gbdiwf">
+        <div class="flex items-center justify-between" data-page-node-id="QWF38wRQFd5CSH2bT981up">
+          <div class="flex items-center gap-2" data-page-node-id="wDPsIp1OnKxOpHnHBYnByd">
+            <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center" data-page-node-id="xdYBaZYZY0QAFfUT6VQham">
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="deCAUfNOjTW9bSFYZ4Bbk4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" data-page-node-id="sP8qlYl1YadGG4xTOA9bDC"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-red-900" data-page-node-id="hDaAEczw7G9UjLwtVEqi0d">债务</span>
+          </div>
+          <span class="text-sm font-semibold text-red-700" data-page-node-id="j3DPPwwQBnWCULSokD2i8x">-¥1,050,968</span>
+        </div>
+        <div class="pl-10 mt-1 text-sm text-red-900/70" data-page-node-id="RoASexgAHFDV6GWkEWlqKQ">房贷 · 招行</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 3：录入表单 ========== -->
+  <div id="page-add" class="page" data-page-node-id="bdn5YmZsU1HJRBAmGpTsHb">
+    <div class="sticky top-0 bg-gray-50 z-30" data-page-node-id="PqEEMF8AyrBldfv7nn6r9Y">
+      <div class="px-6 pt-3 pb-3 flex justify-between items-center" data-page-node-id="XJ1zLWGFZ8T4pai4jyJ9CB">
+        <button @click="go('dashboard')" class="text-emerald-600 text-sm font-medium" data-page-node-id="34X5Klw3ovUS2VcT5S2jl4">取消</button>
+        <h2 class="text-base font-semibold text-gray-900" data-page-node-id="v3H3E6aOXsEGCcpYM6DbQF">录入资产</h2>
+        <button class="text-emerald-600 text-sm font-semibold" data-page-node-id="da4tF652fA9FKmRGuLlhLS">保存</button>
+      </div>
+    </div>
+
+    <div class="px-6 pb-4" data-page-node-id="o6NgOvuDrtAbeanLi2NXI8">
+      <!-- 类别选择 -->
+      <p class="text-sm text-gray-500 mb-2" data-page-node-id="eDYXSxh5C4O3LfLX2HSMmX">资产类别</p>
+      <div class="grid grid-cols-4 gap-2 mb-5" data-page-node-id="g9278wxXf29TY13m93cjlc">
+        <button @click="form.category='cash'" :class="form.category==='cash' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="Sa0sotB6Ltm18umL0yvZsQ">
+          <span class="text-xl" data-page-node-id="63zKHQ0GDXIEPgRb3Qlalb">💵</span>
+          <span class="text-xs" data-page-node-id="yx1c5aCbUEXPm9adRL26bG">现金</span>
+        </button>
+        <button @click="form.category='bank'" :class="form.category==='bank' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="rTqaq6dyrV3n13kgP41H0E">
+          <span class="text-xl" data-page-node-id="JpZAKsOD4S7WRsOgB0QD1G">🏦</span>
+          <span class="text-xs" data-page-node-id="hFL3q8gWvdyUu9I97potHU">存款</span>
+        </button>
+        <button @click="form.category='stock'" :class="form.category==='stock' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="z6TkOUudaR3VqAH9Fk7C8X">
+          <span class="text-xl" data-page-node-id="ZSxPSGKCIRnN20wONr80l3">📈</span>
+          <span class="text-xs" data-page-node-id="dFqjX8hbNvzisTzGHIBA3e">股票</span>
+        </button>
+        <button @click="form.category='fund'" :class="form.category==='fund' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="FUJNbBTQ3EbE1xFh6PEttD">
+          <span class="text-xl" data-page-node-id="uA1qCNWlwsr7yiEOuxQCTc">📊</span>
+          <span class="text-xs" data-page-node-id="AkKSwLDYX54SDkFLQ3Ee6q">基金</span>
+        </button>
+        <button @click="form.category='wealth'" :class="form.category==='wealth' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="3Y94WsYYCur3jHyRtbOxc5">
+          <span class="text-xl" data-page-node-id="L035jYCNSBTFPNDInf7e2V">💰</span>
+          <span class="text-xs" data-page-node-id="SbG5PRDqDxFEO297vAEIny">理财</span>
+        </button>
+        <button @click="form.category='estate'" :class="form.category==='estate' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="saDK2cN9RFiAn7gf0buPkX">
+          <span class="text-xl" data-page-node-id="DQmzvmM6uyJJfyXYQRWUA3">🏠</span>
+          <span class="text-xs" data-page-node-id="HdUgNDWlAjvCQq54xdcaQT">房产</span>
+        </button>
+        <button @click="form.category='vehicle'" :class="form.category==='vehicle' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="BSzPxN2hBKUqFDZAQgsvF3">
+          <span class="text-xl" data-page-node-id="aylTnOFDu4yn7ywPjQobsi">🚗</span>
+          <span class="text-xs" data-page-node-id="foUCwotFK27FNodilb9bxg">车辆</span>
+        </button>
+        <button @click="form.category='crypto'" :class="form.category==='crypto' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="sVvgaXkRktodY4nAAUKifU">
+          <span class="text-xl" data-page-node-id="kqp1A9zOsTcPCDMZJs8Iso">₿</span>
+          <span class="text-xs" data-page-node-id="DFZK16hLWTba3Yla5ioU4z">数字币</span>
+        </button>
+        <button @click="form.category='metal'" :class="form.category==='metal' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="LHuv7CMYJseLyrooB0whcV">
+          <span class="text-xl" data-page-node-id="p30TAxpl6SxhoAOw4pkn0p">🥇</span>
+          <span class="text-xs" data-page-node-id="XB31EbwxkljU9Aj4uyEkqg">贵金属</span>
+        </button>
+        <button @click="form.category='receivable'" :class="form.category==='receivable' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="Ji9BSsBfCHkgbJuB9ZbxyR">
+          <span class="text-xl" data-page-node-id="nLBVQGSdNmyi8tURwKySn9">📝</span>
+          <span class="text-xs" data-page-node-id="yW5MEM3fMuIuOsvA0Jlzmp">债权</span>
+        </button>
+        <button @click="form.category='liability'" :class="form.category==='liability' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700'" class="flex flex-col items-center gap-1 p-3 rounded-2xl" data-page-node-id="YF8isZhTp2swADJA7yyWfY">
+          <span class="text-xl" data-page-node-id="rqlHVH9VT6TRpsMKjGjl5U">⚠️</span>
+          <span class="text-xs" data-page-node-id="Lq5Vo3vjKVW4HI66Hp5O9g">债务</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 p-3 rounded-2xl bg-gray-100 text-gray-400 border-2 border-dashed border-gray-300" data-page-node-id="S6BktS7gHwOroqtYcBnMuA">
+          <span class="text-xl" data-page-node-id="ALazlFupgb7EAFeLcwB54J">+</span>
+          <span class="text-xs" data-page-node-id="UDeKZyFPxWJ8FALoxaYDoB">自定义</span>
+        </button>
+      </div>
+
+      <!-- 表单字段 -->
+      <div class="bg-white rounded-3xl p-5 shadow-soft space-y-4" data-page-node-id="san8SRN4UMIzb3PRVxsP9O">
+        <div data-page-node-id="3Tq5GILgnFIWsZmoUe2gQV">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="DbZG1vk6bXPesrnwtE0gmH">资产名称</label>
+          <input type="text" placeholder="如：招商银行卡 ··1234" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="2tkAfUzAELjGRPxX4GuNq2">
+        </div>
+
+        <div x-show="form.category==='stock' || form.category==='fund' || form.category==='crypto'" data-page-node-id="mQOEyXgN7u1qvkQdH0OwtY">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="K017b1cGhkR4kruS2ZuEuG">代码 / Symbol</label>
+          <input type="text" placeholder="如：600519 / BTC" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="5BA2749DGj7zxUwOAYcWKS">
+        </div>
+
+        <div x-show="form.category==='estate'" data-page-node-id="xPZoYaOhk28bkZ8rvV3irY">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="soyRSStXJxhfa13CW0ZpFr">地址</label>
+          <input type="text" placeholder="详细地址" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="E2TLFcxdwefRGt8tORVQ0J">
+          <div class="grid grid-cols-2 gap-3 mt-3" data-page-node-id="H8D01X2qVOFxoY5RgBxbXI">
+            <div data-page-node-id="HQF81C2TTAWQCOidjGJJ6Y">
+              <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="P7ZJnyuNzn7gVMEehe5Ytl">面积 (㎡)</label>
+              <input type="number" placeholder="89.5" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="zlia5Fa4OcQTASsRB6zjxW">
+            </div>
+            <div data-page-node-id="hBbZ0Y9qAdqPrhso9yEHV9">
+              <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="bNR3qafmFNkrOCACmUOpCg">购入年份</label>
+              <input type="number" placeholder="2020" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="7N5CCberh4zGkeisLTcTXf">
+            </div>
+          </div>
+        </div>
+
+        <div x-show="form.category==='vehicle'" data-page-node-id="YrLiHis9OyJdUaNmeRj3Tu">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="9fTkDB4dhIa1o5SuSb68yP">品牌型号</label>
+          <input type="text" placeholder="如：Tesla Model Y" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="dan7EPfoSGgtERKtfjH7FV">
+        </div>
+
+        <!-- 金额 -->
+        <div data-page-node-id="CPhDrPnA2H4bAEGouQqRMr">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="3jtomlc7MEiGQf8KmA7WOJ">
+            <span x-show="form.category!=='liability'" data-page-node-id="zWbqqsHyFNR6P8WNMeTBVi">当前金额</span>
+            <span x-show="form.category==='liability'" data-page-node-id="7AfAkCogV3YVAPKa9XCmaZ">剩余本金</span>
+          </label>
+          <div class="relative" data-page-node-id="YCGzpiDuMx7AbmiFbrrJgR">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" data-page-node-id="R7Qcq3kEAFA8e68lqSCvs8">¥</span>
+            <input type="number" placeholder="0.00" class="w-full bg-gray-50 pl-8 pr-4 py-3.5 rounded-2xl text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="oFjZ7MT57lJreogSR9HqW7">
+          </div>
+        </div>
+
+        <div x-show="form.category==='stock' || form.category==='fund' || form.category==='crypto'" data-page-node-id="pXnjgcoVb9DkvBVzzvso6U">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="Fs5vzGNCEphY5Kd8klGgIq">持有数量</label>
+          <input type="number" placeholder="如：100" class="w-full bg-gray-50 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" data-page-node-id="EhRJlESzAJVMfC2Q9j7x4F">
+        </div>
+
+        <!-- 币种 -->
+        <div data-page-node-id="A8dLyKgCoBAuowsU4h5oi9">
+          <label class="text-xs text-gray-500 mb-1.5 block" data-page-node-id="8qqZDmy5NjfVznNawO6oLJ">币种</label>
+          <div class="flex gap-2" data-page-node-id="EYt45wAB414767IHLodH7X">
+            <button class="flex-1 bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-medium" data-page-node-id="HjeWxJQABMwcq1Gwtjix6P">人民币 ¥</button>
+            <button class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium" data-page-node-id="bC6UPaCQ6OjhNFBG0eBcwG">美元 $</button>
+            <button class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium" data-page-node-id="ARfm7aoijdT0cV4lNUuoNj">港币 HK$</button>
+          </div>
+        </div>
+
+        <!-- 隐私 -->
+        <div class="bg-blue-50 rounded-2xl p-3 flex items-start gap-2" data-page-node-id="axWhedtNAOOL8yReg2oKwB">
+          <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" data-page-node-id="FroOFMA57OgRRc23AWwDkX"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" data-page-node-id="C0VdFECSoi0IqjComvwvNH"/></svg>
+          <p class="text-xs text-blue-900" data-page-node-id="dvKCv4PF2sqBBLxrFQFWCn">金额已端到端加密，仅家庭成员可见，连我们都无法解密。</p>
+        </div>
+      </div>
+
+      <!-- 快捷录入 -->
+      <div class="mt-5" data-page-node-id="VU5IGpeJcmCVbxSrSgg5nb">
+        <p class="text-sm text-gray-500 mb-2" data-page-node-id="LlbcqoxPUBsBoiVlJxTgzI">快捷录入方式</p>
+        <div class="grid grid-cols-2 gap-3" data-page-node-id="79s0q0JkZkFoTuE1Ijzyir">
+          <button class="bg-white rounded-2xl p-4 flex items-center gap-3" data-page-node-id="zHlQ5hXHM8w4BcBAl4yrJq">
+            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center" data-page-node-id="fwSDiiuRpX6F5FGNJvpxs0">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="RJLoB2a1G3n9M5grLhsitF"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" data-page-node-id="qxSAhAhIya5ZqwtDca9zzT"/><circle cx="12" cy="13" r="3" data-page-node-id="GjWLrlRfK86bt6FOUElisA"/></svg>
+            </div>
+            <div class="text-left" data-page-node-id="ghf2l5b5NXei7mdM8pbm5n">
+              <p class="text-sm font-semibold text-gray-900" data-page-node-id="SlkffdWYB0tSycwgGDjihC">截图识别</p>
+              <p class="text-xs text-gray-500" data-page-node-id="FMeD5Od2igsWh15PTAWMfC">拍银行 App 自动填</p>
+            </div>
+          </button>
+          <button class="bg-white rounded-2xl p-4 flex items-center gap-3" data-page-node-id="ha3x0esch90EoIrvlalejY">
+            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center" data-page-node-id="Gx50TTkTAp2Dkc367nyTcy">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="TSTFmDSe4VznE4cRuoncyh"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" data-page-node-id="KOZCjK70mR9fvp7VA8Z2yL"/></svg>
+            </div>
+            <div class="text-left" data-page-node-id="fcXRBBhFM2aM0lJ29pyCAc">
+              <p class="text-sm font-semibold text-gray-900" data-page-node-id="nBhg8EJ7FwNbJEq7gGpHVM">CSV 导入</p>
+              <p class="text-xs text-gray-500" data-page-node-id="hLiPHhOPI8ZrFnVbhKVyU8">批量导入历史</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 4：趋势图 ========== -->
+  <div id="page-trends" class="page" data-page-node-id="40pXIZB2eAIDbLlihROxZG">
+    <div class="px-6 pt-3 pb-3" data-page-node-id="D9ydQv8IYLXeHEkccRkBJi">
+      <h2 class="text-2xl font-bold text-gray-900 mb-1" data-page-node-id="F0Crt0bwrsNjGgiigjzHp8">资产趋势</h2>
+      <p class="text-sm text-gray-500" data-page-node-id="Dbj5XeV7sSlLJ1epx4ngCd">过去 6 个月变化</p>
+    </div>
+
+    <!-- 时间切换 -->
+    <div class="px-6 mb-4" data-page-node-id="K1zVZXHqnAo5y6OXDHPWVW">
+      <div class="bg-white rounded-2xl p-1 flex" data-page-node-id="NZBBncB0wrggjtjrfoSERu">
+        <button class="flex-1 py-2 text-sm text-gray-500 rounded-xl" data-page-node-id="7j19ucuRiQn1sxl0Zjm2Nr">日</button>
+        <button class="flex-1 py-2 text-sm text-gray-500 rounded-xl" data-page-node-id="WqRsw5KNNXPjS9EFQSNl6I">周</button>
+        <button class="flex-1 py-2 text-sm bg-emerald-500 text-white rounded-xl font-medium" data-page-node-id="RSnXhjao98JEZF7To3Wn45">月</button>
+        <button class="flex-1 py-2 text-sm text-gray-500 rounded-xl" data-page-node-id="MMM1sTkmA2gNWUvxHqSaxs">年</button>
+      </div>
+    </div>
+
+    <!-- 总趋势图 -->
+    <div class="px-6" data-page-node-id="jiRnqw1WdAGLpRqv2Yt5Aw">
+      <div class="bg-white rounded-3xl p-5 shadow-soft" data-page-node-id="EiPJeVNZuj9ASqLPgpygC7">
+        <div class="flex justify-between items-start mb-3" data-page-node-id="Lc5IghessHK4eadlug8JjH">
+          <div data-page-node-id="ycGf332CNqRDPbMZYd8aBn">
+            <p class="text-xs text-gray-500" data-page-node-id="BCCA0pTy7WXtuW4UeXHEUQ">净资产</p>
+            <p class="text-2xl font-bold text-gray-900" data-page-node-id="VITlCajNcPL9vY3EAqegH8">¥1,285,432<span class="text-sm text-gray-400" data-page-node-id="tlguuAAQSk4c1EOaQXxO6Q">.68</span></p>
+            <p class="text-xs text-emerald-600 font-medium mt-1" data-page-node-id="vfFWpwpWL26E3cNrcE4z9r">↑ 6.84% (¥82,431)</p>
+          </div>
+          <div class="text-right" data-page-node-id="S5zml1Sm7QCuZT5MdiXw1q">
+            <p class="text-xs text-gray-500" data-page-node-id="K8EDUCjS7oghoyDQ5zKGSW">峰值</p>
+            <p class="text-sm font-semibold text-gray-900" data-page-node-id="YsKMTCLmHkZvAeViK6wWKe">¥1,302,118</p>
+            <p class="text-xs text-gray-400 mt-1" data-page-node-id="GMyiLcNAWLr9YiDmY93iL3">2026-08-22</p>
+          </div>
+        </div>
+
+        <!-- 三线图例 -->
+        <div class="flex items-center gap-4 mb-3" data-page-node-id="kY7vQ3Ck0sTSyBqvBnGo9m">
+          <div class="flex items-center gap-1.5" data-page-node-id="zF1nEqLThWnT9aJqmP3hVc">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" data-page-node-id="mKd1nQPnXr8aH2dEkJ7cBp"></span>
+            <span class="text-xs text-gray-600" data-page-node-id="vBt4mYrLqPxK5jNhXfW2cR">净资产</span>
+          </div>
+          <div class="flex items-center gap-1.5" data-page-node-id="QqR2cWcYpHvBdTfNmL8aXy">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500" data-page-node-id="tHg1nKvNbZcH4dEkJ7cBp"></span>
+            <span class="text-xs text-gray-600" data-page-node-id="hWb3rNqKpYxT5jMhXfW2cR">总资产</span>
+          </div>
+          <div class="flex items-center gap-1.5" data-page-node-id="MrS7tVcYnBfGhDfNmL8aXy">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500" data-page-node-id="nKp9lJqNbZcH4dEkJ7cBp"></span>
+            <span class="text-xs text-gray-600" data-page-node-id="jDf4sXcKpYxT5jMhXfW2cR">总债务</span>
+          </div>
+        </div>
+
+        <canvas id="trendChart" height="200" style="max-height: 200px;" data-page-node-id="roIUWnWRRhzIWL7NE9KAnU"></canvas>
+      </div>
+    </div>
+
+    <!-- 分类对比 -->
+    <div class="px-6 mt-4" data-page-node-id="EEFySt4sC2EMuNsjL6dst5">
+      <div class="flex justify-between items-center mb-3" data-page-node-id="YxtqFfM1XcUTdgX4Hj8Z3m">
+        <h3 class="font-semibold text-gray-900" data-page-node-id="p3gwBBwXDG8V6MBUBndUKx">分类对比</h3>
+        <span class="text-xs text-gray-400" data-page-node-id="rtktkjvFvQWKAAAquObetB">2026-09-05</span>
+      </div>
+      <div class="bg-white rounded-3xl p-5 shadow-soft space-y-3" data-page-node-id="aBkP5TavMsZxYPjsMIcffD">
+        <div data-page-node-id="dMSf6tWemtmu8e3sLcnYLi">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="E9eegP7fFheqO3aPdhBCbL">
+            <span class="text-gray-700" data-page-node-id="CFOAA0z94XZUwG0m0yOTQn">房产</span>
+            <span class="font-semibold" data-page-node-id="Xbcyyp4XhCcZaBd2YMdEp9">¥3,200,000</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="VdtJzFtD9CdFPwjmXmo0H1"><div class="bg-orange-500 h-2 rounded-full" style="width: 100%" data-page-node-id="FsrN6wPgoDxxOBIJvQuxSW"></div></div>
+        </div>
+        <div data-page-node-id="P9yPQG1BMdMCQ8lOSU1HtB">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="WrXhRA7jj4dwmb1OxK8Ehm">
+            <span class="text-gray-700" data-page-node-id="tuuTBeQcWqPmmP030HszBO">银行存款</span>
+            <span class="font-semibold" data-page-node-id="4CbE4nZaLRAkPX860FqwWA">¥328,500</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="3xJjJRYqNuL60OstxuIEBg"><div class="bg-blue-500 h-2 rounded-full" style="width: 10%" data-page-node-id="NkiYv2sGQm8M4gn0mNKLCA"></div></div>
+        </div>
+        <div data-page-node-id="3OnuG0HQJRoGtorCGFinSD">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="VjyFS1nrxqssRfulyWBRAF">
+            <span class="text-gray-700" data-page-node-id="g6N1TVWKXrmEEVE10583uZ">车辆</span>
+            <span class="font-semibold" data-page-node-id="dKYbGZQy2JAevCpZlF9GfF">¥220,000</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="2pAmqHtNNVbOuUwjrN5xSH"><div class="bg-lime-500 h-2 rounded-full" style="width: 7%" data-page-node-id="rwDtrWdbAqyklfDod9j5AZ"></div></div>
+        </div>
+        <div data-page-node-id="AR2PoK1NlZy0FwGP7DJMD0">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="6cW8cRCim0MliqzLMkcz5H">
+            <span class="text-gray-700" data-page-node-id="DNxpuDvZLx0fYvJmQAY5Je">股票</span>
+            <span class="font-semibold" data-page-node-id="8XDoP8bERmwJCEzcRhLbWH">¥186,200</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="mKWGfULqSVfqBDWGdyywxq"><div class="bg-purple-500 h-2 rounded-full" style="width: 6%" data-page-node-id="INVYE8pG7w94zAO4anPBoY"></div></div>
+        </div>
+        <div data-page-node-id="AsRtnnwBb71OepkCSyHM3n">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="PytvVxMXWWQNnCsBqxGFVo">
+            <span class="text-gray-700" data-page-node-id="kR4mpeV7hcFlcECsDoEJBA">理财</span>
+            <span class="font-semibold" data-page-node-id="oxE0Q6gkXXswSdhm5zNmPw">¥150,000</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="P3NdEyPrQizcye8v2ymhRw"><div class="bg-cyan-500 h-2 rounded-full" style="width: 5%" data-page-node-id="gIGTZqZaXERtYnec9ncm1k"></div></div>
+        </div>
+        <div data-page-node-id="qGAvi4ISNv19rms41HxTrh">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="3R5FU9BmWAOCVtr9SuEmsq">
+            <span class="text-gray-700" data-page-node-id="aPiohCsb1S5fYwwEqPUqIT">基金</span>
+            <span class="font-semibold" data-page-node-id="09ozDNJFyh5UQa4ieE9FAP">¥92,400</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="iqTddMvsFe6q0sIedGiwGo"><div class="bg-fuchsia-500 h-2 rounded-full" style="width: 3%" data-page-node-id="2wqkzcpCtF0wCuoeLfLZBP"></div></div>
+        </div>
+        <div data-page-node-id="ntY23OWHoK3r1lmT0khYw4">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="BdBbKwCFvWPBg1s7KqcTbo">
+            <span class="text-gray-700" data-page-node-id="LFg5MWehujHK9dTFSQimsT">数字货币</span>
+            <span class="font-semibold" data-page-node-id="JAWQGlmXeilAqa37efPYB1">¥65,000</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="FIDr9rZTzWC7T3FHKU3gn3"><div class="bg-amber-500 h-2 rounded-full" style="width: 2%" data-page-node-id="KpLEtdWbjGnlkAwv7M6ziD"></div></div>
+        </div>
+        <div data-page-node-id="VQPLYPkdyKRDfcTjSTUYmW">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="B8NKNsUjoZ5eknWS5IqTRu">
+            <span class="text-gray-700" data-page-node-id="RhYOZZ4P6GD5RwlERNACTU">债权</span>
+            <span class="font-semibold" data-page-node-id="Oqf1flDJ6zU7hqQXcIHogF">¥50,000</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="gJG9iEIYjC54Aggv6POsYp"><div class="bg-teal-500 h-2 rounded-full" style="width: 2%" data-page-node-id="twwJ6lAloVAzmDXD9oHkV5"></div></div>
+        </div>
+        <div data-page-node-id="ruNZmY2Xgrh40rFZTelknw">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="R9K97q19zhGHgmnJk8L6EE">
+            <span class="text-gray-700" data-page-node-id="ueKYIOVNwMIkIfTycnHePv">现金</span>
+            <span class="font-semibold" data-page-node-id="xQupEtyJQ44Agk8oESBsze">¥15,800</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2" data-page-node-id="3KdhrCYPFbj7HGD4VW2wFu"><div class="bg-emerald-500 h-2 rounded-full" style="width: 1%" data-page-node-id="G5Jon4mD8ckOSh7v4urSC7"></div></div>
+        </div>
+        <div class="pt-3 border-t border-gray-100" data-page-node-id="zC9jnGjIcIuJHgRAZCkIzC">
+          <div class="flex justify-between text-sm mb-1.5" data-page-node-id="pSXHDH9j1lrY1s2dFF3zfI">
+            <span class="text-red-700 font-medium" data-page-node-id="t1hAHHTIx4cEUQnECzhIGe">债务</span>
+            <span class="font-semibold text-red-700" data-page-node-id="EHvEbGytqQZetUoMuqQGUq">-¥1,050,968</span>
+          </div>
+          <div class="w-full bg-red-50 rounded-full h-2" data-page-node-id="OqdCECLSADvFWmCDEogd4O"><div class="bg-red-500 h-2 rounded-full" style="width: 33%" data-page-node-id="vx3gLA7rpfIelS7sxM5DBk"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 同环比 -->
+    <div class="px-6 mt-4 pb-4" data-page-node-id="AZ39cwN9eF8fl1B5ydKDet">
+      <div class="grid grid-cols-2 gap-3" data-page-node-id="HiJ2G39RACf0eEYRzEfIbw">
+        <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="vk2Zy3ASQaaMIb5a5hBiPR">
+          <p class="text-xs text-gray-500 mb-1" data-page-node-id="cCAJAMGhd1oRWO65LhovBY">同比去年</p>
+          <p class="text-lg font-bold text-emerald-600" data-page-node-id="ArdyvexDZpNZXzF1ZMIQdA">+12.4%</p>
+          <p class="text-xs text-gray-500 mt-1" data-page-node-id="C9qZVFtpRRt1NMhOemBxTZ">+¥141,827</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="DUzRqyGIXQUszebDKGnF66">
+          <p class="text-xs text-gray-500 mb-1" data-page-node-id="kEFw02HTJFo50P2cOHcAMD">环比上月</p>
+          <p class="text-lg font-bold text-emerald-600" data-page-node-id="EYd2DlqlVdDyCUZqyabcfD">+2.34%</p>
+          <p class="text-xs text-gray-500 mt-1" data-page-node-id="wmeS6fVT39aLMXBZnwC2Gx">+¥29,388</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 5：家庭协作 ========== -->
+  <div id="page-family" class="page" data-page-node-id="U1N1C5G9baRtskaprRVzWQ">
+    <div class="px-6 pt-3 pb-3" data-page-node-id="o83Kcs2AJ4JtE3IpmXR77C">
+      <h2 class="text-2xl font-bold text-gray-900 mb-1" data-page-node-id="5lsbGRGdEQTFIZCrgKortY">家庭</h2>
+      <p class="text-sm text-gray-500" data-page-node-id="RWamotvaFVUmqp1kvh8pss">李明的家 · 4 位成员</p>
+    </div>
+
+    <!-- 邀请 -->
+    <div class="px-6 mb-4" data-page-node-id="Jqh6ZUW9WV4UpRvhtIoR6T">
+      <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-5 text-white shadow-soft" data-page-node-id="tOaKB97klPaBztAPtfUm1c">
+        <p class="text-sm opacity-90 mb-1" data-page-node-id="uf5F5mThMyA8jq9FluwRv8">邀请码</p>
+        <div class="flex justify-between items-center" data-page-node-id="vGiz0vvXyhmjIgcqFWnERD">
+          <p class="text-3xl font-bold tracking-widest font-mono" data-page-node-id="Gx9rVUkfhdVEGM3S39KLKB">X7K9M2</p>
+          <button class="bg-white/20 backdrop-blur px-3 py-2 rounded-xl text-sm font-medium" data-page-node-id="bE2MFSAuL0bPeip5ATmOAv">复制</button>
+        </div>
+        <p class="text-xs opacity-75 mt-2" data-page-node-id="43glILH0MfGiRWDFUzmQ2a">7 天内有效 · 邀请者自动成为 Editor</p>
+      </div>
+    </div>
+
+    <!-- 成员 -->
+    <div class="px-6 mb-3" data-page-node-id="ANcHsFOgIBFBrSZAoPi8FU">
+      <div class="flex justify-between items-center" data-page-node-id="kTvqpjzy6iEY72YM4DR1QQ">
+        <h3 class="font-semibold text-gray-900" data-page-node-id="syL6c8cPtmCSmqoL46Yezi">成员 (4)</h3>
+        <button class="text-emerald-600 text-sm font-medium" data-page-node-id="90n3DYCLhkJCU2fqTf2L2C">+ 邀请</button>
+      </div>
+    </div>
+
+    <div class="px-6 space-y-2 pb-4" data-page-node-id="W7DiZAABZOaX6oEuHxDcVK">
+      <!-- Owner -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="ipGsoPedPa40LdRUxTGRaw">
+        <div class="flex items-center gap-3" data-page-node-id="p2CABMWhh3TsegpypmnpbY">
+          <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold text-lg" data-page-node-id="7bfSByNKptqNC7NEfEGFFK">李</div>
+          <div class="flex-1" data-page-node-id="GeRbUbP8Y4VyfS5vGqUKSg">
+            <div class="flex items-center gap-2" data-page-node-id="FMh8GsCEcmIRExBUpC07yS">
+              <p class="font-semibold text-gray-900" data-page-node-id="sT1PXzFUEGXClM7jI50T4u">李明（我）</p>
+              <span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold" data-page-node-id="GawC15uy0ZBxTJebHUfNkN">OWNER</span>
+            </div>
+            <p class="text-xs text-gray-500" data-page-node-id="rlME9DXk5gPOMbl4DHreNe">liming@example.com · 5 天前活跃</p>
+          </div>
+          <button class="text-gray-400" data-page-node-id="2aMcIcSwH8g3O27PfTbEuT">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="TyXFOYEQXaM3EGYd6Ffdo7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" data-page-node-id="ESJIvgb4UFzgkU52XSCBsl"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="JYa2dVwoY2Gm5ugyXTjg4e">
+        <div class="flex items-center gap-3" data-page-node-id="NUkMCYtAseFdHCtnWDKB4X">
+          <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold text-lg" data-page-node-id="4Hwe2V0ILwkGRNrXbzUHC7">王</div>
+          <div class="flex-1" data-page-node-id="6fB8ogwJJsG3YsAS4ahVP3">
+            <div class="flex items-center gap-2" data-page-node-id="aSrybD9TGlYPDzAVbaWxe9">
+              <p class="font-semibold text-gray-900" data-page-node-id="ur8P4VfjdEFZz6uUQPkolI">王芳</p>
+              <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold" data-page-node-id="2QBeKRDhehXq6GmPEa0dnz">EDITOR</span>
+            </div>
+            <p class="text-xs text-gray-500" data-page-node-id="itlfAOyXU4xHuGwVCeMpFC">wangfang@example.com · 今天活跃</p>
+          </div>
+          <button class="text-gray-400" data-page-node-id="u38iAnIGQXzQQZod5rotHJ">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="VY44feVOop2xdxZBvIizqU"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" data-page-node-id="Swa1RiU1lGobeG6BgSAuwf"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewer -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="x34Ptb5vLPy5brQJFcVDkN">
+        <div class="flex items-center gap-3" data-page-node-id="DcjdlNfXHhzaqqumh9jQLD">
+          <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white font-semibold text-lg" data-page-node-id="H0eg3L624t2H2u6mnKRth4">爸</div>
+          <div class="flex-1" data-page-node-id="ClsCYCfsfRzpqsLsjLZEzf">
+            <div class="flex items-center gap-2" data-page-node-id="NfIlRHpx6kVMFRNdUc743f">
+              <p class="font-semibold text-gray-900" data-page-node-id="wSTYX7dFKWeITVqAEyXetN">李建国</p>
+              <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-bold" data-page-node-id="f5x2R3vwFA17nOWEzFXFlW">VIEWER</span>
+            </div>
+            <p class="text-xs text-gray-500" data-page-node-id="F1br6KDw4BzM8AsISna6Dv">父亲 · 2 天前活跃</p>
+          </div>
+          <button class="text-gray-400" data-page-node-id="nuZ3koAo3tEwAAAVKumZ1y">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="gbZP9JIDmpvLlc28HIy4yV"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" data-page-node-id="2YOEHeBhuP4H94w1HsfGyc"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 女儿 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="5vUXr9q04nGgbExemgYe3U">
+        <div class="flex items-center gap-3" data-page-node-id="sCvmknPCyGGAdKKHTMWM5a">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg" data-page-node-id="xjQSgHkkmFbimVw4CcoFOK">丫</div>
+          <div class="flex-1" data-page-node-id="q6n8PCXjEOmlkUwotHidJH">
+            <div class="flex items-center gap-2" data-page-node-id="fFnDBA46FIAupoG7EC6iYi">
+              <p class="font-semibold text-gray-900" data-page-node-id="WPfF511ReiEYx2lYBGE7sp">丫丫（8岁）</p>
+              <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-bold" data-page-node-id="pd8g6wczK8aRh6BtPJO6mo">VIEWER</span>
+            </div>
+            <p class="text-xs text-gray-500" data-page-node-id="OhyRVkiWzyXxw7MleCTRAR">仅查看 · 用于教育金追踪</p>
+          </div>
+          <button class="text-gray-400" data-page-node-id="P5Qwn4LsZ8rIXj5pmgX8Nw">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="KHxTT4I2SAXGhZnecIMt0j"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" data-page-node-id="tsD2VqUMbAmd3jyRCNjaTp"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 异动提醒 -->
+    <div class="px-6 mt-4 pb-4" data-page-node-id="7zdRkAwglpLYPqObYPgdP8">
+      <div class="flex justify-between items-center mb-3" data-page-node-id="mgTh1IGXLvKtR5ObtHCrDm">
+        <h3 class="font-semibold text-gray-900" data-page-node-id="b2wrVUQ2jvvUXaSV6h91D9">异动提醒</h3>
+        <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" data-page-node-id="fIDMbzkHkL1iwqFCuzZ8qm">2 新</span>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-soft space-y-3" data-page-node-id="AazAVD2x6m3ji3PliPGLd5">
+        <div class="flex items-start gap-3" data-page-node-id="CwFOt6HbdqhaHnUGIs3K4S">
+          <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0" data-page-node-id="hlsV0pbCVrElbaixKcyLPH">
+            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="apkCV562AXyohZhhl69JsW"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" data-page-node-id="HuD834g6AlOkiRXWNKWFGE"/></svg>
+          </div>
+          <div class="flex-1" data-page-node-id="IobwyDpYW80d7KRgMOIQyr">
+            <p class="text-sm font-medium text-gray-900" data-page-node-id="GgHWVcUoJXXpmssLHOgqvx">BTC 单日跌幅 5.21%</p>
+            <p class="text-xs text-gray-500 mt-0.5" data-page-node-id="5X6MsAxjN4dWotZ5FgsEG0">触发规则：单类资产变动 &gt; 5% · 1 小时前</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3" data-page-node-id="8ra2d4X3zTNVmvgkTKDZiK">
+          <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0" data-page-node-id="Rud34J4l06G4sCZSICjmfH">
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="a4EqKtEAgLUATgcgr1fMtU"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" data-page-node-id="2VcGrdfr81Z1AGICdEqCPX"/></svg>
+          </div>
+          <div class="flex-1" data-page-node-id="ZG4nRhjE212GKBLUBezpz3">
+            <p class="text-sm font-medium text-gray-900" data-page-node-id="BiNWpLGzny2POYoNAj858v">招行卡入账 ¥12,000</p>
+            <p class="text-xs text-gray-500 mt-0.5" data-page-node-id="KiGiRBxhOiOkBU6tAwF7co">触发规则：单笔 &gt; ¥10,000 · 3 天前</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 6：我的/设置 ========== -->
+  <div id="page-profile" class="page" data-page-node-id="WdfAFrOfsl3XNb99AHagm1">
+    <div class="px-6 pt-3 pb-4 flex items-center gap-4" data-page-node-id="8rUH2LGVNESvysUjjEohuT">
+      <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-2xl" data-page-node-id="Jodf5JkyCvzN5Bo3yqfUbC">李</div>
+      <div class="flex-1" data-page-node-id="ZhdEfaZfn5zypwvla52YNz">
+        <h2 class="text-xl font-bold text-gray-900" data-page-node-id="P6qunRRkjMerhDwFhdClXa">李明</h2>
+        <p class="text-sm text-gray-500" data-page-node-id="3LoQdOd4HuPIK502SnTVAu">liming@example.com</p>
+      </div>
+      <button class="text-gray-400" data-page-node-id="7xViqFq0Fw3bff7GbbjcvC">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="bM8JXrKQ4IHwAnufMLW60V"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" data-page-node-id="Tw2FfrbjTNN3UnmX2ZY48X"/></svg>
+      </button>
+    </div>
+
+    <!-- 多家庭切换 -->
+    <div class="px-6 mb-4" data-page-node-id="ZoaAsaxIar7M0FXZrXcObx">
+      <div class="bg-white rounded-2xl p-4 shadow-soft" data-page-node-id="HOGyCU12oMGAKHi6EkZAWn">
+        <div class="flex justify-between items-center" data-page-node-id="E9YOjw5D9Cvs7RK5HEBjYu">
+          <div data-page-node-id="M8cyJWYdeNmN3lYcCOPBKR">
+            <p class="text-xs text-gray-500" data-page-node-id="6bxGxyshv2T9rIAoxUOrlr">当前家庭</p>
+            <p class="text-base font-semibold text-gray-900 mt-0.5" data-page-node-id="B54RkKmZjDo8Ifv4a1eLrU">李明的家</p>
+          </div>
+          <button class="text-emerald-600 text-sm font-medium" data-page-node-id="Ln3MyDeT3aEOg7WOpSMoF6">切换 ›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置项 -->
+    <div class="px-6 space-y-1.5 pb-4" data-page-node-id="zeLEAzjWv3btwRKQcDUr1M">
+      <p class="text-xs text-gray-500 px-2 mb-1" data-page-node-id="yPePSyEFh7yJoP1YjZAEai">安全与隐私</p>
+      <div class="bg-white rounded-2xl shadow-soft divide-y divide-gray-100" data-page-node-id="fCSjRuRCza1RFY6s3QLIxG">
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="QV7qSjnOGNbgPpta5DILp6">
+          <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center" data-page-node-id="bII8vRlDrlsJjDrhVIclpA">
+            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20" data-page-node-id="NHap7HplatX2TdhWE5jkBc"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" data-page-node-id="715YOqyQwLyqXoy1UKgJgr"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="9D63uEzz02svXylLQwbhjL">端到端加密</span>
+          <span class="text-emerald-600 text-sm font-medium" data-page-node-id="i1gU1Hcp2Jhb8tHJiSLHWc">已开启</span>
+        </button>
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="7jAMrb6kqH4Y6i91GtXAMC">
+          <div class="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center" data-page-node-id="VuvwvrW81SvAJRcUCm7UEu">
+            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="yJjRvwEiwFGXoh97G7ZWmA"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" data-page-node-id="Ki9cnUzulMFPjb2TW4LC30"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="5D9NQlEQo43Q2bGntLl2K1">生物识别登录</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="JaQFNXCROZIie3Vgj42bUY"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-page-node-id="RVN1OmFLF6e4HrrFXQbT5v"/></svg>
+        </button>
+        <button @click="go('backup')" class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="lgEpz07tdqq2JpnTesjHs7">
+          <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center" data-page-node-id="Nhdzu3ctfY4y1bvUGELaaD">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="BCMqisHbrDDWWMYeftnPJ1"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" data-page-node-id="pUm4T5rGylPCrI6vvcJjxb"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="j4WE4h8f26eP9oXPh1aG1S">本地备份</span>
+          <span class="text-gray-400 text-sm" data-page-node-id="FSJHLQ4xLAw2koRFCdmFdV">2 小时前</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 px-2 mb-1 mt-4" data-page-node-id="KdmzJPFy6eqe1eGkqQmEsz">功能</p>
+      <div class="bg-white rounded-2xl shadow-soft divide-y divide-gray-100" data-page-node-id="3jOh87yhxA4cEXwYZDS9zC">
+        <button @click="go('reminder')" class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="reminder-entry">
+          <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900">盘点提醒</span>
+          <span class="text-emerald-600 text-xs font-medium mr-1">每月 1 日</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button @click="go('groups')" class="w-full flex items-center gap-3 p-3.5 text-left">
+          <div class="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900">资产分组</span>
+          <span class="text-gray-400 text-xs mr-1">4 组</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button @click="go('report')" class="w-full flex items-center gap-3 p-3.5 text-left">
+          <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900">月度/年度报表</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="5BxU44knJzkfXeLJ9A7tPS">
+          <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center" data-page-node-id="GG6E6MczFU0JchoCroMKHu">
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="Ta4EspWJbBLlHjfs9EnKrB"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" data-page-node-id="2CzXkFxZCGqhtpETEhyJPY"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="FUGpZ0kWpEZ2Me4Mt5V9ot">异动提醒设置</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="VlKsOH5sdQi1MiMxm3w28c"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-page-node-id="3puC8v8iUVJSrYJPF3qKKY"/></svg>
+        </button>
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="EAgXRmGKFFO1nt9r8zgBQk">
+          <div class="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center" data-page-node-id="79L4vMCzTQovxJ0q6dqb4T">
+            <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="oIE3OzB5MCOKav3B9hqukO"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" data-page-node-id="QFE9EevyBRkBn0rhhXFSPg"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="RRCMCyFqC2n3gpNVJrNd3r">导出报表</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="5OrM5NpExVBOmHJLofjhp9"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-page-node-id="tPkrqcTIdBbIlXiIMIIz2W"/></svg>
+        </button>
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="3xCdRUdFE8VKcZiehHC7yW">
+          <div class="w-9 h-9 bg-pink-100 rounded-xl flex items-center justify-center" data-page-node-id="DCZYqPFLIC0KpgzE1XMYwT">
+            <svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="TmB72zezYBugX6NdrVfJYy"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" data-page-node-id="Ik8gLzX3tXjTtQbIxiqceD"/></svg>
+          </div>
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="y8BskrK9vAduf0iNyYv5Ro">帮助与反馈</span>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="MOBtHO0UpVnor4njt9DJ1A"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-page-node-id="9UPwpB5aZtMPLbNFFE7PPT"/></svg>
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 px-2 mb-1 mt-4" data-page-node-id="wt5lQWJhXhJ5u7jisMxH7c">关于</p>
+      <div class="bg-white rounded-2xl shadow-soft divide-y divide-gray-100" data-page-node-id="CTdP8nU5u4Khkj4qceXxwv">
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="MJCEbK1MAKKTUD9Pjh684z">
+          <span class="flex-1 text-sm text-gray-900" data-page-node-id="6gZi1Zpf0BRlpe4U66xDqq">版本</span>
+          <span class="text-gray-400 text-sm" data-page-node-id="FBGQL2h7ksNGWjm2ucBDqU">v0.9.2 (Prototype)</span>
+        </button>
+        <button class="w-full flex items-center gap-3 p-3.5 text-left" data-page-node-id="nMcYikv1oZjdvSqfFnIa7u">
+          <span class="flex-1 text-sm text-red-600" data-page-node-id="HCJPGn4EHOKsrGQx4AX4Hm">退出登录</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 7：盘点提醒设置（P0-1） ========== -->
+  <div id="page-reminder" class="page">
+    <div class="px-6 pt-3 pb-3 flex justify-between items-center">
+      <button @click="go('profile')" class="text-emerald-600 text-sm font-medium">‹ 返回</button>
+      <h2 class="text-base font-semibold text-gray-900">盘点提醒</h2>
+      <div class="w-12"></div>
+    </div>
+    <div class="px-6 space-y-4 pb-4">
+      <div class="bg-white rounded-2xl p-5 shadow-soft">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm font-semibold text-gray-900">月末盘点提醒</p>
+            <p class="text-xs text-gray-500 mt-0.5">每月定时提醒更新账户余额</p>
+          </div>
+          <div class="w-11 h-6 bg-emerald-500 rounded-full relative flex items-center px-0.5 cursor-pointer">
+            <div class="w-5 h-5 bg-white rounded-full shadow translate-x-5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-soft space-y-4">
+        <div>
+          <p class="text-sm font-semibold text-gray-900 mb-2">提醒日</p>
+          <div class="grid grid-cols-4 gap-2">
+            <button class="py-2 bg-emerald-500 text-white text-sm rounded-xl font-medium">每月 1 日</button>
+            <button class="py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">每月 5 日</button>
+            <button class="py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">每月 15 日</button>
+            <button class="py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">月末</button>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900 mb-2">提醒时间</p>
+          <div class="flex gap-2">
+            <button class="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">08:00</button>
+            <button class="flex-1 py-2 bg-emerald-500 text-white text-sm rounded-xl font-medium">20:00</button>
+            <button class="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">22:00</button>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900 mb-2">未完成时重试</p>
+          <div class="flex gap-2">
+            <button class="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">每天</button>
+            <button class="flex-1 py-2 bg-emerald-500 text-white text-sm rounded-xl font-medium">每 3 天</button>
+            <button class="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded-xl">每周</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-soft">
+        <p class="text-sm font-semibold text-gray-900 mb-3">本月盘点进度</p>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600">已更新 8 / 12 项资产</span>
+          <span class="text-sm font-semibold text-emerald-600">67%</span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full bg-emerald-500 rounded-full" style="width:67%"></div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">完成全部 12 项更新后，本月将不再提醒</p>
+      </div>
+
+      <div class="bg-blue-50 rounded-2xl p-4 flex gap-3">
+        <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <p class="text-xs text-blue-900">提醒写入系统日历，关闭 App 后仍可收到。鸿蒙端无需申请 AGC 权限。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 8：本地备份与恢复（P0-2） ========== -->
+  <div id="page-backup" class="page">
+    <div class="px-6 pt-3 pb-3 flex justify-between items-center">
+      <button @click="go('profile')" class="text-emerald-600 text-sm font-medium">‹ 返回</button>
+      <h2 class="text-base font-semibold text-gray-900">本地备份</h2>
+      <div class="w-12"></div>
+    </div>
+    <div class="px-6 space-y-4 pb-4">
+      <div class="bg-white rounded-2xl p-5 shadow-soft text-center">
+        <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </div>
+        <p class="text-sm font-semibold text-gray-900">上次备份</p>
+        <p class="text-2xl font-bold text-gray-900 mt-1">2 小时前</p>
+        <p class="text-xs text-gray-500 mt-1">2026-09-30 18:12 · 12 资产 · 46 快照</p>
+      </div>
+
+      <button class="w-full bg-emerald-500 text-white py-4 rounded-2xl text-base font-semibold shadow-soft">
+        立即生成备份
+      </button>
+
+      <div class="bg-white rounded-2xl divide-y divide-gray-100 shadow-soft">
+        <div class="p-4 flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-900">备份加密</p>
+            <p class="text-xs text-gray-500 mt-0.5">使用主密钥加密，离开密钥无法解密</p>
+          </div>
+          <span class="text-emerald-600 text-sm font-medium">已开启</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-900">备份内容</p>
+            <p class="text-xs text-gray-500 mt-0.5">资产 / 快照 / 家庭关系</p>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-900">自动备份频率</p>
+            <p class="text-xs text-gray-500 mt-0.5">每周日自动备份</p>
+          </div>
+          <span class="text-gray-900 text-sm">每周</span>
+        </div>
+      </div>
+
+      <button class="w-full bg-white border border-gray-200 text-gray-900 py-4 rounded-2xl text-base font-semibold">
+        从备份恢复
+      </button>
+
+      <div class="bg-amber-50 rounded-2xl p-4 flex gap-3">
+        <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+        <p class="text-xs text-amber-900">恢复将覆盖现有数据，建议先导出最新备份。损坏文件会给出友好提示。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 9：资产分组管理（P0-4） ========== -->
+  <div id="page-groups" class="page">
+    <div class="px-6 pt-3 pb-3 flex justify-between items-center">
+      <button @click="go('profile')" class="text-emerald-600 text-sm font-medium">‹ 返回</button>
+      <h2 class="text-base font-semibold text-gray-900">分组管理</h2>
+      <div class="w-12"></div>
+    </div>
+    <div class="px-6 space-y-3 pb-4">
+      <p class="text-xs text-gray-500">分组名称与排序仅保存在本机；资产的分组归属会随资产加密同步。</p>
+
+      <!-- 新建 -->
+      <div class="flex gap-2">
+        <input type="text" placeholder="新分组名称（如：银行 / 投资 / 负债）" class="flex-1 bg-white px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-soft">
+        <button class="bg-emerald-500 text-white px-5 rounded-2xl text-sm font-medium">新建</button>
+      </div>
+
+      <!-- 分组列表 -->
+      <div class="bg-white rounded-2xl shadow-soft divide-y divide-gray-100">
+        <div class="p-4 flex items-center gap-3">
+          <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
+          <span class="flex-1 text-sm font-medium text-gray-900">银行存款</span>
+          <span class="text-xs text-gray-400">5 项</span>
+          <button class="text-xs text-gray-500 px-2 py-1">上移</button>
+          <button class="text-xs text-gray-500 px-2 py-1">下移</button>
+          <button class="text-xs text-emerald-600 px-2 py-1">改名</button>
+          <button class="text-xs text-red-500 px-2 py-1">删除</button>
+        </div>
+        <div class="p-4 flex items-center gap-3">
+          <div class="w-2 h-8 bg-purple-500 rounded-full"></div>
+          <span class="flex-1 text-sm font-medium text-gray-900">投资</span>
+          <span class="text-xs text-gray-400">7 项</span>
+          <button class="text-xs text-gray-500 px-2 py-1">上移</button>
+          <button class="text-xs text-gray-500 px-2 py-1">下移</button>
+          <button class="text-xs text-emerald-600 px-2 py-1">改名</button>
+          <button class="text-xs text-red-500 px-2 py-1">删除</button>
+        </div>
+        <div class="p-4 flex items-center gap-3">
+          <div class="w-2 h-8 bg-amber-500 rounded-full"></div>
+          <span class="flex-1 text-sm font-medium text-gray-900">实物资产</span>
+          <span class="text-xs text-gray-400">2 项</span>
+          <button class="text-xs text-gray-500 px-2 py-1">上移</button>
+          <button class="text-xs text-gray-500 px-2 py-1">下移</button>
+          <button class="text-xs text-emerald-600 px-2 py-1">改名</button>
+          <button class="text-xs text-red-500 px-2 py-1">删除</button>
+        </div>
+        <div class="p-4 flex items-center gap-3">
+          <div class="w-2 h-8 bg-red-500 rounded-full"></div>
+          <span class="flex-1 text-sm font-medium text-gray-900">负债</span>
+          <span class="text-xs text-gray-400">2 项</span>
+          <button class="text-xs text-gray-500 px-2 py-1">上移</button>
+          <button class="text-xs text-gray-500 px-2 py-1">下移</button>
+          <button class="text-xs text-emerald-600 px-2 py-1">改名</button>
+          <button class="text-xs text-red-500 px-2 py-1">删除</button>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 rounded-2xl p-4 border border-dashed border-gray-300">
+        <p class="text-sm font-medium text-gray-500 mb-1">未分组</p>
+        <p class="text-xs text-gray-400">1 项资产未归入任何分组，删除分组时资产自动回到此分组。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 页面 10：月度/年度报表（P0-5） ========== -->
+  <div id="page-report" class="page">
+    <div class="px-6 pt-3 pb-3 flex justify-between items-center">
+      <button @click="go('profile')" class="text-emerald-600 text-sm font-medium">‹ 返回</button>
+      <h2 class="text-base font-semibold text-gray-900">资产报表</h2>
+      <div class="w-12"></div>
+    </div>
+
+    <!-- 月报/年报切换 -->
+    <div class="px-6 mb-3">
+      <div class="bg-gray-100 rounded-2xl p-1 flex">
+        <button class="flex-1 py-2 bg-emerald-500 text-white text-sm rounded-xl font-medium">月报</button>
+        <button class="flex-1 py-2 text-gray-500 text-sm rounded-xl">年报</button>
+      </div>
+    </div>
+
+    <!-- 期间切换 -->
+    <div class="px-6 flex items-center justify-center mb-4">
+      <button class="w-9 h-9 bg-white rounded-xl border border-gray-200 text-xl text-gray-400">‹</button>
+      <span class="text-base font-bold text-gray-900 mx-6">2026 年 9 月</span>
+      <button class="w-9 h-9 bg-white rounded-xl border border-gray-200 text-xl text-gray-900">›</button>
+    </div>
+
+    <div class="px-6 space-y-3 pb-4">
+      <!-- 三卡 -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-white rounded-2xl p-3 text-center shadow-soft">
+          <p class="text-xs text-gray-500">净资产</p>
+          <p class="text-sm font-bold text-gray-900 mt-1">¥128.5万</p>
+        </div>
+        <div class="bg-white rounded-2xl p-3 text-center shadow-soft">
+          <p class="text-xs text-gray-500">总资产</p>
+          <p class="text-sm font-bold text-gray-900 mt-1">¥233.6万</p>
+        </div>
+        <div class="bg-white rounded-2xl p-3 text-center shadow-soft">
+          <p class="text-xs text-gray-500">总负债</p>
+          <p class="text-sm font-bold text-gray-900 mt-1">¥105.1万</p>
+        </div>
+      </div>
+
+      <!-- 环比 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft">
+        <p class="text-sm font-semibold text-gray-900 mb-3">环比 8 月</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-gray-600">净资产</span><span class="text-emerald-600 font-medium">+¥29,388（+2.34%）</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">总资产</span><span class="text-emerald-600 font-medium">+¥23,400</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">总负债</span><span class="text-emerald-600 font-medium">-¥5,988</span></div>
+        </div>
+      </div>
+
+      <!-- 配置分布 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft">
+        <p class="text-sm font-semibold text-gray-900 mb-3">配置分布</p>
+        <div class="space-y-2.5">
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-600">房产</span><span class="text-gray-900 font-medium">¥167.5万 52.3%</span></div>
+            <div class="h-2 bg-gray-100 rounded-full"><div class="h-full bg-orange-500 rounded-full" style="width:52.3%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-600">存款</span><span class="text-gray-900 font-medium">¥45.1万 14.1%</span></div>
+            <div class="h-2 bg-gray-100 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:14.1%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-600">股票</span><span class="text-gray-900 font-medium">¥25.6万 8.0%</span></div>
+            <div class="h-2 bg-gray-100 rounded-full"><div class="h-full bg-purple-500 rounded-full" style="width:8%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-600">债务</span><span class="text-red-500 font-medium">¥105.1万 -45.0%</span></div>
+            <div class="h-2 bg-gray-100 rounded-full"><div class="h-full bg-red-500 rounded-full" style="width:45%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 本月快照明细 -->
+      <div class="bg-white rounded-2xl p-4 shadow-soft">
+        <p class="text-sm font-semibold text-gray-900 mb-3">本月快照明细（8 条）</p>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-400 w-10">09-28</span>
+            <div class="flex-1"><p class="text-sm text-gray-900">招商银行卡</p><p class="text-xs text-gray-400">银行存款 · 手动</p></div>
+            <span class="text-sm font-medium text-gray-900">¥168,500</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-400 w-10">09-25</span>
+            <div class="flex-1"><p class="text-sm text-gray-900">贵州茅台</p><p class="text-xs text-gray-400">股票 · OCR</p></div>
+            <span class="text-sm font-medium text-gray-900">¥148,000</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-400 w-10">09-20</span>
+            <div class="flex-1"><p class="text-sm text-gray-900">房贷 · 招行</p><p class="text-xs text-gray-400">债务 · 手动</p></div>
+            <span class="text-sm font-medium text-gray-900">¥1,050,968</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导出按钮 -->
+    <div class="px-6 pb-4">
+      <button class="w-full bg-emerald-500 text-white py-4 rounded-2xl text-base font-semibold shadow-soft">
+        导出 HTML 报表
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== 底部 Tab Bar ========== -->
+  <div class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 z-40 pb-6 pt-2" data-page-node-id="pWdFdVmusSFFYt3GKqKOnn">
+    <div class="flex justify-around items-center" data-page-node-id="XHX7tU6xrVzEODyDXoGEYI">
+      <button @click="go('dashboard')" :class="currentPage==='dashboard' ? 'active' : ''" class="tab-item flex flex-col items-center gap-1 px-3 py-1" data-page-node-id="wUJgXGATf2ldutt9sX6xMo">
+        <svg class="w-6 h-6" :class="currentPage==='dashboard' ? 'text-emerald-600' : 'text-gray-400'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="7TADOjRfMCMC2VxzVYQLGt"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" data-page-node-id="3OOfvOsjAKuPluHFFWN8kw"/></svg>
+        <span class="text-[10px]" :class="currentPage==='dashboard' ? 'text-emerald-600 font-semibold' : 'text-gray-500'" data-page-node-id="zH6jgoud73FX5WR6r2c293">总览</span>
+      </button>
+      <button @click="go('assets')" :class="currentPage==='assets' ? 'active' : ''" class="tab-item flex flex-col items-center gap-1 px-3 py-1" data-page-node-id="Siq6MoMn4fYJGfcElGujaT">
+        <svg class="w-6 h-6" :class="currentPage==='assets' ? 'text-emerald-600' : 'text-gray-400'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="CeH9mraaoYJEf6Xr1cmLMn"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" data-page-node-id="YcssiHRSFzUFns7X5bccMg"/></svg>
+        <span class="text-[10px]" :class="currentPage==='assets' ? 'text-emerald-600 font-semibold' : 'text-gray-500'" data-page-node-id="N5WEmTqrUVeG7seDESjMRV">资产</span>
+      </button>
+      <button @click="go('add')" class="relative -mt-6" data-page-node-id="ptZs5iorRylgAzQnF3T32Q">
+        <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40" data-page-node-id="q6grrhGz8yGVbNfZegGL4L">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-page-node-id="XyYvByMmHZwWwixjib3zEK"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" data-page-node-id="CJwsAQqpCNwCFK409gw1vD"/></svg>
+        </div>
+      </button>
+      <button @click="go('trends')" :class="currentPage==='trends' ? 'active' : ''" class="tab-item flex flex-col items-center gap-1 px-3 py-1" data-page-node-id="E9p9MSb99xZXsFAp5dOiz4">
+        <svg class="w-6 h-6" :class="currentPage==='trends' ? 'text-emerald-600' : 'text-gray-400'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="isE0jBe01CriiiWn9IBMWa"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" data-page-node-id="0tSBvVShkoAQfKU8gDroad"/></svg>
+        <span class="text-[10px]" :class="currentPage==='trends' ? 'text-emerald-600 font-semibold' : 'text-gray-500'" data-page-node-id="NGjYbcquZHXAP2v2flTT1d">趋势</span>
+      </button>
+      <button @click="go('profile')" :class="currentPage==='profile' ? 'active' : ''" class="tab-item flex flex-col items-center gap-1 px-3 py-1" data-page-node-id="bh8QFHnTvQxdauIrfmZ01O">
+        <svg class="w-6 h-6" :class="currentPage==='profile' ? 'text-emerald-600' : 'text-gray-400'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-page-node-id="vJZzZUzl1BEy2jDH36Z3hb"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" data-page-node-id="esNOCqEJGNSe4pG8cDjDXk"/></svg>
+        <span class="text-[10px]" :class="currentPage==='profile' ? 'text-emerald-600 font-semibold' : 'text-gray-500'" data-page-node-id="mUsOi9V5vSDlBiHUITISLk">我的</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 说明面板 -->
+<div class="fixed top-4 right-4 bg-white rounded-2xl shadow-xl p-4 max-w-xs z-50 text-xs" data-page-node-id="FfsVLDMTXqtIiD8VwxojBk">
+  <p class="font-bold text-gray-900 mb-2" data-page-node-id="o7H2NAdVHaBOjw9lXFpYJl">🎨 高保真原型说明</p>
+  <p class="text-gray-600 mb-2" data-page-node-id="vup1PlQ4hNO7v9JF1dCVq2">点击底部 Tab 切换页面，中间 + 号是录入按钮。</p>
+  <p class="text-gray-600 mb-2" data-page-node-id="tIZDN31fuTFrqLCdL2LT0q">已覆盖 6 大核心页面：总览 / 资产 / 录入 / 趋势 / 家庭 / 我的</p>
+  <p class="text-gray-500 italic" data-page-node-id="VJAQGFR50Tm96GQK33jjCz">数据为 mock，仅用于视觉验证。</p>
+</div>
+
+<script>
+function app() {
+  return {
+    currentPage: 'dashboard',
+    form: { category: 'bank' },
+    init() {
+      this.$watch('currentPage', (val) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const map = { dashboard: 'page-dashboard', assets: 'page-assets', add: 'page-add', trends: 'page-trends', family: 'page-family', profile: 'page-profile', reminder: 'page-reminder', backup: 'page-backup', groups: 'page-groups', report: 'page-report' };
+        document.getElementById(map[val])?.classList.add('active');
+        if (val === 'dashboard') setTimeout(() => this.renderDonut(), 50);
+        if (val === 'trends') setTimeout(() => this.renderTrend(), 100);
+        if (val === 'report') setTimeout(() => this.renderReport(), 50);
+      });
+      setTimeout(() => {
+        const hash = location.hash.slice(1);
+        if (hash && hash !== 'dashboard') {
+          this.go(hash);
+        } else {
+          this.renderDonut();
+        }
+      }, 300);
+    },
+    go(page) {
+      this.currentPage = page;
+      setTimeout(() => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const map = { dashboard: 'page-dashboard', assets: 'page-assets', add: 'page-add', trends: 'page-trends', family: 'page-family', profile: 'page-profile', reminder: 'page-reminder', backup: 'page-backup', groups: 'page-groups', report: 'page-report' };
+        document.getElementById(map[page])?.classList.add('active');
+        if (page === 'dashboard') setTimeout(() => this.renderDonut(), 50);
+        if (page === 'trends') setTimeout(() => this.renderTrend(), 100);
+        if (page === 'report') setTimeout(() => this.renderReport(), 50);
+      }, 50);
+    },
+    renderDonut() {
+      const ctx = document.getElementById('categoryDonut');
+      if (!ctx || ctx._chart) return;
+      ctx._chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['房产', '存款', '股票', '理财', '基金', '车辆', '数字币', '其他'],
+          datasets: [{
+            data: [52.3, 14.1, 8.0, 6.4, 3.9, 9.4, 2.8, 3.1],
+            backgroundColor: ['#F97316', '#3B82F6', '#8B5CF6', '#06B6D4', '#A855F7', '#84CC16', '#F59E0B', '#9CA3AF'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          animation: { duration: 0 }
+        }
+      });
+    },
+    renderTrend() {
+      const ctx = document.getElementById('trendChart');
+      if (!ctx) return;
+      // 销毁旧实例，避免 canvas 高度异常累积
+      if (ctx._chart) { ctx._chart.destroy(); ctx._chart = null; }
+      ctx.style.height = '200px';
+
+      // 净资产专属渐变（仅净资产填充）
+      const grad = ctx.getContext('2d').createLinearGradient(0, 0, 0, 200);
+      grad.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
+      grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+      ctx._chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['4月', '5月', '6月', '7月', '8月', '9月'],
+          datasets: [
+            {
+              label: '净资产',
+              data: [1203000, 1188500, 1232000, 1255800, 1285432, 1285432],
+              borderColor: '#10B981',
+              backgroundColor: grad,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#10B981',
+              borderWidth: 2.5,
+            },
+            {
+              label: '总资产',
+              data: [2294000, 2323000, 2310000, 2335000, 2360000, 2336400],
+              borderColor: '#F59E0B',
+              backgroundColor: 'rgba(245, 158, 11, 0)',
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#F59E0B',
+              borderWidth: 2,
+              borderDash: [],
+            },
+            {
+              label: '总债务',
+              data: [1091000, 1134500, 1078000, 1079200, 1074568, 1050968],
+              borderColor: '#EF4444',
+              backgroundColor: 'rgba(239, 68, 68, 0)',
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#EF4444',
+              borderWidth: 2,
+              borderDash: [5, 4],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: '#1F2937',
+              titleFont: { size: 11 },
+              bodyFont: { size: 11 },
+              padding: 8,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ¥${ctx.parsed.y.toLocaleString()}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 10 }, color: '#9CA3AF' },
+            },
+            y: {
+              display: true,
+              grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+              ticks: {
+                font: { size: 9 },
+                color: '#9CA3AF',
+                callback: (v) => v >= 10000 ? `¥${(v / 10000).toFixed(0)}万` : `¥${v}`,
+                maxTicksLimit: 5,
+              },
+            },
+          },
+          animation: { duration: 800 },
+        },
+      });
+    },
+    renderReport() {
+      // 月报原型以静态卡片 + 配置条形图展示，无 canvas 依赖；
+      // 此处预留，后续可在此处用 Chart.js 渲染月趋势迷你图。
+    }
+  }
+}
+
+// 路由：URL hash 控制页面
+window.addEventListener('hashchange', () => {
+  const hash = location.hash.slice(1) || 'dashboard';
+  document.querySelector('[x-data]')._x_dataStack[0].go(hash);
+});
+</script>
+
+</body>
+</html>

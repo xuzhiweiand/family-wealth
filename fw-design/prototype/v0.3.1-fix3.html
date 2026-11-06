@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家资 v0.3.1 修复 · 输入框紧凑 + 首页自适应窗口</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; }
+  body { background: #E5E7EB; }
+  .phone-frame { background: #F9FAFB; border-radius: 40px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 12px #1F2937, 0 0 0 14px #374151;
+    overflow: hidden; position: relative; }
+  .notch { height: 30px; background: #1F2937; border-radius: 0 0 18px 18px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; }
+  .status-bar { height: 50px; padding-top: 12px; }
+  .page { display: none; height: calc(852px - 50px); overflow-y: auto; }
+  .page.active { display: block; }
+  .page::-webkit-scrollbar { width: 0; }
+  .gradient-card { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+  .shadow-soft { box-shadow: 0 4px 24px -8px rgba(16,185,129,0.18); }
+  .v031 { background:#F59E0B; color:#fff; font-size:9px; font-weight:700; padding:2px 6px;
+    border-radius:99px; letter-spacing:.5px; display:inline-block; vertical-align:middle; }
+  .growth-pos { color:#059669; } .growth-neg { color:#DC2626; }
+  .mono { font-variant-numeric: tabular-nums; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .row-done { background:#F0FDF4; }
+  .frame-label { position:absolute; top:-42px; left:0; right:0; text-align:center;
+    font-size:12px; font-weight:700; color:#374151; letter-spacing:.3px; }
+  @keyframes toastIn { from { opacity:0; transform: translate(-50%, 12px);} to { opacity:1; transform: translate(-50%, 0);} }
+  .toast { animation: toastIn .22s ease-out; }
+
+  /* ===== 输入框紧凑样式 ===== */
+  .amt-input-wrap {
+    display: inline-flex; align-items: center;
+    background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 999px;
+    padding: 0 8px; height: 30px; gap: 2px; min-width: 96px;
+    transition: all .15s ease;
+  }
+  .amt-input-wrap:focus-within { border-color: #10B981; background:#fff; box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+  .amt-input-wrap.done { background:#ECFDF5; border-color:#A7F3D0; }
+  .amt-input-wrap input {
+    background:transparent; border:0; outline:none; width:68px; text-align:right;
+    font-size:12px; font-weight:700; color:#111827; font-variant-numeric: tabular-nums;
+  }
+  .amt-input-wrap input::placeholder { font-size:10px; font-weight:400; color:#9CA3AF; text-align:right; }
+  .amt-input-wrap .prefix { font-size:10px; color:#9CA3AF; flex-shrink:0; }
+  .amt-input-wrap input::-webkit-inner-spin-button { display:none; }
+</style>
+</head>
+<body class="min-h-screen flex flex-wrap items-center justify-center gap-10 p-8 pt-16" x-data="app()">
+
+<!-- ============ 左侧：变更说明 ============ -->
+<div class="w-[300px] shrink-0 bg-white rounded-3xl shadow-xl p-5 self-center">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="v031" style="font-size:11px;padding:4px 10px">v0.3.1 修复</span>
+    <h1 class="text-base font-bold text-gray-900">紧凑输入 + 首页自适应</h1>
+  </div>
+  <p class="text-[11px] text-gray-500 mb-4">同一套页面，左右两档宽度对照 · 橙色为变更点</p>
+
+  <div class="flex gap-2 mb-4">
+    <button @click="page='update'" class="flex-1 py-2 rounded-xl text-xs font-bold transition"
+      :class="page==='update' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'">更新页</button>
+    <button @click="page='home'" class="flex-1 py-2 rounded-xl text-xs font-bold transition"
+      :class="page==='home' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'">首页</button>
+  </div>
+
+  <div class="space-y-2.5 text-sm">
+    <div class="p-3 rounded-2xl border border-gray-100">
+      <p class="font-semibold text-gray-800 text-[13px]">① 更新页输入框紧凑化</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        通栏输入框改为<strong>胶囊紧凑样式</strong>：圆边、浅灰底、左 ¥ 符号、右对齐、单行高度 30px。直板机放在名称与保存之间，折叠机同样紧凑。
+      </p>
+    </div>
+    <div class="p-3 rounded-2xl border border-gray-100">
+      <p class="font-semibold text-gray-800 text-[13px]">② 首页趋势窗口自适应</p>
+      <p class="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        原固定近半年（6 个月）改为<strong>按屏宽</strong>：直板机 6 个月、折叠机展开 12 个月，与趋势页同一断点。
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-4 pt-3 border-t border-gray-100 text-[10.5px] text-gray-400 leading-relaxed">
+    演示数据：2026-11 当月，净资产 1,285,432（与首页口径一致）。
+  </div>
+</div>
+
+<!-- ============ 直板机 ============ -->
+<div class="relative">
+  <div class="frame-label">直板机 · 393pt</div>
+  <div class="phone-frame" style="width:393px;height:852px">
+    <div class="notch" style="width:110px"></div>
+    <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <!-- 更新页（窄 · 紧凑输入） -->
+    <div class="page" :class="{active: page==='update'}">
+      <div class="px-4 pt-1 pb-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-white shadow-soft flex items-center justify-center">
+            <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </div>
+          <div>
+            <h2 class="text-[16px] font-bold text-gray-900 leading-tight">更新数据</h2>
+            <p class="text-[10px] text-gray-500">2026-11-02 · 共 12 项</p>
+          </div>
+        </div>
+        <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          录入
+        </button>
+      </div>
+
+      <div class="px-4">
+        <div class="gradient-card rounded-2xl px-4 py-3 text-white shadow-soft relative overflow-hidden">
+          <div class="absolute -right-6 -top-8 w-24 h-24 bg-white/10 rounded-full"></div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[10px] opacity-85">更新后净资产预览</p>
+              <p class="text-[20px] font-bold mono mt-0.5">¥<span x-text="fmt(previewNet)"></span></p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] opacity-85">已更新</p>
+              <p class="text-[15px] font-bold mono"><span x-text="savedCount"></span> / 12</p>
+            </div>
+          </div>
+          <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-center text-[10px]">
+            <div class="bg-white/10 rounded-lg py-1"><p class="opacity-80">资产合计</p><p class="font-semibold mono">¥<span x-text="fmt(previewAssets)"></span></p></div>
+            <div class="bg-white/10 rounded-lg py-1"><p class="opacity-80">负债合计</p><p class="font-semibold mono">¥<span x-text="fmt(previewDebts)"></span></p></div>
+            <div class="bg-white/10 rounded-lg py-1"><p class="opacity-80">已填未存</p><p class="font-semibold mono"><span x-text="dirtyCount"></span> 项</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 mt-3 flex items-center gap-1.5">
+        <button @click="filter='all'" class="px-2.5 py-1 rounded-full text-[10px] font-bold" :class="filter==='all' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">全部</button>
+        <button @click="filter='asset'" class="px-2.5 py-1 rounded-full text-[10px] font-bold" :class="filter==='asset' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">资产</button>
+        <button @click="filter='debt'" class="px-2.5 py-1 rounded-full text-[10px] font-bold" :class="filter==='debt' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">负债</button>
+        <span class="ml-auto text-[9px] text-gray-400">紧凑胶囊输入</span>
+      </div>
+
+      <div class="px-4 mt-3 pb-6">
+        <template x-for="grp in visibleGroups" :key="'n' + grp.type">
+          <div class="mb-2.5">
+            <div class="flex items-center gap-1.5 mb-1 px-1">
+              <span class="w-1.5 h-1.5 rounded-full" :style="'background:' + grp.color"></span>
+              <p class="text-[10px] font-bold text-gray-600" x-text="grp.label"></p>
+              <span class="text-[9px] text-gray-400" x-text="grp.items.length + ' 项'"></span>
+            </div>
+            <div class="bg-white rounded-xl overflow-hidden shadow-soft">
+              <template x-for="(item, idx) in grp.items" :key="'n2' + item.id">
+                <div class="px-3 py-2.5 border-b border-gray-50 last:border-0" :class="item.saved ? 'row-done' : ''">
+                  <!-- 直板机：名称 + 紧凑输入 + 保存，元信息单独一行 -->
+                  <div class="flex items-center gap-2">
+                    <p class="flex-1 text-[12px] font-semibold text-gray-900 truncate" x-text="item.name"></p>
+                    <div class="amt-input-wrap" :class="{done: item.saved}">
+                      <span class="prefix">¥</span>
+                      <input type="number" inputmode="decimal" :disabled="item.saved" :value="item.value"
+                        @input="item.value = $event.target.value" placeholder="最新值">
+                    </div>
+                    <button @click="saveOne(item)"
+                      class="shrink-0 h-[26px] px-2 rounded-md text-[10px] font-bold transition"
+                      :class="item.saved ? 'bg-emerald-50 text-emerald-600' : (valid(item.value) ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400')">
+                      <span x-show="!item.saved">保存</span>
+                      <span x-show="item.saved">已更新</span>
+                    </button>
+                  </div>
+                  <p class="text-[10px] text-gray-400 mt-1">
+                    上次 <span class="mono" x-text="'¥' + fmt(item.last)"></span>
+                    <span class="mx-1">·</span><span x-text="item.lastDate"></span>
+                    <span x-show="item.saved" class="ml-1 text-emerald-600">· 本月已更新</span>
+                  </p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+        <p class="mt-2 text-[9px] text-gray-400 text-center">没找到要更新的资产？点右上角「＋ 录入」新增</p>
+      </div>
+    </div>
+
+    <!-- 首页（窄 · 近 6 个月趋势） -->
+    <div class="page" :class="{active: page==='home'}">
+      <div class="px-4 pt-1 pb-1 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-gray-500">下午好，</p>
+          <p class="text-[16px] font-bold text-gray-900 leading-tight">王家</p>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center">
+          <span class="text-[13px] font-bold text-white">王</span>
+        </div>
+      </div>
+
+      <div class="px-4">
+        <div class="gradient-card rounded-2xl px-4 py-4 text-white shadow-soft relative overflow-hidden">
+          <div class="absolute -right-6 -top-8 w-24 h-24 bg-white/10 rounded-full"></div>
+          <p class="text-[11px] opacity-85">家庭净资产</p>
+          <p class="text-[22px] font-bold mono mt-1">¥1,285,432</p>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="px-1.5 py-0.5 rounded bg-white/15 text-[9px]">近 6 个月</span>
+            <span class="text-[10px] font-semibold text-red-300">▲ ¥128,432 (+11.80%)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 mt-3">
+        <div class="bg-white rounded-xl border border-gray-100 p-3">
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[11px] font-bold text-gray-900">近 6 个月趋势</p>
+            <p class="text-[9px] text-gray-400">直板机仅展示半年</p>
+          </div>
+          <div class="h-[110px]">
+            <svg viewBox="0 0 320 110" class="w-full h-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="hN" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10B981" stop-opacity="0.22"/><stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polygon points="0,85 64,70 128,58 192,46 256,38 320,18 320,110 0,110" fill="url(#hN)"/>
+              <polyline points="0,85 64,70 128,58 192,46 256,38 320,18" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="320" cy="18" r="4" fill="#10B981"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-6 gap-0 mt-1">
+            <div class="text-center"><p class="text-[9px] text-gray-500">06</p><p class="text-[8px] text-emerald-600 font-semibold">+1.8%</p></div>
+            <div class="text-center"><p class="text-[9px] text-gray-500">07</p><p class="text-[8px] text-emerald-600 font-semibold">+0.3%</p></div>
+            <div class="text-center"><p class="text-[9px] text-gray-500">08</p><p class="text-[8px] text-emerald-600 font-semibold">+1.2%</p></div>
+            <div class="text-center"><p class="text-[9px] text-gray-500">09</p><p class="text-[8px] text-emerald-600 font-semibold">+0.6%</p></div>
+            <div class="text-center"><p class="text-[9px] text-gray-500">10</p><p class="text-[8px] text-red-600 font-semibold">-1.2%</p></div>
+            <div class="text-center"><p class="text-[9px] font-bold text-emerald-600">11</p><p class="text-[8px] text-emerald-600 font-semibold">+2.4%</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 mt-3 pb-24 grid grid-cols-4 gap-2">
+        <button class="flex flex-col items-center gap-1 py-3 rounded-xl bg-white border border-gray-100">
+          <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20 4.5V10h-5.5"/></svg>
+          <span class="text-[10px] font-semibold text-gray-700">更新</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 py-3 rounded-xl bg-white border border-gray-100">
+          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          <span class="text-[10px] font-semibold text-gray-700">录入</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 py-3 rounded-xl bg-white border border-gray-100">
+          <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg>
+          <span class="text-[10px] font-semibold text-gray-700">趋势</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 py-3 rounded-xl bg-white border border-gray-100">
+          <svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="text-[10px] font-semibold text-gray-700">家庭</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 底部 Tab -->
+    <div class="absolute left-0 right-0 bottom-0 h-[62px] bg-white border-t border-gray-200 flex items-end pb-1.5 z-30">
+      <div class="flex-1 h-10 flex flex-col items-center justify-center"><svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1Z"/></svg><span class="text-[9px] font-bold text-emerald-600">总览</span></div>
+      <div class="flex-1 h-10 flex flex-col items-center justify-center"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg><span class="text-[9px] text-gray-400">资产</span></div>
+      <div class="flex-1 h-[62px] flex flex-col items-center justify-end pb-1 relative">
+        <button class="w-[46px] h-[46px] rounded-full bg-emerald-500 flex items-center justify-center -mt-5" style="box-shadow:0 6px 16px -4px rgba(16,185,129,0.55)">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20 4.5V10h-5.5"/></svg>
+        </button>
+        <span class="text-[9px] font-bold text-gray-500 mt-0.5">更新</span>
+      </div>
+      <div class="flex-1 h-10 flex flex-col items-center justify-center"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg><span class="text-[9px] text-gray-400">趋势</span></div>
+      <div class="flex-1 h-10 flex flex-col items-center justify-center"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span class="text-[9px] text-gray-400">我的</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 折叠机展开 ============ -->
+<div class="relative">
+  <div class="frame-label">折叠机展开 · 736pt</div>
+  <div class="phone-frame" style="width:736px;height:852px">
+    <div class="notch" style="width:150px"></div>
+    <div class="status-bar flex justify-between items-center px-8 text-sm font-semibold text-gray-900 relative z-40">
+      <span>9:41</span>
+      <div class="flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <!-- 更新页（宽 · 紧凑输入） -->
+    <div class="page" :class="{active: page==='update'}">
+      <div class="px-6 pt-1 pb-2 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900 leading-tight">更新数据</h2>
+            <p class="text-[11px] text-gray-500">2026-11-02 · 共 12 项</p>
+          </div>
+        </div>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-bold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          录入
+        </button>
+      </div>
+
+      <div class="px-6">
+        <div class="gradient-card rounded-3xl px-5 py-4 text-white shadow-soft relative overflow-hidden">
+          <div class="absolute -right-8 -top-10 w-32 h-32 bg-white/10 rounded-full"></div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs opacity-85">更新后净资产预览</p>
+              <p class="text-[26px] font-bold mono mt-0.5">¥<span x-text="fmt(previewNet)"></span></p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs opacity-85">已更新</p>
+              <p class="text-lg font-bold mono"><span x-text="savedCount"></span> / 12</p>
+            </div>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="bg-white/10 rounded-xl py-1.5"><p class="opacity-80">资产合计</p><p class="font-semibold mono mt-0.5">¥<span x-text="fmt(previewAssets)"></span></p></div>
+            <div class="bg-white/10 rounded-xl py-1.5"><p class="opacity-80">负债合计</p><p class="font-semibold mono mt-0.5">¥<span x-text="fmt(previewDebts)"></span></p></div>
+            <div class="bg-white/10 rounded-xl py-1.5"><p class="opacity-80">已填未存</p><p class="font-semibold mono mt-0.5"><span x-text="dirtyCount"></span> 项</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 mt-4 flex items-center gap-2">
+        <button @click="filter='all'" class="px-3 py-1.5 rounded-full text-xs font-bold" :class="filter==='all' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">全部</button>
+        <button @click="filter='asset'" class="px-3 py-1.5 rounded-full text-xs font-bold" :class="filter==='asset' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">资产</button>
+        <button @click="filter='debt'" class="px-3 py-1.5 rounded-full text-xs font-bold" :class="filter==='debt' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'">负债</button>
+        <span class="ml-auto text-[11px] text-gray-400">紧凑胶囊，行内单行三段</span>
+      </div>
+
+      <div class="px-6 mt-4 pb-6">
+        <template x-for="grp in visibleGroups" :key="'w' + grp.type">
+          <div class="mb-3">
+            <div class="flex items-center gap-2 mb-1.5 px-1">
+              <span class="w-1.5 h-1.5 rounded-full" :style="'background:' + grp.color"></span>
+              <p class="text-[11px] font-bold text-gray-600" x-text="grp.label"></p>
+              <span class="text-[9px] text-gray-400" x-text="grp.items.length + ' 项'"></span>
+            </div>
+            <div class="bg-white rounded-2xl overflow-hidden shadow-soft">
+              <template x-for="(item, idx) in grp.items" :key="'w2' + item.id">
+                <div class="px-3 py-2.5 border-b border-gray-50 last:border-0" :class="item.saved ? 'row-done' : ''">
+                  <!-- 折叠机：单行三段，紧凑输入居中 -->
+                  <div class="flex items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[13px] font-semibold text-gray-900 truncate" x-text="item.name"></p>
+                      <p class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        上次 <span class="mono" x-text="'¥' + fmt(item.last)"></span>
+                        <span class="mx-0.5">·</span><span x-text="item.lastDate"></span>
+                      </p>
+                    </div>
+                    <div class="amt-input-wrap" :class="{done: item.saved}">
+                      <span class="prefix">¥</span>
+                      <input type="number" inputmode="decimal" :disabled="item.saved" :value="item.value"
+                        @input="item.value = $event.target.value" placeholder="最新值">
+                    </div>
+                    <button @click="saveOne(item)"
+                      class="shrink-0 h-[30px] px-3 rounded-md text-[11px] font-bold transition"
+                      :class="item.saved ? 'bg-emerald-50 text-emerald-600' : (valid(item.value) ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400')">
+                      <span x-show="!item.saved">保存</span>
+                      <span x-show="item.saved">已更新</span>
+                    </button>
+                  </div>
+                  <p class="text-[9px] text-emerald-600 mt-1" x-show="item.saved">本月已更新</p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+        <p class="text-[10px] text-gray-400 text-center mt-2">没找到要更新的资产？点右上角「＋ 录入」新增</p>
+      </div>
+    </div>
+
+    <!-- 首页（宽 · 近 12 个月趋势） -->
+    <div class="page" :class="{active: page==='home'}">
+      <div class="px-6 pt-1 pb-1 flex items-center justify-between">
+        <div>
+          <p class="text-[12px] text-gray-500">下午好，</p>
+          <p class="text-xl font-bold text-gray-900 leading-tight">王家</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+          <span class="text-sm font-bold text-white">王</span>
+        </div>
+      </div>
+
+      <div class="px-6">
+        <div class="gradient-card rounded-3xl px-5 py-4 text-white shadow-soft relative overflow-hidden">
+          <div class="absolute -right-8 -top-10 w-32 h-32 bg-white/10 rounded-full"></div>
+          <p class="text-xs opacity-85">家庭净资产</p>
+          <p class="text-[28px] font-bold mono mt-1">¥1,285,432</p>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="px-2 py-0.5 rounded bg-white/15 text-[10px]">近 12 个月</span>
+            <span class="text-xs font-semibold text-red-300">▲ ¥128,432 (+11.78%)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 mt-3">
+        <div class="bg-white rounded-2xl border border-gray-100 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[13px] font-bold text-gray-900">近 12 个月趋势</p>
+            <p class="text-[10px] text-emerald-600 font-semibold">折叠机展开 · 完整一年</p>
+          </div>
+          <div class="h-[150px]">
+            <svg viewBox="0 0 640 150" class="w-full h-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="hW" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10B981" stop-opacity="0.22"/><stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polygon points="0,130 58,120 116,112 174,100 232,92 290,80 348,72 406,60 464,48 522,38 580,30 640,14 640,150 0,150" fill="url(#hW)"/>
+              <polyline points="0,130 58,120 116,112 174,100 232,92 290,80 348,72 406,60 464,48 522,38 580,30 640,14" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="640" cy="14" r="4" fill="#10B981"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-12 gap-0 mt-1">
+            <template x-for="(m, i) in ['12','01','02','03','04','05','06','07','08','09','10','11']" :key="'hm' + i">
+              <div class="text-center"><p class="text-[8.5px] text-gray-500" x-text="m"></p>
+                <p class="text-[7.5px]" :class="[0,1,2,3,4,6,7,8,10].includes(i) ? 'text-emerald-600' : 'text-red-600'">
+                  <template x-if="i===0">—</template>
+                  <template x-if="i===1">+2.3%</template>
+                  <template x-if="i===2">+1.2%</template>
+                  <template x-if="i===3">+1.8%</template>
+                  <template x-if="i===4">+1.3%</template>
+                  <template x-if="i===5">+0.8%</template>
+                  <template x-if="i===6">+0.3%</template>
+                  <template x-if="i===7">+1.2%</template>
+                  <template x-if="i===8">+0.6%</template>
+                  <template x-if="i===9">-1.2%</template>
+                  <template x-if="i===10">-0.8%</template>
+                  <template x-if="i===11">+2.4%</template>
+                </p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 mt-3 pb-20 grid grid-cols-4 gap-3">
+        <button class="flex flex-col items-center gap-1.5 py-4 rounded-2xl bg-white border border-gray-100">
+          <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20 4.5V10h-5.5"/></svg>
+          <span class="text-xs font-semibold text-gray-700">更新</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 py-4 rounded-2xl bg-white border border-gray-100">
+          <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          <span class="text-xs font-semibold text-gray-700">录入</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 py-4 rounded-2xl bg-white border border-gray-100">
+          <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg>
+          <span class="text-xs font-semibold text-gray-700">趋势</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 py-4 rounded-2xl bg-white border border-gray-100">
+          <svg class="w-6 h-6 text-sky-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="text-xs font-semibold text-gray-700">家庭</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 底部 Tab -->
+    <div class="absolute left-0 right-0 bottom-0 h-[66px] bg-white border-t border-gray-200 flex items-end pb-2 z-30">
+      <div class="flex-1 h-11 flex flex-col items-center justify-center"><svg class="w-[22px] h-[22px] text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1Z"/></svg><span class="text-[10px] font-bold text-emerald-600">总览</span></div>
+      <div class="flex-1 h-11 flex flex-col items-center justify-center"><svg class="w-[22px] h-[22px] text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg><span class="text-[10px] text-gray-400">资产</span></div>
+      <div class="flex-1 h-[66px] flex flex-col items-center justify-end pb-1">
+        <button class="w-[50px] h-[50px] rounded-full bg-emerald-500 flex items-center justify-center -mt-5" style="box-shadow:0 6px 16px -4px rgba(16,185,129,0.55)">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20 4.5V10h-5.5"/></svg>
+        </button>
+        <span class="text-[10px] font-bold text-gray-500 mt-0.5">更新</span>
+      </div>
+      <div class="flex-1 h-11 flex flex-col items-center justify-center"><svg class="w-[22px] h-[22px] text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg><span class="text-[10px] text-gray-400">趋势</span></div>
+      <div class="flex-1 h-11 flex flex-col items-center justify-center"><svg class="w-[22px] h-[22px] text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span class="text-[10px] text-gray-400">我的</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TYPE_META = {
+  bank_deposit: { label: '银行存款', color: '#3B82F6' },
+  stock:        { label: '股票',     color: '#8B5CF6' },
+  fund:         { label: '基金',     color: '#EC4899' },
+  wealth:       { label: '理财',     color: '#06B6D4' },
+  cash:         { label: '现金',     color: '#F59E0B' },
+  debt:         { label: '债务',     color: '#EF4444' },
+};
+function app() {
+  return {
+    page: 'update',
+    filter: 'all',
+    items: [
+      { id: 'a1', name: '招商银行 · 储蓄卡', type: 'bank_deposit', last: 562000, lastDate: '10-28', value: '', saved: false },
+      { id: 'a2', name: '工商银行 · 活期',   type: 'bank_deposit', last: 256400, lastDate: '10-28', value: '', saved: false },
+      { id: 'a3', name: 'A 股证券账户',      type: 'stock',        last: 428000, lastDate: '10-31', value: '', saved: false },
+      { id: 'a4', name: '指数基金组合',      type: 'fund',         last: 260000, lastDate: '10-30', value: '', saved: false },
+      { id: 'a5', name: '稳健理财 0901',     type: 'wealth',       last: 96000,  lastDate: '10-20', value: '', saved: false },
+      { id: 'a6', name: '家庭现金',          type: 'cash',         last: 19000,  lastDate: '10-31', value: '', saved: false },
+      { id: 'a7', name: '房贷 · 朝阳',        type: 'debt',         last: 820000, lastDate: '10-31', value: '', saved: false },
+      { id: 'a8', name: '车贷 · 特斯拉',      type: 'debt',         last: 128000, lastDate: '10-31', value: '', saved: false },
+      { id: 'a9', name: '信用卡 · 招行',      type: 'debt',         last: 62968,  lastDate: '10-31', value: '', saved: false },
+    ],
+    get visibleItems() {
+      if (this.filter === 'asset') return this.items.filter(i => i.type !== 'debt');
+      if (this.filter === 'debt') return this.items.filter(i => i.type === 'debt');
+      return this.items;
+    },
+    get visibleGroups() {
+      const groups = new Map();
+      for (const item of this.visibleItems) {
+        if (!groups.has(item.type)) groups.set(item.type, []);
+        groups.get(item.type).push(item);
+      }
+      return [...groups.entries()].map(([type, items]) => ({
+        type, label: TYPE_META[type].label, color: TYPE_META[type].color, items,
+      }));
+    },
+    amountOf(item) {
+      const v = parseFloat(item.value);
+      return Number.isFinite(v) ? v : item.last;
+    },
+    valid(v) {
+      const n = parseFloat(v);
+      return Number.isFinite(n) && n >= 0;
+    },
+    get previewAssets() {
+      return this.items.filter(i => i.type !== 'debt').reduce((s, i) => s + this.amountOf(i), 0);
+    },
+    get previewDebts() {
+      return this.items.filter(i => i.type === 'debt').reduce((s, i) => s + this.amountOf(i), 0);
+    },
+    get previewNet() { return this.previewAssets - this.previewDebts; },
+    get savedCount() { return this.items.filter(i => i.saved).length; },
+    get dirtyCount() {
+      return this.items.filter(i => !i.saved && this.valid(i.value) && i.value !== '').length;
+    },
+    fmt(n) { return Math.round(n).toLocaleString('zh-CN'); },
+    saveOne(item) {
+      if (!this.valid(item.value)) return;
+      item.value = String(Math.round(parseFloat(item.value)));
+      item.saved = true;
+    },
+  };
+}
+</script>
+</body>
+</html>

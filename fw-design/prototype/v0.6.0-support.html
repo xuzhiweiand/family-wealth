@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家资 v0.6.0 · 帮助与反馈高保真单页「私行墨绿 × 鎏金」</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  :root{
+    --ink:#0B3D2E; --ink-deep:#072A1F; --ink-soft:#14533F;
+    --gold:#C6A15B; --gold-light:#E9DCC0; --gold-deep:#A8853F;
+    --bg:#F7F5EF; --surface:#FFFFFF; --surface-warm:#FBFAF6;
+    --hairline:#E7E3D8; --divider:#F0EDE4;
+    --text:#1C2B26; --sub:#75807A; --faint:#A8B0AA;
+    --danger:#B4453C; --success:#0F7B5C; --warning:#B9862F;
+  }
+  * { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif; }
+  .font-display { font-family: Georgia, 'Times New Roman', serif; font-variant-numeric: tabular-nums; }
+  .font-serif-cn { font-family: 'Songti SC', 'STSong', 'SimSun', serif; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* ===== 画廊底 ===== */
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1100px 640px at 18% -12%, rgba(198,161,91,.09), transparent 60%),
+      radial-gradient(820px 560px at 112% 112%, rgba(11,61,46,.4), transparent 55%),
+      #101614;
+    display: flex; align-items: center; justify-content: center;
+    padding: 56px 20px;
+  }
+  .caption {
+    position: fixed; left: 0; right: 0; bottom: 22px; text-align: center;
+    font-family: 'Songti SC','STSong',serif; font-size: 11px; letter-spacing: 5px;
+    color: rgba(233,220,192,.32); pointer-events: none;
+  }
+
+  /* ===== 手机框 ===== */
+  .phone {
+    width: 393px; height: 852px; border-radius: 46px; overflow: hidden; position: relative;
+    background: var(--bg);
+    box-shadow: 0 40px 80px -24px rgba(0,0,0,.65), 0 0 0 11px #1B2420, 0 0 0 13px #2E3A34,
+                0 0 90px -30px rgba(198,161,91,.25);
+  }
+  .notch { height: 30px; width: 110px; background: #1B2420; border-radius: 0 0 18px 18px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 50; }
+  .status-bar { height: 50px; padding-top: 12px; }
+  .page { height: calc(852px - 50px); overflow-y: auto; position: relative; }
+  .page::-webkit-scrollbar { width: 0; }
+
+  /* 纸感底纹（径向暖光 + SVG 细噪点） */
+  .paper {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(700px 420px at 85% -8%, rgba(198,161,91,.08), transparent 60%),
+      radial-gradient(520px 380px at -12% 30%, rgba(11,61,46,.05), transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.52 0 0 0 0 0.46 0 0 0 0.028 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ===== 墨绿 hero ===== */
+  .hero-ink {
+    background:
+      radial-gradient(360px 240px at 88% -12%, rgba(198,161,91,.24), transparent 62%),
+      radial-gradient(300px 300px at -12% 108%, rgba(20,83,63,.92), transparent 60%),
+      linear-gradient(160deg, #0E4634 0%, var(--ink) 46%, var(--ink-deep) 100%);
+    box-shadow: 0 18px 40px -18px rgba(7,42,31,.5);
+    position: relative; overflow: hidden;
+  }
+  .hero-ink::before { content:""; position:absolute; width:230px; height:230px; border-radius:50%;
+    border:1px solid rgba(233,220,192,.16); top:-96px; right:-74px; }
+  .hero-ink::after { content:""; position:absolute; width:156px; height:156px; border-radius:50%;
+    border:1px solid rgba(233,220,192,.1); top:-44px; right:-22px; }
+  .ring-3 { position:absolute; width:110px; height:110px; border-radius:50%;
+    border:1px solid rgba(233,220,192,.07); top:-8px; right:24px; pointer-events:none; }
+
+  .seal {
+    width: 28px; height: 28px; border-radius: 7px; background: var(--danger);
+    color:#F7F1E4; font-family:'Songti SC','STSong',serif; font-size:11px; line-height:1.1;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    box-shadow: 0 2px 8px rgba(180,69,60,.4); transform: rotate(-3deg);
+  }
+
+  /* ===== 组件 ===== */
+  .card {
+    background: var(--surface); border: 1px solid #ECE8DD; border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(28,43,38,.05);
+  }
+  .icon-chip { width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon-chip.ink  { background: rgba(11,61,46,.08); color: var(--ink); }
+  .icon-chip.gold { background: rgba(198,161,91,.14); color: var(--gold-deep); }
+  .icon-chip.red  { background: rgba(180,69,60,.09); color: var(--danger); }
+
+  .row { display:flex; align-items:center; gap:12px; padding: 13px 0; border-bottom: 1px solid var(--divider); }
+  .row:last-child { border-bottom: 0; }
+
+  .tab-bar {
+    background: rgba(251,250,246,.92); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--hairline);
+  }
+  .tab-item { color: var(--faint); }
+  .tab-item.on { color: var(--ink); }
+  .tab-dot { width:4px; height:4px; border-radius:99px; background: var(--gold); margin:3px auto 0; opacity:0; }
+  .tab-item.on .tab-dot { opacity:1; }
+
+  .hairline-gold { height:1px; background: linear-gradient(90deg, transparent, rgba(198,161,91,.5), transparent); }
+
+  /* ===== 动效 ===== */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(16px);} to { opacity:1; transform: translateY(0);} }
+  .fu { opacity:0; animation: fadeUp .55s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes ringIn { from { opacity:0; transform: scale(.94);} to { opacity:1; transform: scale(1);} }
+  .hero-ink::before, .hero-ink::after { animation: ringIn 1s ease-out both; }
+  .eye-btn { transition: opacity .18s ease, transform .18s ease; }
+  .eye-btn:active { opacity:.7; transform: scale(.92); }
+  .amount-swap { transition: opacity .16s ease; }
+
+  /* ===== 本页补充：chip / input-card / faq / btn-ink / toast ===== */
+  .chip { border:1px solid var(--hairline); background:var(--surface); color:var(--sub);
+    border-radius:999px; font-size:12px; padding:6px 14px; transition: all .18s ease; }
+  .chip.on { background: var(--ink); border-color: var(--ink); color:#F7F3E8; font-weight:600; }
+  .input-card {
+    background: var(--surface-warm); border:1px solid var(--hairline); border-radius:14px;
+    outline:none; transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .input-card:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(198,161,91,.14); }
+  .faq-body { display:none; }
+  .faq.open .faq-body { display:block; }
+  .faq.open .faq-arrow { transform: rotate(90deg); }
+  .faq-arrow { transition: transform .2s ease; }
+  .btn-ink {
+    background: var(--ink); color:#F7F3E8; border-radius: 16px;
+    box-shadow: 0 10px 22px -10px rgba(11,61,46,.5);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .btn-ink:active { opacity:.88; transform: translateY(1px); }
+  @keyframes toastIn { from { opacity:0; transform: translate(-50%, 12px);} to { opacity:1; transform: translate(-50%, 0);} }
+  .toast { animation: toastIn .22s ease-out; }
+  textarea { resize:none; }
+</style>
+</head>
+<body x-data="support()">
+
+<div class="caption">家 资 · 私 行 墨 绿 · v 0 . 6 . 0 · 帮 助 与 反 馈</div>
+
+<div class="phone paper">
+  <div class="notch"></div>
+  <div class="status-bar flex justify-between items-center px-6 text-xs font-semibold relative z-40" style="color:var(--text)">
+    <span class="num">9:41</span>
+    <div class="flex items-center gap-1">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h2v-8H2v8zm5 0h2V10H7v12zm5 0h2V6h-2v16zm5 0h2V2h-2v20z"/></svg>
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+
+  <div class="page pb-8">
+
+    <!-- 子页头：返回 + 标题 -->
+    <div class="px-5 pt-1 pb-3 flex items-center justify-between fu" style="animation-delay:.05s">
+      <div class="w-9 h-9 rounded-full card flex items-center justify-center cursor-pointer">
+        <svg class="w-[18px] h-[18px]" style="color:var(--ink)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+      </div>
+      <p class="font-serif-cn text-[16px] tracking-wide" style="color:var(--text)">帮助与反馈</p>
+      <div class="w-9"></div>
+    </div>
+
+    <div class="px-6 space-y-4">
+      <!-- 常见问题 -->
+      <div class="fu" style="animation-delay:.12s">
+        <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">常见问题</p>
+        <div class="card px-4">
+          <div class="faq py-3" :class="faq===1 && 'open'" style="border-bottom:1px solid var(--divider)">
+            <button class="w-full flex items-center justify-between text-left" @click="faq = faq===1 ? 0 : 1">
+              <span class="text-[12.5px] font-medium" style="color:var(--text)">数据会被平台看到吗？</span>
+              <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+              不会。所有资产数据在本机用主密码派生密钥加密后才上传，服务端只存密文，无法还原明文。
+            </p>
+          </div>
+          <div class="faq py-3" :class="faq===2 && 'open'" style="border-bottom:1px solid var(--divider)">
+            <button class="w-full flex items-center justify-between text-left" @click="faq = faq===2 ? 0 : 2">
+              <span class="text-[12.5px] font-medium" style="color:var(--text)">忘记加密密码怎么办？</span>
+              <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+              加密密码不上传、不可找回。忘记后只能重置账号并重新录入数据，请务必妥善保管。
+            </p>
+          </div>
+          <div class="faq py-3" :class="faq===3 && 'open'">
+            <button class="w-full flex items-center justify-between text-left" @click="faq = faq===3 ? 0 : 3">
+              <span class="text-[12.5px] font-medium" style="color:var(--text)">如何邀请家庭成员？</span>
+              <svg class="faq-arrow w-4 h-4 shrink-0" style="color:var(--gold-deep)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <p class="faq-body text-[11.5px] leading-relaxed pt-2" style="color:var(--sub)">
+              在「我的 · 绑定手机号」后，可通过手机号邀请家人加入家庭空间，共享同一份加密账本。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提交反馈 -->
+      <div class="fu" style="animation-delay:.18s">
+        <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">提交反馈</p>
+        <div class="card p-4">
+          <div class="flex flex-wrap gap-2 mb-3">
+            <template x-for="(t,i) in fbTypes" :key="i">
+              <button class="chip" :class="fbType===i && 'on'" @click="fbType=i" x-text="t"></button>
+            </template>
+          </div>
+          <div class="relative">
+            <textarea rows="4" maxlength="500" x-model="fbText"
+              class="input-card w-full p-3 text-[12.5px] leading-relaxed"
+              placeholder="请描述你遇到的问题或建议（500 字以内）…"></textarea>
+            <span class="absolute bottom-2.5 right-3 text-[10px] num" style="color:var(--faint)" x-text="fbText.length + ' / 500'"></span>
+          </div>
+          <div class="flex items-center gap-2 mt-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+                 style="border:1px dashed var(--hairline);color:var(--faint)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+            </div>
+            <p class="text-[10px]" style="color:var(--faint)">可添加截图（选填）</p>
+          </div>
+          <button class="btn-ink w-full h-[44px] mt-3.5 text-[13px] font-semibold tracking-[3px]" @click="submitFeedback()">提交反馈</button>
+        </div>
+      </div>
+
+      <!-- 我的反馈 -->
+      <div class="fu" style="animation-delay:.24s">
+        <p class="text-[10px] tracking-[2px] mb-1.5 px-1" style="color:var(--faint)">我的反馈</p>
+        <div class="card px-4">
+          <template x-for="t in tickets" :key="t.id">
+            <div class="row" style="min-height:56px">
+              <div class="icon-chip" :class="t.status==='已解决' ? 'ink' : 'gold'">
+                <svg x-show="t.status==='已解决'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                <svg x-show="t.status!=='已解决'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="num text-[12.5px] font-semibold" style="color:var(--text)" x-text="t.id"></p>
+                <p class="text-[10px] mt-0.5" style="color:var(--faint)" x-text="t.desc"></p>
+              </div>
+              <span class="text-[10.5px] font-semibold"
+                    :style="t.status==='已解决' ? 'color:var(--success)' : 'color:var(--warning)'"
+                    x-text="t.status"></span>
+            </div>
+          </template>
+        </div>
+        <p class="text-center text-[10px] mt-4 mb-2" style="color:var(--faint)">工单将在 1 个工作日内处理 · 感谢你的反馈</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div x-show="toast" x-transition.opacity
+       class="toast absolute left-1/2 bottom-10 z-50 px-4 py-2.5 rounded-full text-[12px] font-medium whitespace-nowrap"
+       style="transform:translateX(-50%);background:rgba(11,61,46,.94);color:#F7F3E8;box-shadow:0 10px 24px -8px rgba(7,42,31,.5)"
+       x-text="toast"></div>
+</div>
+
+<script>
+function support() {
+  return {
+    faq: 0,
+    fbTypes: ['功能异常', '体验建议', '数据问题', '其他'],
+    fbType: 0,
+    fbText: '',
+    toast: '',
+    tickets: [
+      { id: 'FB-20261028-0031', desc: '趋势图月份顺序显示异常', status: '已解决' }
+    ],
+
+    submitFeedback() {
+      if (!this.fbText.trim()) {
+        this.showToast('请先填写反馈内容');
+        return;
+      }
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const id = 'FB-' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' +
+                 String(Math.floor(1000 + Math.random()*9000));
+      this.tickets.unshift({ id, desc: this.fbText.trim().slice(0, 18) + (this.fbText.trim().length > 18 ? '…' : ''), status: '待处理' });
+      this.fbText = '';
+      this.showToast('已提交，工单号 ' + id);
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      clearTimeout(this._t);
+      this._t = setTimeout(() => { this.toast = ''; }, 2200);
+    }
+  }
+}
+</script>
+</body>
+</html>
