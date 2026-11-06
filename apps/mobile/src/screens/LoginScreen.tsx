@@ -33,6 +33,7 @@ import Svg, {
   Defs,
   LinearGradient,
   Path,
+  RadialGradient,
   Rect,
   Stop,
 } from 'react-native-svg';
@@ -44,29 +45,47 @@ import {
   requestHuaweiAuthorization,
 } from '../services/huawei-auth';
 
-/** 印章内文字 */
-const SEAL_TEXT = 'rgba(247, 241, 228, 1)';
+/** 金色发丝分隔线（透明 → 金 → 透明，对照设计稿 hairline-gold） */
+function GoldHairline({ width }: { width: number | '100%' }) {
+  return (
+    <Svg width={width} height={1}>
+      <Defs>
+        <LinearGradient id="loginHairlineGold" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={COLORS.gold} stopOpacity={0} />
+          <Stop offset="0.5" stopColor={COLORS.gold} stopOpacity={0.5} />
+          <Stop offset="1" stopColor={COLORS.gold} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={0} y={0} width={width} height={1} fill="url(#loginHairlineGold)" />
+    </Svg>
+  );
+}
 
-/** 浅色纸感底：米色底 + 右上墨绿/金色柔光 + 同心金环 */
+/** 浅色纸感底：米色底 + 右上金色 / 左下墨绿局部径向柔光 + 同心金环（对照 paper 底纹） */
 function Backdrop({ width, height }: { width: number; height: number }) {
+  const goldCx = width * 0.85;
+  const goldCy = -height * 0.08;
+  const goldR = Math.min(700, width * 1.8);
+  const inkCx = -width * 0.12;
+  const inkCy = height * 0.3;
+  const inkR = Math.min(520, width * 1.3);
   return (
     <Svg width={width} height={height} style={styles.backdrop} pointerEvents="none">
       <Defs>
-        <LinearGradient id="loginPaperGlow" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="rgba(198, 161, 91, 0.10)" />
-          <Stop offset="0.55" stopColor="rgba(198, 161, 91, 0)" />
-        </LinearGradient>
-        <LinearGradient id="loginInkGlow" x1="0" y1="1" x2="1" y2="0">
-          <Stop offset="0" stopColor="rgba(11, 61, 46, 0.06)" />
-          <Stop offset="1" stopColor="rgba(11, 61, 46, 0)" />
-        </LinearGradient>
+        <RadialGradient id="loginGoldRadial" gradientUnits="userSpaceOnUse" cx={goldCx} cy={goldCy} r={goldR}>
+          <Stop offset="0" stopColor="#C6A15B" stopOpacity={0.08} />
+          <Stop offset="0.6" stopColor="#C6A15B" stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="loginInkRadial" gradientUnits="userSpaceOnUse" cx={inkCx} cy={inkCy} r={inkR}>
+          <Stop offset="0" stopColor="#0B3D2E" stopOpacity={0.05} />
+          <Stop offset="0.55" stopColor="#0B3D2E" stopOpacity={0} />
+        </RadialGradient>
       </Defs>
       <Rect x={0} y={0} width={width} height={height} fill={COLORS.paper} />
-      <Rect x={0} y={0} width={width} height={height} fill="url(#loginPaperGlow)" />
-      <Rect x={0} y={0} width={width} height={height} fill="url(#loginInkGlow)" />
-      <Circle cx={width - 74} cy={-96} r={115} stroke="rgba(198, 161, 91, 0.22)" strokeWidth={1} fill="none" />
-      <Circle cx={width - 22} cy={-44} r={78} stroke="rgba(198, 161, 91, 0.16)" strokeWidth={1} fill="none" />
-      <Circle cx={width - 56} cy={-8} r={55} stroke="rgba(198, 161, 91, 0.12)" strokeWidth={1} fill="none" />
+      <Circle cx={goldCx} cy={goldCy} r={goldR} fill="url(#loginGoldRadial)" />
+      <Circle cx={inkCx} cy={inkCy} r={inkR} fill="url(#loginInkRadial)" />
+      <Circle cx={width - 74} cy={-96} r={115} stroke="#C6A15B" strokeOpacity={0.14} strokeWidth={1} fill="none" />
+      <Circle cx={width - 22} cy={-44} r={78} stroke="#C6A15B" strokeOpacity={0.10} strokeWidth={1} fill="none" />
     </Svg>
   );
 }
@@ -134,8 +153,6 @@ export default function LoginScreen() {
   };
 
   const loading = status === 'loading';
-  // 卡片左右各 32 页面内边距 + 22 卡片内边距
-  const buttonWidth = Math.max(1, width - 108);
 
   return (
     <View style={styles.root}>
@@ -156,41 +173,35 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.inner}>
-            {/* 品牌 */}
-            <YStack alignItems="center" marginTop={36}>
-              <XStack alignItems="center" space={10}>
-                <View style={styles.seal}>
-                  <Text fontSize={11} lineHeight={13} color={SEAL_TEXT} style={SERIF_CN_TEXT}>
-                    家资
-                  </Text>
-                </View>
-                <Text fontSize={11} color={COLORS.goldDeep} letterSpacing={4} opacity={0.85}>
-                  FAMILY WEALTH
-                </Text>
-              </XStack>
-              <Text
-                marginTop={20}
-                fontSize={32}
-                color={COLORS.ink}
-                letterSpacing={8}
-                style={SERIF_CN_TEXT}
-              >
-                家资
+            {/* 品牌（对照高保真：墨绿芯片 + 衬线标题 + 金丝线 + 副标题） */}
+            <YStack alignItems="center" marginTop={40} marginBottom={40}>
+              <View style={styles.brandChip}>
+                <Svg width={26} height={26} viewBox="0 0 24 24" fill="none"
+                  stroke={COLORS.ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="m3 11 9-8 9 8" />
+                  <Path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
+                </Svg>
+              </View>
+              <Text fontSize={26} color={COLORS.ink} letterSpacing={8} style={SERIF_CN_TEXT}>
+                家 资
               </Text>
-              <Text marginTop={10} fontSize={11} color={COLORS.sub} letterSpacing={1.5}>
+              <View style={styles.brandHairline}>
+                <GoldHairline width={64} />
+              </View>
+              <Text fontSize={10.5} color={COLORS.sub} letterSpacing={3}>
                 家庭资产管理 · 端到端加密
               </Text>
             </YStack>
 
-            {/* 表单玻璃卡 */}
-            <YStack style={styles.card} marginTop={30}>
+            {/* 表单卡 */}
+            <YStack style={styles.card}>
               {mode === 'signup' && (
                 <YStack marginBottom={20}>
-                  <Text fontSize={10.5} color={COLORS.gold} letterSpacing={2} marginBottom={4}>
+                  <Text fontSize={10} color={COLORS.sub} letterSpacing={2} marginBottom={2}>
                     昵称
                   </Text>
                   <TextInput
-                    style={[styles.input, { borderBottomColor: focused === 'name' ? COLORS.gold : COLORS.hairlineSoft }]}
+                    style={[styles.input, { borderBottomColor: focused === 'name' ? COLORS.gold : COLORS.hairline }]}
                     value={displayName}
                     onChangeText={setDisplayName}
                     onFocus={() => setFocused('name')}
@@ -205,11 +216,11 @@ export default function LoginScreen() {
               )}
 
               <YStack marginBottom={20}>
-                <Text fontSize={10.5} color={COLORS.gold} letterSpacing={2} marginBottom={4}>
+                <Text fontSize={10} color={COLORS.sub} letterSpacing={2} marginBottom={2}>
                   邮箱
                 </Text>
                 <TextInput
-                  style={[styles.input, { borderBottomColor: focused === 'email' ? COLORS.gold : COLORS.hairlineSoft }]}
+                  style={[styles.input, { borderBottomColor: focused === 'email' ? COLORS.gold : COLORS.hairline }]}
                   value={email}
                   onChangeText={setEmail}
                   onFocus={() => setFocused('email')}
@@ -225,12 +236,12 @@ export default function LoginScreen() {
               </YStack>
 
               <YStack marginBottom={4}>
-                <Text fontSize={10.5} color={COLORS.gold} letterSpacing={2} marginBottom={4}>
+                <Text fontSize={10} color={COLORS.sub} letterSpacing={2} marginBottom={2}>
                   密码
                 </Text>
                 <View>
                   <TextInput
-                    style={[styles.input, styles.passwordInput, { borderBottomColor: focused === 'password' ? COLORS.gold : COLORS.hairlineSoft }]}
+                    style={[styles.input, styles.passwordInput, { borderBottomColor: focused === 'password' ? COLORS.gold : COLORS.hairline }]}
                     value={password}
                     onChangeText={setPassword}
                     onFocus={() => setFocused('password')}
@@ -280,30 +291,33 @@ export default function LoginScreen() {
               )}
 
               {/* 合规：登录/注册前须同意隐私政策（AppGallery 审核要求） */}
-              <XStack alignItems="center" space={8} marginTop={12} marginBottom={16}>
+              <XStack alignItems="flex-start" space={10} marginTop={16} marginBottom={16}>
                 <TouchableOpacity
                   onPress={() => setAgreed(!agreed)}
                   hitSlop={8}
                   activeOpacity={0.7}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: agreed }}
-                  accessibilityLabel="同意隐私政策"
+                  accessibilityLabel="同意用户协议与隐私政策"
                 >
                   <View style={[
                     styles.checkbox,
                     agreed ? styles.checkboxOn : null,
                   ]}>
                     {agreed ? (
-                      <Text fontSize={10} lineHeight={12} fontWeight="700" color={COLORS.paper}>
-                        ✓
-                      </Text>
+                      <Svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                        stroke={COLORS.surface} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                        <Path d="M20 6 9 17l-5-5" />
+                      </Svg>
                     ) : null}
                   </View>
                 </TouchableOpacity>
-                <Text flex={1} fontSize={10.5} color={COLORS.sub} lineHeight={16}>
+                <Text flex={1} fontSize={10.5} color={COLORS.sub} lineHeight={17}>
                   我已阅读并同意
+                  <Text color={COLORS.goldDeep}>《用户协议》</Text>
+                  与
                   <Text
-                    color={COLORS.ink}
+                    color={COLORS.goldDeep}
                     onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
                   >
                     《隐私政策》
@@ -319,19 +333,10 @@ export default function LoginScreen() {
                 accessibilityLabel={mode === 'signin' ? '登录' : '注册'}
               >
                 <View style={[styles.primaryBtn, { opacity: !agreed ? 0.5 : 1 }]}>
-                  <Svg width={buttonWidth} height={48} style={styles.btnBg} pointerEvents="none">
-                    <Defs>
-                      <LinearGradient id="loginGoldBtn" x1="0" y1="0" x2="1" y2="0">
-                        <Stop offset="0" stopColor={COLORS.goldLight} />
-                        <Stop offset="1" stopColor={COLORS.gold} />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect x={0} y={0} width={buttonWidth} height={48} rx={14} fill="url(#loginGoldBtn)" />
-                  </Svg>
                   {loading ? (
                     <Spinner color={COLORS.inkDeep} size="small" />
                   ) : (
-                    <Text fontSize={13} fontWeight="600" color={COLORS.inkDeep} letterSpacing={3}>
+                    <Text fontSize={15} fontWeight="600" color={COLORS.inkDeep} letterSpacing={6}>
                       {mode === 'signin' ? '登 录' : '注 册'}
                     </Text>
                   )}
@@ -372,12 +377,16 @@ export default function LoginScreen() {
             <YStack>
               {huaweiAvailable && (
                 <>
-                  <XStack alignItems="center" space={10} marginBottom={16}>
-                    <View style={styles.dividerLine} />
+                  <XStack alignItems="center" space={12} marginBottom={16}>
+                    <View style={styles.dividerLine}>
+                      <GoldHairline width="100%" />
+                    </View>
                     <Text fontSize={10} color={COLORS.faint} letterSpacing={2}>
                       或
                     </Text>
-                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerLine}>
+                      <GoldHairline width="100%" />
+                    </View>
                   </XStack>
 
                   <TouchableOpacity
@@ -389,18 +398,18 @@ export default function LoginScreen() {
                   >
                     <XStack
                       height={48}
-                      borderRadius={14}
+                      borderRadius={999}
                       borderWidth={1}
-                      borderColor={COLORS.hairlineSoft}
+                      borderColor={COLORS.ink}
                       backgroundColor={COLORS.surface}
                       alignItems="center"
                       justifyContent="center"
-                      space={10}
+                      space={8}
                     >
                       {huaweiLoading ? (
                         <Spinner color={COLORS.gold} size="small" />
                       ) : null}
-                      <Text fontSize={13.5} fontWeight="600" color={COLORS.ink}>
+                      <Text fontSize={15} fontWeight="600" color={COLORS.ink}>
                         {huaweiLoading ? '正在授权…' : '华为账号登录'}
                       </Text>
                     </XStack>
@@ -408,11 +417,8 @@ export default function LoginScreen() {
                 </>
               )}
 
-              <Text textAlign="center" fontSize={10} color={COLORS.faint} marginTop={16} lineHeight={15}>
-                登录即代表同意《用户协议》与《隐私政策》
-              </Text>
-              <Text textAlign="center" fontSize={10} color={COLORS.faint} marginTop={4} lineHeight={15}>
-                资产数据本机加密存储 · 仅你可解密查看
+              <Text textAlign="center" fontSize={9.5} color={COLORS.faint} marginTop={12} lineHeight={15}>
+                华为登录仅获取头像、昵称与 openID
               </Text>
             </YStack>
           </View>
@@ -442,26 +448,27 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 32,
   },
-  seal: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    backgroundColor: COLORS.danger,
+  brandChip: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.hairline,
+    backgroundColor: COLORS.inkWash,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ rotate: '-3deg' }],
-    shadowColor: COLORS.danger,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
+    marginBottom: 20,
+  },
+  brandHairline: {
+    marginTop: 8,
+    marginBottom: 10,
   },
   card: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.hairlineSoft,
-    borderRadius: 22,
-    padding: 22,
+    borderRadius: 20,
+    padding: 20,
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -498,11 +505,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   checkbox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 5,
     borderWidth: 1,
-    borderColor: COLORS.hairlineSoft,
+    borderColor: COLORS.hairline,
     backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -512,21 +519,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gold,
   },
   primaryBtn: {
-    height: 48,
-    borderRadius: 14,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: COLORS.goldDeep,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.55,
     shadowRadius: 26,
     elevation: 8,
-  },
-  btnBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
   },
   spacer: {
     flex: 1,
@@ -535,6 +538,5 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: COLORS.divider,
   },
 });
