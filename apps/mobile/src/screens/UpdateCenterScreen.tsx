@@ -357,9 +357,6 @@ export default function UpdateCenterScreen() {
                         ¥ {amountText(preview.netWorth)}
                       </Text>
                     </YStack>
-                    <View style={styles.seal}>
-                      <Text fontSize={11} color={COLORS.paper} style={SERIF_CN_TEXT}>预估</Text>
-                    </View>
                   </XStack>
 
                   <XStack alignItems="center" space={8}>
@@ -480,15 +477,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
-  },
-  seal: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    backgroundColor: COLORS.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-3deg' }],
   },
   changedPill: {
     backgroundColor: 'rgba(198,161,91,0.18)',

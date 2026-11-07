@@ -67,8 +67,6 @@ const CN_MONTHS = [
   '七月', '八月', '九月', '十月', '十一月', '十二月',
 ];
 
-const CN_NUMERALS = ['壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾', '拾壹', '拾贰'];
-
 function monthRef(month: string): Date {
   return new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1);
 }
@@ -80,11 +78,6 @@ function monthLabel(month: string): string {
 /** '2026-10' → '十月'（hero 标签用） */
 function monthCN(month: string): string {
   return CN_MONTHS[Number(month.slice(5, 7)) - 1] ?? month;
-}
-
-/** '2026-10' → '拾月'（朱砂印章用） */
-function monthSeal(month: string): string {
-  return `${CN_NUMERALS[Number(month.slice(5, 7)) - 1] ?? month.slice(5, 7)}月`;
 }
 
 /** 金额（分）→ '3,356,200'（不带 ¥，供 hero / 三列 / 构成行） */
@@ -121,7 +114,6 @@ interface HeroStat {
 interface HeroModel {
   label: string;
   amount: string;
-  seal: string;
   stats: HeroStat[];
 }
 
@@ -249,7 +241,6 @@ export default function ReportScreen() {
       return {
         label: `${monthCN(monthReport.month)}净资产（元）`,
         amount: amountText(totals.netWorth),
-        seal: monthSeal(monthReport.month),
         stats: [
           { label: '期初', value: prev === null ? '—' : amountText(prev.netWorth), tone: 'gold' },
           { label: '期末', value: amountText(totals.netWorth), tone: 'muted' },
@@ -261,7 +252,6 @@ export default function ReportScreen() {
     return {
       label: `${yearReport.year} 年净资产（元）`,
       amount: amountText(yearReport.endTotals.netWorth),
-      seal: '年报',
       stats: [
         {
           label: '年初',
@@ -424,13 +414,6 @@ function HeroCard({ width, model }: { width: number; model: HeroModel }) {
               minimumFontScale={0.65}
             >
               {`¥ ${model.amount}`}
-            </Text>
-          </View>
-          <View style={styles.seal}>
-            <Text
-              style={[styles.sealText, model.seal.length >= 3 && styles.sealTextSmall, SERIF_CN_TEXT]}
-            >
-              {model.seal}
             </Text>
           </View>
         </View>
@@ -728,23 +711,6 @@ const styles = StyleSheet.create({
     color: COLORS.inkWash,
     marginTop: 10,
   },
-  seal: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    marginLeft: 12,
-    backgroundColor: COLORS.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-3deg' }],
-    shadowColor: COLORS.danger,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sealText: { fontSize: 11, color: COLORS.inkWash, textAlign: 'center' },
-  sealTextSmall: { fontSize: 9 },
   heroHairline: { height: 1, backgroundColor: 'rgba(198,161,91,0.5)', marginVertical: 16 },
   heroStats: { flexDirection: 'row' },
   heroStat: { flex: 1, alignItems: 'center' },

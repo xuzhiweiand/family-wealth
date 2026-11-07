@@ -106,5 +106,8 @@ struct Index {
     }
     .width('100%')
     .height('100%')
+    // 纸感底：与 start_window_background / 登录页 COLORS.paper 一致，
+    // 避免启动图淡出到 RN 首帧之间露出系统白屏
+    .backgroundColor('#F7F5EF')
   }
 }

@@ -629,9 +629,6 @@ export default function TrendsScreen() {
                       {deltaText}
                     </Text>
                   </YStack>
-                  <View style={styles.seal}>
-                    <Text fontSize={11} color={COLORS.paper} style={SERIF_CN_TEXT}>趋势</Text>
-                  </View>
                 </XStack>
 
                 <XStack alignItems="center" space={8} marginTop={14}>
@@ -894,15 +891,6 @@ const styles = {
     position: 'absolute',
     top: 0,
     left: 0,
-  },
-  seal: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    backgroundColor: COLORS.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-3deg' }],
   },
   pctPill: {
     backgroundColor: 'rgba(198,161,91,0.18)',

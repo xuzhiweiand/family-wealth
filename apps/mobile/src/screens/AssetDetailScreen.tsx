@@ -1,7 +1,7 @@
 ﻿/**
  * 资产详情页（v0.6.0「私行墨绿 × 鎏金」单页复刻）
  *
- * 版式：页头（返回 / 资产详情 / 编辑）→ 类型芯片 + 名称 + 朱砂印章
+ * 版式：页头（返回 / 资产详情 / 编辑）→ 类型芯片 + 名称
  *       → 当前估值（眼睛显隐 + 环比）→ 近 6 个月迷你走势
  *       → 快照记录 → 资产信息（details 键值对）→ 底部操作。
  *
@@ -316,7 +316,7 @@ export default function AssetDetailScreen() {
         )}
       </XStack>
 
-      {/* 类型芯片 + 名称 + 朱砂印章 */}
+      {/* 类型芯片 + 名称 */}
       <XStack alignItems="center" paddingHorizontal={24} marginTop={4}>
         <XStack flex={1} alignItems="center" space={12}>
           <View style={styles.iconChip}>
@@ -336,9 +336,6 @@ export default function AssetDetailScreen() {
             </Text>
           </YStack>
         </XStack>
-        <View style={styles.seal}>
-          <Text fontSize={11} color={COLORS.inkWash} style={SERIF_CN_TEXT}>资产</Text>
-        </View>
       </XStack>
 
       {/* 当前估值 + 环比 */}
@@ -664,16 +661,6 @@ const styles = {
     backgroundColor: 'rgba(198,161,91,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  seal: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    backgroundColor: COLORS.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-    transform: [{ rotate: '-3deg' }],
   },
   eyeBtn: {
     width: 30,
