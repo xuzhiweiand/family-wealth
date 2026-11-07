@@ -2,7 +2,7 @@
  * 资产详情页（v0.6.0「私行墨绿 × 鎏金」单页复刻）
  *
  * 版式：页头（返回 / 资产详情 / 编辑）→ 类型芯片 + 名称
- *       → 当前估值（眼睛显隐 + 环比）→ 近 6 个月迷你走势
+ *       → 当前估值（眼睛显隐 + 环比）→ 近 6 个月迷你柱状走势
  *       → 快照记录 → 资产信息（details 键值对）→ 底部操作。
  *
  * 业务不变：
@@ -18,18 +18,11 @@
 import { COLORS } from '../theme';
 import { MONEY_TEXT, SERIF_CN_TEXT } from '../typography';
 import { useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, Switch, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, XStack, YStack } from 'tamagui';
-import Svg, {
-  Circle,
-  Defs,
-  Line,
-  LinearGradient,
-  Path,
-  Stop,
-} from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 import { formatCNY, formatCNYCompact, pctChange } from '@family-wealth/shared-utils';
 import { VISIBILITY_LABELS, canDoOnAsset } from '@family-wealth/family';
 import { useAppNavigation, type RootStackParamList } from '../lib/navigation';
@@ -37,8 +30,7 @@ import { useAssetStore } from '../stores/asset-store';
 import { useAuthStore } from '../stores/auth-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { getAssetNote } from '../services/export';
-import { TrendChart } from '../components/TrendChart';
-import { MonthGrowthAxis } from '../components/MonthGrowthAxis';
+import { NetWorthBarChart } from '../components/NetWorthBarChart';
 import {
   buildAssetMonthlySeries,
   buildMonthGrowthLabels,
@@ -93,25 +85,32 @@ function amountText(cents: number): string {
   return formatCNY(cents, { fraction: false }).replace('¥', '');
 }
 
-/** 迷你趋势面积折线：映射到 SPARK_W × SPARK_H 视口 */
-function sparkPaths(values: readonly number[]): {
-  line: string;
-  area: string;
-  last: { x: number; y: number } | null;
-} {
-  if (values.length < 2) return { line: '', area: '', last: null };
+/** 迷你趋势柱状：映射到 SPARK_W × SPARK_H 视口 */
+function sparkBars(values: readonly number[]): Array<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  last: boolean;
+}> {
+  if (values.length < 2) return [];
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const step = (SPARK_W - 8) / (values.length - 1);
-  const yOf = (v: number) => SPARK_H - 6 - ((v - min) / span) * (SPARK_H - 12);
-  const coords = values.map(
-    (v, i) => `${(4 + i * step).toFixed(1)},${yOf(v).toFixed(1)}`,
-  );
-  const line = `M${coords.join(' L')}`;
-  const last = { x: 4 + (values.length - 1) * step, y: yOf(values[values.length - 1]!) };
-  const area = `${line} L${last.x.toFixed(1)},${SPARK_H} L4,${SPARK_H} Z`;
-  return { line, area, last };
+  const plotW = SPARK_W - 8;
+  const step = plotW / values.length;
+  const barWidth = Math.min(18, step * 0.56);
+  const baseline = SPARK_H - 4;
+  return values.map((v, i) => {
+    const top = baseline - ((v - min) / span) * (SPARK_H - 10);
+    return {
+      x: 4 + step * (i + 0.5) - barWidth / 2,
+      y: top,
+      width: barWidth,
+      height: Math.max(3, baseline - top),
+      last: i === values.length - 1,
+    };
+  });
 }
 
 export default function AssetDetailScreen() {
@@ -124,6 +123,8 @@ export default function AssetDetailScreen() {
   const snapshots = useAssetStore((s) => s.snapshots);
   const removeAsset = useAssetStore((s) => s.removeAsset);
   const removeSnapshot = useAssetStore((s) => s.removeSnapshot);
+  const updateAssetMeta = useAssetStore((s) => s.updateAssetMeta);
+  const windowWidth = useWindowDimensions().width;
 
   const asset = useMemo(() => assets.find((a) => a.id === id), [assets, id]);
   // 全部快照（倒序）：趋势弹层与列表共用
@@ -249,11 +250,17 @@ export default function AssetDetailScreen() {
       ? null
       : pctChange(asset.currentAmount, prevMonthAmount);
 
-  const spark = sparkPaths(trendSeries.map((p) => p.netWorth));
+  const spark = sparkBars(trendSeries.map((p) => p.netWorth));
 
   function openEdit() {
     if (!asset) return;
     navigation.navigate('AssetEdit', { id: asset.id });
+  }
+
+  /** 资产信息卡内直接切换可见性（仅自己可见 ↔ 家庭成员可见） */
+  async function changeVisibility(toFamily: boolean) {
+    if (!asset || !canEdit) return;
+    await updateAssetMeta(asset.id, { visibility: toFamily ? 'family' : 'private' });
   }
 
   function confirmAndRemove() {
@@ -407,29 +414,31 @@ export default function AssetDetailScreen() {
                 最高 {hideAmount ? '· · ·' : peakAmount === null ? '—' : formatCNYCompact(peakAmount)}
               </Text>
             </XStack>
-            {spark.line === '' ? (
+            {spark.length === 0 ? (
               <View style={styles.sparkEmpty}>
                 <Text fontSize={11} color={COLORS.faint}>暂无足够走势数据</Text>
               </View>
             ) : (
               <Svg width="100%" height={SPARK_H} viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}>
-                <Defs>
-                  <LinearGradient id="detailSparkFill" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={COLORS.gold} stopOpacity={0.22} />
-                    <Stop offset="1" stopColor={COLORS.gold} stopOpacity={0} />
-                  </LinearGradient>
-                </Defs>
                 {[16, 30, 42].map((y) => (
                   <Line key={`grid-${y}`} x1={4} x2={SPARK_W - 4} y1={y} y2={y}
                     stroke={COLORS.divider} strokeWidth={1} />
                 ))}
-                <Path d={spark.area} fill="url(#detailSparkFill)" />
-                <Path d={spark.line} fill="none" stroke={COLORS.gold} strokeWidth={2}
-                  strokeLinecap="round" strokeLinejoin="round" />
-                {spark.last !== null ? (
-                  <Circle cx={spark.last.x} cy={spark.last.y} r={3.5}
-                    fill={COLORS.gold} stroke={COLORS.surface} strokeWidth={1.5} />
-                ) : null}
+                {spark.map((b, i) => (
+                  <Rect
+                    key={`spark-bar-${i}`}
+                    x={b.x}
+                    y={b.y}
+                    width={b.width}
+                    height={b.height}
+                    rx={2}
+                    fill={b.last ? COLORS.gold : COLORS.ink}
+                    opacity={b.last ? 0.95 : 0.85}
+                    stroke={b.last ? COLORS.goldLight : COLORS.transparent}
+                    strokeOpacity={b.last ? 0.55 : 0}
+                    strokeWidth={1}
+                  />
+                ))}
               </Svg>
             )}
             <TouchableOpacity onPress={() => setShowTrend(true)} activeOpacity={0.7}
@@ -524,9 +533,17 @@ export default function AssetDetailScreen() {
                   <Text fontSize={10} color={COLORS.faint} letterSpacing={0.5} paddingTop={2}>
                     {row.label}
                   </Text>
-                  <Text fontSize={12} lineHeight={17} color={COLORS.text} flex={1} textAlign="right">
-                    {row.value}
-                  </Text>
+                  <XStack flex={1} alignItems="center" justifyContent="flex-end" gap={10}>
+                    <Text fontSize={12} lineHeight={17} color={COLORS.text} flexShrink={1} textAlign="right">
+                      {row.value}
+                    </Text>
+                    {row.label === '可见性' && canEdit ? (
+                      <Switch
+                        value={asset.visibility === 'family'}
+                        onValueChange={(toFamily) => void changeVisibility(toFamily)}
+                      />
+                    ) : null}
+                  </XStack>
                 </XStack>
               );
             })}
@@ -534,17 +551,12 @@ export default function AssetDetailScreen() {
         </View>
       </YStack>
 
-      {/* 底部操作 */}
+      {/* 底部操作：更新估值（金额与元数据同表单，不再重复放「编辑资产」） */}
       {canEdit ? (
         <YStack paddingHorizontal={24} marginTop={22} space={10}>
           <TouchableOpacity activeOpacity={0.82} onPress={openEdit} style={styles.primaryBtn}>
             <Text fontSize={14} fontWeight="600" color={COLORS.paper} letterSpacing={2}>
               更新估值
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.82} onPress={openEdit} style={styles.secondaryBtn}>
-            <Text fontSize={14} fontWeight="600" color={COLORS.goldDeep} letterSpacing={2}>
-              编辑资产
             </Text>
           </TouchableOpacity>
         </YStack>
@@ -583,8 +595,7 @@ export default function AssetDetailScreen() {
               <Text fontSize="$2" color="$textSecondary">✕</Text>
             </TouchableOpacity>
           </XStack>
-          <TrendChart data={trendSeries} height={160} lines={['netWorth']} showXLabels={false} />
-          <MonthGrowthAxis items={trendGrowth} />
+          <NetWorthBarChart data={trendSeries} growth={trendGrowth} width={windowWidth - 48} />
           <XStack space="$sm" marginTop="$md">
             <YStack flex={1} backgroundColor={COLORS.paper} borderRadius="$md" padding="$sm" alignItems="center">
               <Text fontSize="$1" color="$textTertiary">半年涨跌</Text>
@@ -720,15 +731,6 @@ const styles = {
     shadowOpacity: 0.28,
     shadowRadius: 16,
     elevation: 6,
-  },
-  secondaryBtn: {
-    height: 46,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.gold,
-    backgroundColor: COLORS.transparent,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   trashBtn: {
     marginTop: 18,

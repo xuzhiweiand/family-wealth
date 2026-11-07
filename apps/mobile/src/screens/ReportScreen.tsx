@@ -33,6 +33,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { filterVisibleAssets } from '@family-wealth/family';
 import { formatCNY, formatCNYCompact } from '@family-wealth/shared-utils';
+import type { TrendPoint } from '@family-wealth/shared-types';
 import { useAuthStore } from '../stores/auth-store';
 import { useAssetStore } from '../stores/asset-store';
 import { useMyFamilyRole } from '../stores/family-store';
@@ -43,6 +44,7 @@ import {
   availableMonths,
   availableYears,
   buildMonthlyReport,
+  buildYearlyNetWorthTrend,
   buildYearlyReport,
   scopeSnapshots,
   type MonthlyReport,
@@ -177,6 +179,12 @@ export default function ReportScreen() {
     if (years.length === 0 || effYearIdx < 0) return null;
     return buildYearlyReport(visibleAssets, snapshots, Number(years[effYearIdx]));
   }, [years, effYearIdx, visibleAssets, snapshots]);
+
+  // 年度净资产趋势（近 5 年，每年年末快照口径）——年度报表折线图
+  const yearlyTrend = useMemo(
+    () => (mode === 'year' ? buildYearlyNetWorthTrend(visibleAssets, scopedSnapshots) : []),
+    [mode, visibleAssets, scopedSnapshots],
+  );
 
   const activeReport = mode === 'month' ? monthReport : yearReport;
   const canExport = activeReport !== null && activeReport.hasData;
@@ -381,7 +389,11 @@ export default function ReportScreen() {
           <SnapshotDetails report={monthReport} />
         ) : null}
         {mode === 'year' && yearReport?.hasData ? (
-          <YearDetails report={yearReport} chartWidth={Math.max(1, screenWidth - 50)} />
+          <YearDetails
+            report={yearReport}
+            chartWidth={Math.max(1, screenWidth - 50)}
+            yearlyTrend={yearlyTrend}
+          />
         ) : null}
 
         {/* 导出 */}
@@ -518,7 +530,15 @@ function SnapshotDetails({ report }: { report: MonthlyReport }) {
 
 /* ---------------- 年报明细 ---------------- */
 
-function YearDetails({ report, chartWidth }: { report: YearlyReport; chartWidth: number }) {
+function YearDetails({
+  report,
+  chartWidth,
+  yearlyTrend,
+}: {
+  report: YearlyReport;
+  chartWidth: number;
+  yearlyTrend: readonly TrendPoint[];
+}) {
   // 柱子顶部的环比涨幅：与趋势页同口径，按月度序列逐点相对上一个月计算
   const monthGrowth = useMemo(
     () => buildMonthGrowthLabels(report.monthlyTrend, report.monthlyTrend.length),
@@ -557,6 +577,19 @@ function YearDetails({ report, chartWidth }: { report: YearlyReport; chartWidth:
           />
         </View>
       </View>
+
+      {yearlyTrend.length > 0 ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={[styles.sectionTitle, SERIF_CN_TEXT]}>年度净资产趋势</Text>
+            <Text style={styles.sectionMeta}>{`近 ${yearlyTrend.length} 年`}</Text>
+          </View>
+          <View style={styles.chartCard}>
+            {/* 年度柱状图：只画净资产柱与年份刻度，不叠加月度环比虚线 */}
+            <NetWorthBarChart data={yearlyTrend} growth={[]} width={chartWidth} />
+          </View>
+        </View>
+      ) : null}
 
       {report.monthlyTrend.length > 0 ? (
         <View style={styles.section}>
@@ -605,7 +638,7 @@ function YearDetails({ report, chartWidth }: { report: YearlyReport; chartWidth:
                   <Text style={styles.snapName} numberOfLines={1}>{e.assetName}</Text>
                   <Text style={styles.snapMeta}>{e.typeLabel}</Text>
                 </View>
-                <Text style={styles.snapDate}>{e.at.slice(0, 10)}</Text>
+                <Text style={styles.eventDate} numberOfLines={1}>{e.at.slice(0, 10)}</Text>
               </View>
             ))}
 
@@ -847,6 +880,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
+  // 大事记日期为完整 YYYY-MM-DD，不能用固定 44 宽（会折行）；按内容单行展示
+  eventDate: { fontSize: 11, color: COLORS.faint, marginLeft: 8 },
   tag: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginRight: 10 },
   tagAdded: { backgroundColor: COLORS.inkWashSoft },
   tagArchived: { backgroundColor: COLORS.divider },

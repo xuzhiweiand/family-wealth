@@ -160,21 +160,20 @@
           <p class="text-[10px] num" style="color:var(--gold-deep)">口径：月末余额</p>
         </div>
         <svg viewBox="0 0 320 96" class="w-full">
-          <defs>
-            <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#C6A15B" stop-opacity=".22"/>
-              <stop offset="100%" stop-color="#C6A15B" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
           <g stroke="#F0EDE4" stroke-width="1">
             <line x1="0" y1="24" x2="320" y2="24"/><line x1="0" y1="48" x2="320" y2="48"/><line x1="0" y1="72" x2="320" y2="72"/>
           </g>
-          <path d="M8,78 L70,70 L132,72 L194,58 L256,44 L312,26 L312,96 L8,96 Z" fill="url(#sparkfill)"/>
-          <path d="M8,78 L70,70 L132,72 L194,58 L256,44 L312,26" fill="none" stroke="#C6A15B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="312" cy="26" r="3.5" fill="#C6A15B" stroke="#fff" stroke-width="1.5"/>
+          <g>
+            <rect x="24.7" y="78" width="24" height="10" rx="2" fill="#0B3D2E" opacity=".85"/>
+            <rect x="75.9" y="70" width="24" height="18" rx="2" fill="#0B3D2E" opacity=".85"/>
+            <rect x="127.3" y="72" width="24" height="16" rx="2" fill="#0B3D2E" opacity=".85"/>
+            <rect x="178.6" y="58" width="24" height="30" rx="2" fill="#0B3D2E" opacity=".85"/>
+            <rect x="229.9" y="44" width="24" height="44" rx="2" fill="#0B3D2E" opacity=".85"/>
+            <rect x="281.3" y="26" width="24" height="62" rx="2" fill="#C6A15B" opacity=".95" stroke="#E9DCC0" stroke-opacity=".55"/>
+          </g>
           <g font-size="8.5" fill="#A8B0AA" text-anchor="middle" font-family="Georgia,serif">
-            <text x="8" y="94" text-anchor="start">6月</text><text x="70" y="94">7月</text><text x="132" y="94">8月</text>
-            <text x="194" y="94">9月</text><text x="256" y="94">10月</text><text x="312" y="94" text-anchor="end">11月</text>
+            <text x="36.7" y="94">6月</text><text x="88" y="94">7月</text><text x="139.3" y="94">8月</text>
+            <text x="190.7" y="94">9月</text><text x="242" y="94">10月</text><text x="293.3" y="94" fill="#0B3D2E" font-weight="700">11月</text>
           </g>
         </svg>
         <button class="w-full mt-2 py-2 rounded-xl text-[11.5px] font-semibold flex items-center justify-center gap-1.5"

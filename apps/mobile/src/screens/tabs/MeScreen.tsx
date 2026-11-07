@@ -5,7 +5,7 @@
  *   账号头 → 账号 / 安全与隐私 / 功能 / 关于 分组卡片 → 退出登录
  *
  * 保留原有业务：绑定手机号弹层、注销账号、当前家庭跳转、端到端加密状态、
- * 生物识别 / 异动提醒 / 金额默认隐藏本机偏好、盘点提醒 / 报表 / 本地备份 /
+ * 生物识别 / 异动提醒 / 金额默认隐藏本机偏好、盘点提醒 / 本地备份 /
  * 导出报表 / 帮助反馈、退出登录。
  *
  * 安全开关是本机偏好；端到端加密由架构保证、恒为开启。
@@ -78,12 +78,6 @@ const CALENDAR: IconGlyph = (
     <Path d="M8 2v4M16 2v4" />
     <Path d="M3 8h18" />
     <Path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-  </>
-);
-const CHART: IconGlyph = (
-  <>
-    <Path d="M3 3v18h18" />
-    <Path d="M8 17V9M13 17V5M18 17v-7" />
   </>
 );
 const DOWNLOAD: IconGlyph = (
@@ -324,22 +318,10 @@ export default function MeScreen() {
             value="刚刚"
           />
           <Row
-            glyph={HELP} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
-            label="帮助与反馈"
-            chevron
-            onPress={() => navigation.navigate('HelpFeedback')}
-          />
-          <Row
             glyph={CALENDAR} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="盘点提醒"
             chevron
             onPress={() => navigation.navigate('ReminderSettings')}
-          />
-          <Row
-            glyph={CHART} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
-            label="月度/年度报表"
-            chevron
-            onPress={() => navigation.navigate('Report')}
           />
           <Row
             glyph={BELL} glyphColor={COLORS.warning} glyphBg={CHIP_GOLD}
@@ -362,6 +344,12 @@ export default function MeScreen() {
         {/* 关于 */}
         <SectionLabel>关于</SectionLabel>
         <Group>
+          <Row
+            glyph={HELP} glyphColor={COLORS.goldDeep} glyphBg={CHIP_GOLD}
+            label="帮助与反馈"
+            chevron
+            onPress={() => navigation.navigate('HelpFeedback')}
+          />
           <Row
             glyph={INFO} glyphColor={COLORS.inkSoft} glyphBg={CHIP_INK}
             label="版本"

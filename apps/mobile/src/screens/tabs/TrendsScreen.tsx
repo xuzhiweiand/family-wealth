@@ -266,6 +266,19 @@ export default function TrendsScreen() {
     () => monthSeries.slice(-detailLimit).reverse(),
     [monthSeries, detailLimit],
   );
+  // 月度明细的环比增长金额与百分比：与图上环比同口径（相对上一个有数据的月份）
+  const detailGrowth = useMemo(() => {
+    const map = new Map<string, { delta: number; pct: number } | null>();
+    monthSeries.forEach((p, i) => {
+      if (i === 0) {
+        map.set(p.date, null);
+        return;
+      }
+      const prev = monthSeries[i - 1]!.netWorth;
+      map.set(p.date, { delta: p.netWorth - prev, pct: pctChange(p.netWorth, prev) });
+    });
+    return map;
+  }, [monthSeries]);
   // 还有更多月份可加载：当前展示的最早月早于序列中的最早月
   const detailHasMore = monthSeries.length > detailLimit;
 
@@ -317,7 +330,7 @@ export default function TrendsScreen() {
   const avgText = `${monthlyAvg >= 0 ? '+' : '-'}${amountText(Math.abs(Math.round(monthlyAvg)))}`;
 
   const detailMax = detailRows.reduce((max, r) => Math.max(max, Math.abs(r.netWorth)), 0);
-  const detailTrackWidth = Math.max(1, screenWidth - 48 - 32 - 56 - 74 - 24);
+  const detailTrackWidth = Math.max(1, screenWidth - 48 - 32 - 56 - 100 - 24);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
@@ -528,6 +541,7 @@ export default function TrendsScreen() {
                   const ratio = detailMax > 0 ? Math.abs(row.netWorth) / detailMax : 0;
                   const fillWidth = Math.max(4, detailTrackWidth * ratio);
                   const assetRows = detailAssetRows.get(row.date) ?? [];
+                  const growth = detailGrowth.get(row.date) ?? null;
                   return (
                     <View key={row.date}>
                       <TouchableOpacity
@@ -563,16 +577,31 @@ export default function TrendsScreen() {
                               }} />
                             )}
                           </View>
-                          <Text
-                            width={74}
-                            textAlign="right"
-                            fontSize={12}
-                            fontWeight="600"
-                            color={COLORS.text}
-                            style={MONEY_TEXT}
-                          >
-                            {wanText(row.netWorth, 2)} 万
-                          </Text>
+                          <YStack width={100} alignItems="flex-end" space={2}>
+                            <Text
+                              textAlign="right"
+                              fontSize={12}
+                              fontWeight="600"
+                              color={COLORS.text}
+                              style={MONEY_TEXT}
+                            >
+                              {wanText(row.netWorth, 2)} 万
+                            </Text>
+                            {/* 环比增长金额 + 百分比（较上一个有数据的月份），绿涨红跌 */}
+                            <Text
+                              numberOfLines={1}
+                              textAlign="right"
+                              fontSize={10.5}
+                              color={growth === null
+                                ? COLORS.faint
+                                : growth.delta >= 0 ? COLORS.success : COLORS.danger}
+                              style={MONEY_TEXT}
+                            >
+                              {growth === null
+                                ? '—'
+                                : `${growth.delta >= 0 ? '+' : '-'}${wanText(Math.abs(growth.delta), 2)} 万 (${growth.pct >= 0 ? '+' : '-'}${Math.abs(growth.pct).toFixed(1)}%)`}
+                            </Text>
+                          </YStack>
                           <Svg
                             width={14}
                             height={14}

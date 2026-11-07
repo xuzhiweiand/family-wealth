@@ -22,6 +22,9 @@ const PCT_TOP = PLOT_TOP + 10;
 const PCT_BOTTOM = PLOT_BOTTOM - 42;
 /** 横轴刻度每个标签至少占的宽度，点数多时按此抽稀，避免重叠 */
 const AXIS_LABEL_SLOT = 34;
+/** 10+ 个点（整年 12 个月）时收紧刻度间距，保证每月标签都能显示 */
+const AXIS_LABEL_SLOT_DENSE = 24;
+const DENSE_POINT_COUNT = 10;
 
 /** 桶 key → 图表横轴短标签 */
 function axisShort(key: string): string {
@@ -72,8 +75,16 @@ export function NetWorthBarChart({ data, growth, width }: NetWorthBarChartProps)
   const centerX = (i: number) => GUTTER_LEFT + step * (i + 0.5);
   const lastIndex = data.length - 1;
   const tickValues = [high, high - domain / 3, high - domain * 2 / 3, low];
-  const maxLabels = Math.max(6, Math.floor(plotWidth / AXIS_LABEL_SLOT));
+  // 点数多（≥10，典型为整年 12 个月）时收紧刻度间距并缩小标注字号，让每个月都能标出
+  const dense = data.length >= DENSE_POINT_COUNT;
+  const maxLabels = Math.max(
+    6,
+    Math.floor(plotWidth / (dense ? AXIS_LABEL_SLOT_DENSE : AXIS_LABEL_SLOT)),
+  );
   const labelIndices = pickLabelIndices(data.length, maxLabels);
+  const pctFontSize = dense ? 7.5 : 8.5;
+  const valueFontSize = dense ? 7.5 : 8.5;
+  const monthFontSize = dense ? 8.5 : 9;
 
   const pctPoints = growth
     .map((g, i) => (g.pct === null || i >= data.length ? null : { i, pct: g.pct }))
@@ -185,7 +196,7 @@ export function NetWorthBarChart({ data, growth, width }: NetWorthBarChartProps)
             key={`pct-${i}`}
             x={centerX(i)}
             y={Math.max(PLOT_TOP - 6, top - 6)}
-            fontSize={8.5}
+            fontSize={pctFontSize}
             fill={pct === null ? COLORS.faint : COLORS.goldDeep}
             fontWeight={i === lastIndex ? '700' : '400'}
             textAnchor="middle"
@@ -201,7 +212,7 @@ export function NetWorthBarChart({ data, growth, width }: NetWorthBarChartProps)
           key={`value-${i}`}
           x={centerX(i)}
           y={PLOT_BOTTOM + 14}
-          fontSize={8.5}
+          fontSize={valueFontSize}
           fill={i === lastIndex ? COLORS.ink : COLORS.sub}
           fontWeight={i === lastIndex ? '700' : '400'}
           textAnchor="middle"
@@ -214,7 +225,7 @@ export function NetWorthBarChart({ data, growth, width }: NetWorthBarChartProps)
           key={`month-${i}`}
           x={centerX(i)}
           y={PLOT_BOTTOM + 30}
-          fontSize={9}
+          fontSize={monthFontSize}
           fill={i === lastIndex ? COLORS.ink : COLORS.faint}
           fontWeight={i === lastIndex ? '700' : '400'}
           textAnchor="middle"

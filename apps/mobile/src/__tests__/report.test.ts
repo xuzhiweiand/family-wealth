@@ -5,6 +5,7 @@ import {
   availableMonths,
   availableYears,
   buildMonthlyReport,
+  buildYearlyNetWorthTrend,
   buildYearlyReport,
 } from '../lib/report';
 
@@ -288,5 +289,53 @@ describe('buildYearlyReport', () => {
     expect(report.topMovers).toEqual([]);
     // 大事记仍按资产字段给出（与快照无关）
     expect(report.events).toHaveLength(2);
+  });
+});
+
+describe('buildYearlyNetWorthTrend', () => {
+  const assets = [
+    makeAsset({ id: 'a1', type: 'bank_deposit' }),
+    makeAsset({ id: 'a2', type: 'debt' }),
+  ];
+
+  it('每年取最后一个有快照月份的年末口径，最多近 maxYears 年', () => {
+    const snapshots = [
+      makeSnap('a1', 80000, iso(2024, 12, 10)),
+      makeSnap('a2', -20000, iso(2024, 12, 10)),
+      makeSnap('a1', 120000, iso(2025, 11, 20)),
+      makeSnap('a2', -10000, iso(2025, 12, 15)),
+      makeSnap('a1', 150000, iso(2026, 9, 30)),
+    ];
+    const all = buildYearlyNetWorthTrend(assets, snapshots);
+    expect(all.map((p) => p.date)).toEqual(['2024', '2025', '2026']);
+    expect(all[0]).toEqual({
+      date: '2024',
+      totalAssets: 80000,
+      totalLiabilities: 20000,
+      netWorth: 60000,
+    });
+    // 2025 取最后一个有快照的 12 月；当月只有 a2 快照 → 只计入该资产
+    expect(all[1]).toEqual({
+      date: '2025',
+      totalAssets: 0,
+      totalLiabilities: 10000,
+      netWorth: -10000,
+    });
+    // 2026 只有 a1 快照 → 未录入的负债不计入
+    expect(all[2]).toEqual({
+      date: '2026',
+      totalAssets: 150000,
+      totalLiabilities: 0,
+      netWorth: 150000,
+    });
+
+    expect(buildYearlyNetWorthTrend(assets, snapshots, 2).map((p) => p.date)).toEqual([
+      '2025',
+      '2026',
+    ]);
+  });
+
+  it('无快照时返回空数组', () => {
+    expect(buildYearlyNetWorthTrend(assets, [])).toEqual([]);
   });
 });

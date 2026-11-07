@@ -334,3 +334,23 @@ export function buildYearlyReport(
     topMovers: movers.slice(0, 3),
   };
 }
+
+/**
+ * 年度净资产趋势：最近 maxYears 个「有快照的年份」，每年取该年最后一个有快照月份的口径
+ * （与年报「年末净资产」完全一致，buildMonthTotals 只统计当月有快照的资产）。
+ * date 为年份 key 'YYYY'，供年度报表折线图使用；数据不足时返回空数组。
+ */
+export function buildYearlyNetWorthTrend(
+  assets: readonly Asset[],
+  snapshots: readonly AssetSnapshot[],
+  maxYears = 5,
+): TrendPoint[] {
+  const scoped = scopeSnapshots(snapshots, assets);
+  const lastMonthOfYear = new Map<string, string>();
+  for (const month of availableMonths(scoped)) lastMonthOfYear.set(month.slice(0, 4), month);
+  const years = [...lastMonthOfYear.keys()].sort().slice(-Math.max(1, maxYears));
+  return years.map((year) => {
+    const totals = buildMonthTotals(assets, scoped, monthRef(lastMonthOfYear.get(year)!));
+    return { date: year, ...totals };
+  });
+}

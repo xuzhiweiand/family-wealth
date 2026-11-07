@@ -113,9 +113,10 @@
   .chip.on { background: var(--ink); border-color: var(--ink); color:#F7F3E8; font-weight:600; }
   @keyframes growBar { from { width: 0; } }
   .bar-grow { animation: growBar .8s cubic-bezier(.2,.7,.2,1) both; }
+  [x-cloak] { display: none !important; }
 </style>
 </head>
-<body x-data="{}">
+<body x-data="{ mode: 'year' }">
 
 <div class="caption">家 资 · 私 行 墨 绿 · v 0 . 6 . 0 · 报 表</div>
 
@@ -132,17 +133,23 @@
 
   <div class="page pb-28">
 
-    <!-- 页头 -->
+    <!-- 页头：年度报表 / 月度报表 双模式（默认年度，与 App 一致） -->
     <div class="px-6 pt-2 pb-4 flex items-baseline justify-between fu" style="animation-delay:.05s">
       <div>
-        <h2 class="font-serif-cn text-[21px] tracking-wide" style="color:var(--text)">月度报表</h2>
-        <p class="text-[10.5px] mt-1" style="color:var(--faint)">2026 年 10 月 · 已归档</p>
+        <h2 class="font-serif-cn text-[21px] tracking-wide" style="color:var(--text)"
+            x-text="mode === 'month' ? '月度报表' : '年度报表'">年度报表</h2>
+        <p class="text-[10.5px] mt-1" style="color:var(--faint)"
+           x-text="mode === 'month' ? '2026 年 10 月 · 已归档' : '2026 年 · 已归档'">2026 年 · 已归档</p>
       </div>
-      <span class="text-[11px] flex items-center gap-1" style="color:var(--gold-deep)">
-        年度报表
+      <button type="button" class="text-[11px] flex items-center gap-1" style="color:var(--gold-deep)"
+              @click="mode = mode === 'month' ? 'year' : 'month'">
+        <span x-text="mode === 'month' ? '年度报表' : '月度报表'">月度报表</span>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
-      </span>
+      </button>
     </div>
+
+    <!-- ===== 月度报表分支 ===== -->
+    <div x-show="mode === 'month'" x-cloak>
 
     <!-- 月度 hero -->
     <div class="px-5 fu" style="animation-delay:.12s">
@@ -237,8 +244,309 @@
         <button class="chip shrink-0">2026-08</button>
         <button class="chip shrink-0">2026-07</button>
       </div>
-      <p class="text-center text-[10px] mt-4 mb-2" style="color:var(--faint)">数据本机加密存储 · 仅你可解密查看</p>
     </div>
+    </div><!-- /月度报表分支 -->
+
+    <!-- ===== 年度报表分支（默认，对齐 App YearDetails） ===== -->
+    <div x-show="mode === 'year'">
+
+      <!-- 年度 hero -->
+      <div class="px-5 fu" style="animation-delay:.10s">
+        <div class="hero-ink rounded-[26px] px-6 pt-6 pb-5">
+          <div class="ring-3"></div>
+          <div class="relative z-10">
+            <p class="text-[10.5px] tracking-[3px] mb-2.5" style="color:rgba(233,220,192,.55)">2026 年净资产（元）</p>
+            <span class="font-display text-[36px] leading-none font-semibold num" style="color:#F7F3E8">¥ -367,000</span>
+          </div>
+
+          <div class="hairline-gold my-4 relative z-10"></div>
+          <div class="flex relative z-10 text-center">
+            <div class="flex-1">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">年初</p>
+              <p class="num font-display text-[15.5px] mt-1" style="color:var(--gold-light)">-728,000</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">年末</p>
+              <p class="num font-display text-[15.5px] mt-1" style="color:rgba(242,238,226,.72)">-367,000</p>
+            </div>
+            <div class="flex-1" style="border-left:1px solid rgba(233,220,192,.14)">
+              <p class="text-[9.5px] tracking-[2px]" style="color:rgba(233,220,192,.45)">全年</p>
+              <p class="num font-display text-[15.5px] mt-1" style="color:#F7F3E8">+49.59%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 资产构成（年末快照口径） -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.16s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">资产构成</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">共 404,000 元</span>
+        </div>
+
+        <div class="card px-4 py-4 space-y-3.5">
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">基金</span>
+              <span class="num" style="color:var(--sub)">364,000 · 90%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="bar-grow h-full rounded-full" style="width:90%;background:var(--ink);animation-delay:.28s"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12px] mb-1.5">
+              <span style="color:var(--text)">银行存款</span>
+              <span class="num" style="color:var(--sub)">40,000 · 10%</span>
+            </div>
+            <div class="h-[7px] rounded-full" style="background:var(--divider)">
+              <div class="bar-grow h-full rounded-full" style="width:10%;background:var(--gold);animation-delay:.36s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 年份选择 -->
+      <div class="px-6 mt-4 fu" style="animation-delay:.22s">
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          <button class="chip on shrink-0">2026</button>
+          <button class="chip shrink-0">2025</button>
+        </div>
+      </div>
+
+      <!-- 年初年末对比 -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.28s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">年初年末对比</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">2026-01 → 2026-11</span>
+        </div>
+        <div class="card px-4 py-1">
+          <div class="py-2" style="border-bottom:1px solid var(--divider)">
+            <p class="text-[13px]" style="color:var(--sub)">净资产</p>
+            <p class="num text-[12.5px] mt-[3px]" style="color:var(--text)">¥-72.8万 → ¥-36.7万</p>
+            <p class="num text-[12.5px] font-semibold mt-[3px]" style="color:var(--danger)">+¥361,000.00（+49.59%）</p>
+          </div>
+          <div class="py-2" style="border-bottom:1px solid var(--divider)">
+            <p class="text-[13px]" style="color:var(--sub)">总资产</p>
+            <p class="num text-[12.5px] mt-[3px]" style="color:var(--text)">¥7.0万 → ¥40.4万</p>
+            <p class="num text-[12.5px] font-semibold mt-[3px]" style="color:var(--danger)">+¥334,000.00</p>
+          </div>
+          <div class="py-2">
+            <p class="text-[13px]" style="color:var(--sub)">总负债</p>
+            <p class="num text-[12.5px] mt-[3px]" style="color:var(--text)">¥79.8万 → ¥77.1万</p>
+            <p class="num text-[12.5px] font-semibold mt-[3px]" style="color:var(--success)">¥-27,000.00</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 年度净资产趋势（柱状图，年末快照口径，与月度柱状图同视觉） -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.31s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">年度净资产趋势</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">近 2 年</span>
+        </div>
+        <div class="card py-4" style="overflow:hidden">
+          <svg viewBox="0 0 330 190" class="w-full block">
+            <!-- 网格线 + 左侧万元刻度 -->
+            <g stroke="#F0EDE4" stroke-width="1">
+              <line x1="32" y1="34" x2="326" y2="34"/>
+              <line x1="32" y1="73.3" x2="326" y2="73.3"/>
+              <line x1="32" y1="112.7" x2="326" y2="112.7"/>
+              <line x1="32" y1="152" x2="326" y2="152"/>
+            </g>
+            <g font-size="8" fill="#A8B0AA" font-family="Georgia,serif" text-anchor="end">
+              <text x="26" y="37">-31</text>
+              <text x="26" y="76.3">-51</text>
+              <text x="26" y="115.7">-70</text>
+              <text x="26" y="155">-90</text>
+            </g>
+
+            <!-- 末年金色柱光晕 -->
+            <rect x="236.5" y="42.4" width="32" height="109.6" rx="8" fill="#C6A15B" opacity=".14"/>
+
+            <!-- 净资产柱：墨绿 85%，末年金鎏金 -->
+            <rect x="92.5" y="140.6" width="26" height="11.4" rx="4" fill="#0B3D2E" opacity=".85"/>
+            <rect x="239.5" y="45.4" width="26" height="106.6" rx="4" fill="#C6A15B" opacity=".95"
+                  stroke="#E9DCC0" stroke-opacity=".55" stroke-width="1"/>
+
+            <!-- 柱底数值（万元）与年份 -->
+            <g font-size="8.5" fill="#75807A" font-family="Georgia,serif" text-anchor="middle">
+              <text x="105.5" y="166">-84.5</text>
+              <text x="252.5" y="166" fill="#0B3D2E" font-weight="700">-36.7</text>
+            </g>
+            <g font-size="9" text-anchor="middle">
+              <text x="105.5" y="182" fill="#A8B0AA">2025</text>
+              <text x="252.5" y="182" fill="#0B3D2E" font-weight="700">2026</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 月度净资产趋势（与趋势页共用柱状图组件） -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.34s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">月度净资产趋势</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">11 个月</span>
+        </div>
+        <div class="card py-4" style="overflow:hidden">
+          <svg viewBox="0 0 330 190" class="w-full block">
+            <!-- 网格线 + 左侧万元刻度 -->
+            <g stroke="#F0EDE4" stroke-width="1">
+              <line x1="32" y1="34" x2="326" y2="34"/>
+              <line x1="32" y1="73.3" x2="326" y2="73.3"/>
+              <line x1="32" y1="112.7" x2="326" y2="112.7"/>
+              <line x1="32" y1="152" x2="326" y2="152"/>
+            </g>
+            <g font-size="8" fill="#A8B0AA" font-family="Georgia,serif" text-anchor="end">
+              <text x="26" y="37">-32</text>
+              <text x="26" y="76.3">-47</text>
+              <text x="26" y="115.7">-62</text>
+              <text x="26" y="155">-77</text>
+            </g>
+
+            <!-- 末月金色柱光晕 -->
+            <rect x="301.3" y="42.4" width="22.6" height="109.6" rx="8" fill="#C6A15B" opacity=".14"/>
+
+            <!-- 净资产柱：墨绿 85%，末月鎏金（11 个月真实数据） -->
+            <g fill="#0B3D2E" opacity=".85">
+              <rect x="37.1" y="140.6" width="16.6" height="11.4" rx="4"/>
+              <rect x="63.8" y="129.3" width="16.6" height="22.7" rx="4"/>
+              <rect x="90.5" y="77.8" width="16.6" height="74.2" rx="4"/>
+              <rect x="117.3" y="75.2" width="16.6" height="76.8" rx="4"/>
+              <rect x="144.0" y="80.5" width="16.6" height="71.5" rx="4"/>
+              <rect x="170.7" y="81.3" width="16.6" height="70.7" rx="4"/>
+              <rect x="197.5" y="59.9" width="16.6" height="92.1" rx="4"/>
+              <rect x="224.2" y="57.0" width="16.6" height="95.0" rx="4"/>
+              <rect x="250.9" y="55.4" width="16.6" height="96.6" rx="4"/>
+              <rect x="277.6" y="49.1" width="16.6" height="102.9" rx="4"/>
+            </g>
+            <rect x="304.3" y="45.4" width="16.6" height="106.6" rx="4" fill="#C6A15B" opacity=".95"
+                  stroke="#E9DCC0" stroke-opacity=".55" stroke-width="1"/>
+
+            <!-- 环比金色虚线 + 圆点 -->
+            <path d="M72.1,89.6 L98.8,44 L125.5,97.5 L152.3,110 L179.0,102.7 L205.7,69.0 L232.5,96.3 L259.2,98.5 L285.9,89.6 L312.6,94.1"
+                  fill="none" stroke="#C6A15B" stroke-width="1.8" stroke-dasharray="1 3" stroke-linecap="round"/>
+            <g fill="#C6A15B" stroke="#FFFFFF" stroke-width="1">
+              <circle cx="72.1" cy="89.6" r="2.5"/>
+              <circle cx="98.8" cy="44" r="2.5"/>
+              <circle cx="125.5" cy="97.5" r="2.5"/>
+              <circle cx="152.3" cy="110" r="2.5"/>
+              <circle cx="179.0" cy="102.7" r="2.5"/>
+              <circle cx="205.7" cy="69.0" r="2.5"/>
+              <circle cx="232.5" cy="96.3" r="2.5"/>
+              <circle cx="259.2" cy="98.5" r="2.5"/>
+              <circle cx="285.9" cy="89.6" r="2.5"/>
+              <circle cx="312.6" cy="94.1" r="3"/>
+            </g>
+
+            <!-- 柱顶涨幅（dense 字号 7.5） -->
+            <g font-size="7.5" font-family="Georgia,serif" text-anchor="middle" fill="#A8853F">
+              <text x="45.4" y="134.6" fill="#A8B0AA">—</text>
+              <text x="72.1" y="123.3">+5.9%</text>
+              <text x="98.8" y="71.8">+28.5%</text>
+              <text x="125.5" y="69.2">+2.0%</text>
+              <text x="152.3" y="74.5">-4.2%</text>
+              <text x="179.0" y="75.3">-0.6%</text>
+              <text x="205.7" y="53.9">+16.1%</text>
+              <text x="232.5" y="51.0">+2.6%</text>
+              <text x="259.2" y="49.4">+1.5%</text>
+              <text x="285.9" y="43.1">+5.9%</text>
+              <text x="312.6" y="39.4" font-weight="700">+3.7%</text>
+            </g>
+
+            <!-- 柱底数值（万元，12 个月全显）与月份 -->
+            <g font-size="7.5" fill="#75807A" font-family="Georgia,serif" text-anchor="middle">
+              <text x="45.4" y="166">-72.8</text>
+              <text x="72.1" y="166">-68.5</text>
+              <text x="98.8" y="166">-49.0</text>
+              <text x="125.5" y="166">-48.0</text>
+              <text x="152.3" y="166">-50.0</text>
+              <text x="179.0" y="166">-50.3</text>
+              <text x="205.7" y="166">-42.2</text>
+              <text x="232.5" y="166">-41.1</text>
+              <text x="259.2" y="166">-40.5</text>
+              <text x="285.9" y="166">-38.1</text>
+              <text x="312.6" y="166" fill="#0B3D2E" font-weight="700">-36.7</text>
+            </g>
+            <g font-size="8.5" fill="#A8B0AA" text-anchor="middle">
+              <text x="45.4" y="182">01月</text>
+              <text x="72.1" y="182">02月</text>
+              <text x="98.8" y="182">03月</text>
+              <text x="125.5" y="182">04月</text>
+              <text x="152.3" y="182">05月</text>
+              <text x="179.0" y="182">06月</text>
+              <text x="205.7" y="182">07月</text>
+              <text x="232.5" y="182">08月</text>
+              <text x="259.2" y="182">09月</text>
+              <text x="285.9" y="182">10月</text>
+              <text x="312.6" y="182" fill="#0B3D2E" font-weight="700">11月</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 配置变化 -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.40s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">配置变化</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">占总资产</span>
+        </div>
+        <div class="card px-4 py-1">
+          <div class="flex justify-between items-center py-2" style="border-bottom:1px solid var(--divider)">
+            <span class="text-[13px]" style="color:var(--sub)">基金</span>
+            <span class="num text-[12.5px] font-semibold" style="color:var(--text)">99.2%&nbsp;&nbsp;→&nbsp;&nbsp;90.1%</span>
+          </div>
+          <div class="flex justify-between items-center py-2">
+            <span class="text-[13px]" style="color:var(--sub)">银行存款</span>
+            <span class="num text-[12.5px] font-semibold" style="color:var(--text)">0.8%&nbsp;&nbsp;→&nbsp;&nbsp;9.9%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 年度大事记 -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.46s">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="font-serif-cn text-[17px] tracking-wide" style="color:var(--text)">年度大事记</h3>
+          <span class="text-[10.5px]" style="color:var(--faint)">3 条</span>
+        </div>
+        <div class="card px-4 py-1">
+          <div class="flex items-center py-2.5" style="border-bottom:1px solid var(--divider)">
+            <span class="text-[10.5px] font-semibold rounded-full px-2 py-[2px] mr-2.5"
+                  style="background:rgba(11,61,46,.06);color:var(--ink-soft)">新增</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-medium truncate" style="color:var(--text)">教育金定投</p>
+              <p class="text-[10.5px] mt-[1px]" style="color:var(--faint)">基金</p>
+            </div>
+            <span class="num text-[11px] ml-2" style="color:var(--faint)">2026-03-18</span>
+          </div>
+          <div class="flex items-center py-2.5" style="border-bottom:1px solid var(--divider)">
+            <span class="text-[10.5px] font-semibold rounded-full px-2 py-[2px] mr-2.5"
+                  style="background:var(--divider);color:var(--sub)">归档</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-medium truncate" style="color:var(--text)">旧车（已置换）</p>
+              <p class="text-[10.5px] mt-[1px]" style="color:var(--faint)">车辆</p>
+            </div>
+            <span class="num text-[11px] ml-2" style="color:var(--faint)">2026-06-05</span>
+          </div>
+          <p class="text-[11px] font-semibold mt-3 mb-[2px]" style="color:var(--faint)">变化最大的资产</p>
+          <div class="flex items-center py-2.5">
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-medium truncate" style="color:var(--text)">沪深300指数基金</p>
+              <p class="num text-[10.5px] mt-[1px]" style="color:var(--faint)">¥6.9万 → ¥36.4万</p>
+            </div>
+            <span class="num text-[13px] font-semibold ml-2" style="color:var(--danger)">+¥294,560.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 导出 -->
+      <div class="px-6 mt-6 fu" style="animation-delay:.52s">
+        <button class="w-full h-[44px] rounded-[12px] text-[13px] font-semibold"
+                style="border:1px solid var(--ink);color:var(--ink);letter-spacing:1px;background:transparent">导出报表</button>
+      </div>
+    </div><!-- /年度报表分支 -->
+
+    <p class="text-center text-[10px] mt-4 mb-2" style="color:var(--faint)">数据本机加密存储 · 仅你可解密查看</p>
   </div>
 
   <!-- Tab 栏 -->
