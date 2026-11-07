@@ -37,7 +37,8 @@ import { useAuthStore } from '../stores/auth-store';
 import { useAssetStore } from '../stores/asset-store';
 import { useMyFamilyRole } from '../stores/family-store';
 import { GradientCard } from '../components/GradientCard';
-import { TrendChart } from '../components/TrendChart';
+import { NetWorthBarChart } from '../components/NetWorthBarChart';
+import { buildMonthGrowthLabels } from '../lib/asset-meta';
 import {
   availableMonths,
   availableYears,
@@ -146,7 +147,7 @@ export default function ReportScreen() {
   const snapshots = useAssetStore((s) => s.snapshots);
   const role = useMyFamilyRole();
 
-  const [mode, setMode] = useState<Mode>('month');
+  const [mode, setMode] = useState<Mode>('year');
   const [monthIdx, setMonthIdx] = useState<number | null>(null);
   const [yearIdx, setYearIdx] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -379,7 +380,9 @@ export default function ReportScreen() {
         {mode === 'month' && monthReport?.hasData ? (
           <SnapshotDetails report={monthReport} />
         ) : null}
-        {mode === 'year' && yearReport?.hasData ? <YearDetails report={yearReport} /> : null}
+        {mode === 'year' && yearReport?.hasData ? (
+          <YearDetails report={yearReport} chartWidth={Math.max(1, screenWidth - 50)} />
+        ) : null}
 
         {/* 导出 */}
         <View style={styles.exportWrap}>
@@ -515,7 +518,13 @@ function SnapshotDetails({ report }: { report: MonthlyReport }) {
 
 /* ---------------- 年报明细 ---------------- */
 
-function YearDetails({ report }: { report: YearlyReport }) {
+function YearDetails({ report, chartWidth }: { report: YearlyReport; chartWidth: number }) {
+  // 柱子顶部的环比涨幅：与趋势页同口径，按月度序列逐点相对上一个月计算
+  const monthGrowth = useMemo(
+    () => buildMonthGrowthLabels(report.monthlyTrend, report.monthlyTrend.length),
+    [report.monthlyTrend],
+  );
+
   return (
     <>
       <View style={styles.section}>
@@ -556,7 +565,11 @@ function YearDetails({ report }: { report: YearlyReport }) {
             <Text style={styles.sectionMeta}>{report.monthlyTrend.length} 个月</Text>
           </View>
           <View style={styles.chartCard}>
-            <TrendChart data={report.monthlyTrend} height={200} lines={['netWorth']} />
+            <NetWorthBarChart
+              data={report.monthlyTrend}
+              growth={monthGrowth}
+              width={chartWidth}
+            />
           </View>
         </View>
       ) : null}
